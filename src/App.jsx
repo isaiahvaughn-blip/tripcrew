@@ -1,3 +1,4 @@
+import { supabase } from './supabase'
 import { useState } from "react";
 
 // ─── DATA ────────────────────────────────────────────────────────────────────
