@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 // ─── DATA ────────────────────────────────────────────────────────────────────
 
@@ -158,6 +158,37 @@ export default function App() {
 // ─── PROFILE ──────────────────────────────────────────────────────────────────
 
 function ProfileScreen({ onOpen }) {
+  const [trips, setTrips] = useState([]);
+
+useEffect(() => {
+  const fetchTrips = async () => {
+    const { data, error } = await supabase
+      .from('trips')
+      .select('*')
+      .order('created_at', { ascending: false })
+    if (error) console.error(error)
+    else setTrips(data)
+  }
+  fetchTrips()
+}, [])
+  const handleNewTrip = async () => {
+  const { data, error } = await supabase
+    .from('trips')
+    .insert([{
+      name: 'New Trip',
+      location: 'Somewhere',
+      dates: 'TBD',
+      emoji: '✈️',
+      bg: 'linear-gradient(135deg, #0d2b1e 0%, #1a4a32 100%)',
+      tag: '#4ade80',
+      total_spent: 0,
+      settled: false,
+      solo: false
+    }])
+    .select()
+  if (error) console.error(error)
+  else console.log('Trip created:', data)
+}
   return (
     <div style={S.screen}>
       <div style={S.profileHero}>
@@ -185,9 +216,9 @@ function ProfileScreen({ onOpen }) {
       <div style={{ padding: "0 20px 40px" }}>
         <div style={S.sectionRow}>
           <div style={S.sectionLabel}>YOUR TRIPS</div>
-          <button style={S.newBtn}>+ New</button>
+          <button style={S.newBtn} onClick={handleNewTrip}>+ New</button>
         </div>
-        {TRIPS.map((t, i) => (
+        {trips.map((t, i) => (
           <TripCard key={t.id} trip={t} idx={i} onOpen={onOpen} />
         ))}
       </div>
@@ -196,13 +227,17 @@ function ProfileScreen({ onOpen }) {
 }
 
 function TripCard({ trip, idx, onOpen }) {
+  const members = trip.members || [];
+  const tag = trip.tag || "#4ade80";
+  const bg = trip.bg || "linear-gradient(135deg, #0d2b1e 0%, #1a4a32 100%)";
+
   return (
     <div
-      style={{ ...S.tripCard, background: trip.bg, animationDelay: `${idx * 80}ms` }}
+      style={{ ...S.tripCard, background: bg, animationDelay: `${idx * 80}ms` }}
       onClick={() => onOpen(trip)}
     >
       <div style={S.tcTop}>
-        <span style={S.tcEmoji}>{trip.emoji}</span>
+        <span style={S.tcEmoji}>{trip.emoji || "✈️"}</span>
         <div style={{ display: "flex", gap: 6 }}>
           {trip.solo && <span style={S.soloBadge}>SOLO</span>}
           {trip.settled && <span style={S.settledBadge}>SETTLED</span>}
@@ -212,23 +247,22 @@ function TripCard({ trip, idx, onOpen }) {
       <div style={S.tcLocation}>{trip.location} · {trip.dates}</div>
       <div style={S.tcBottom}>
         <div style={S.tcMembers}>
-          {trip.members.slice(0, 4).map((m, i) => (
-            <div key={i} style={{ ...S.mDot, background: trip.tag + "30", color: trip.tag, borderColor: trip.bg, marginLeft: i > 0 ? -7 : 0 }}>
+          {members.slice(0, 4).map((m, i) => (
+            <div key={i} style={{ ...S.mDot, background: tag + "30", color: tag, borderColor: bg, marginLeft: i > 0 ? -7 : 0 }}>
               {m[0]}
             </div>
           ))}
-          {trip.members.length > 4 && (
-            <div style={{ ...S.mDot, background: "#ffffff10", color: "#94a3b8", borderColor: trip.bg, marginLeft: -7 }}>
-              +{trip.members.length - 4}
+          {members.length > 4 && (
+            <div style={{ ...S.mDot, background: "#ffffff10", color: "#94a3b8", borderColor: bg, marginLeft: -7 }}>
+              +{members.length - 4}
             </div>
           )}
         </div>
-        <div style={{ ...S.tcTotal, color: trip.tag }}>${trip.totalSpent.toLocaleString()}</div>
+        <div style={{ ...S.tcTotal, color: tag }}>${(trip.total_spent || 0).toLocaleString()}</div>
       </div>
     </div>
   );
 }
-
 // ─── TRIP SHELL ───────────────────────────────────────────────────────────────
 
 function TripShell({ trip, activeTab, setActiveTab, onBack, onModal }) {
