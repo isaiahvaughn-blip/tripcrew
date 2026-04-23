@@ -159,7 +159,7 @@ export default function App() {
 
 function ProfileScreen({ onOpen }) {
   const [trips, setTrips] = useState([]);
-
+const [showNewTrip, setShowNewTrip] = useState(false);
 useEffect(() => {
   const fetchTrips = async () => {
     const { data, error } = await supabase
@@ -216,7 +216,16 @@ useEffect(() => {
       <div style={{ padding: "0 20px 40px" }}>
         <div style={S.sectionRow}>
           <div style={S.sectionLabel}>YOUR TRIPS</div>
-          <button style={S.newBtn} onClick={handleNewTrip}>+ New</button>
+          <button style={S.newBtn} onClick={() => setShowNewTrip(true)}>+ New</button>
+          {showNewTrip && (
+  <NewTripModal
+    onClose={() => setShowNewTrip(false)}
+    onSave={(trip) => {
+      setTrips(prev => [trip, ...prev]);
+      setShowNewTrip(false);
+    }}
+  />
+)}
         </div>
         {trips.map((t, i) => (
           <TripCard key={t.id} trip={t} idx={i} onOpen={onOpen} />
@@ -813,6 +822,77 @@ function ShareModal({ trip, onClose }) {
           <div style={S.shareNote}>
             🔒 Sensitive photos and private notes are always excluded from shared exports.
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function NewTripModal({ onClose, onSave }) {
+  const [form, setForm] = useState({
+    name: "", location: "", dates: "", emoji: "✈️",
+    bg: "linear-gradient(135deg, #0d2b1e 0%, #1a4a32 100%)",
+    tag: "#4ade80"
+  });
+  const [loading, setLoading] = useState(false);
+
+  const emojis = ["✈️","🏔️","🚴","🏖️","🗾","🎿","🚗","⛵","🏕️","🎭"];
+
+  const handleSave = async () => {
+    if (!form.name) return;
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('trips')
+      .insert([{ ...form, total_spent: 0, settled: false, solo: false }])
+      .select()
+    if (error) { console.error(error); setLoading(false); return; }
+    onSave(data[0]);
+  };
+
+  return (
+    <div style={S.overlay}>
+      <div style={S.sheet}>
+        <div style={S.sheetHandle} />
+        <div style={S.sheetHeader}>
+          <div style={S.sheetTitle}>New Trip</div>
+          <button style={S.closeBtn} onClick={onClose}>✕</button>
+        </div>
+        <div style={S.sheetBody}>
+          <div style={S.field}>
+            <div style={S.fieldLbl}>TRIP NAME</div>
+            <input style={S.input} placeholder="e.g. Tokyo 2025"
+              value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+          </div>
+          <div style={S.field}>
+            <div style={S.fieldLbl}>LOCATION</div>
+            <input style={S.input} placeholder="e.g. Japan"
+              value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} />
+          </div>
+          <div style={S.field}>
+            <div style={S.fieldLbl}>DATES</div>
+            <input style={S.input} placeholder="e.g. Jun 1–10, 2025"
+              value={form.dates} onChange={e => setForm(f => ({ ...f, dates: e.target.value }))} />
+          </div>
+          <div style={S.field}>
+            <div style={S.fieldLbl}>EMOJI</div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {emojis.map(e => (
+                <button key={e} onClick={() => setForm(f => ({ ...f, emoji: e }))}
+                  style={{ fontSize: 24, background: form.emoji === e ? "#1e293b" : "transparent",
+                    border: form.emoji === e ? "1px solid #4ade80" : "1px solid transparent",
+                    borderRadius: 10, padding: 6, cursor: "pointer" }}>
+                  {e}
+                </button>
+              ))}
+            </div>
+          </div>
+          <button
+            style={{ ...S.primaryBtn, background: loading ? "#1e293b" : "#22c55e", color: "#000", marginTop: 8 }}
+            onClick={handleSave}
+            disabled={loading}
+          >
+            {loading ? "Saving..." : "Create Trip"}
+          </button>
         </div>
       </div>
     </div>
