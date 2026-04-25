@@ -114,7 +114,8 @@ const CATEGORY_META = {
 export default function App() {
   const [view, setView] = useState("profile"); // profile | trip
   const [activeTrip, setActiveTrip] = useState(null);
-  const [activeTab, setActiveTab] = useState("itinerary");
+const [activeTab, setActiveTab] = useState("itinerary");
+
   const [modal, setModal] = useState(null); // null | "addExpense" | "addItinerary" | "settle" | "share"
 
   const openTrip = (trip) => {
@@ -400,7 +401,7 @@ function ExpensesTab({ trip, onModal }) {
         </div>
         <div style={S.expSumDiv} />
         <div style={S.expSumItem}>
-          <div style={S.expSumVal}>{trip.members.length}</div>
+          <div style={S.expSumVal}>{(trip.members || []).length}</div>
           <div style={S.expSumLbl}>travelers</div>
         </div>
         <div style={S.expSumDiv} />
@@ -515,7 +516,7 @@ function MembersTab({ trip }) {
         <button style={S.actionBtn}>+ Invite</button>
       </div>
 
-      {trip.members.map((m, i) => {
+      {(trip.members || []).map((m, i) => {
         const paid = EXPENSES.filter(e => e.paidBy === m).reduce((a, e) => a + e.amount, 0);
         const owes = SETTLEMENTS.filter(s => s.from === m).reduce((a, s) => a + s.amount, 0);
         const owed = SETTLEMENTS.filter(s => s.to === m).reduce((a, s) => a + s.amount, 0);
