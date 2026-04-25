@@ -117,7 +117,7 @@ export default function App() {
 const [activeTab, setActiveTab] = useState("itinerary");
 
   const [modal, setModal] = useState(null); // null | "addExpense" | "addItinerary" | "settle" | "share"
-
+const [itinRefresh, setItinRefresh] = useState(0);
   const openTrip = (trip) => {
     setActiveTrip(trip);
     setActiveTab("itinerary");
@@ -132,19 +132,28 @@ const [activeTab, setActiveTab] = useState("itinerary");
         )}
         {view === "trip" && activeTrip && (
           <TripShell
-            trip={activeTrip}
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-            onBack={() => setView("profile")}
-            onModal={setModal}
-          />
+  trip={activeTrip}
+  activeTab={activeTab}
+  setActiveTab={setActiveTab}
+  onBack={() => setView("profile")}
+  onModal={setModal}
+  itinRefresh={itinRefresh}
+/>
         )}
         {modal === "addExpense" && (
           <AddExpenseModal members={activeTrip?.members || []} onClose={() => setModal(null)} />
         )}
         {modal === "addItinerary" && (
-          <AddItineraryModal onClose={() => setModal(null)} />
-        )}
+  <AddItinModal
+    trip={activeTrip}
+    onClose={() => setModal(null)}
+    onAdd={(item) => {
+  setModal(null);
+  setItinRefresh(r => r + 1);
+  setTimeout(() => setItinRefresh(r => r + 1), 100);
+}}
+  />
+)}
         {modal === "settle" && (
           <SettleModal settlements={SETTLEMENTS} onClose={() => setModal(null)} />
         )}
@@ -275,7 +284,8 @@ function TripCard({ trip, idx, onOpen }) {
 }
 // ─── TRIP SHELL ───────────────────────────────────────────────────────────────
 
-function TripShell({ trip, activeTab, setActiveTab, onBack, onModal }) {
+function TripShell({ trip, activeTab, setActiveTab, onBack, onModal, itinRefresh }) {
+  
   const tabs = [
     { id: "itinerary", label: "Itinerary", icon: "🗓" },
     { id: "expenses", label: "Expenses", icon: "💸" },
@@ -302,7 +312,7 @@ function TripShell({ trip, activeTab, setActiveTab, onBack, onModal }) {
 
       {/* Tab Content */}
       <div style={S.tabContent}>
-        {activeTab === "itinerary" && <ItineraryTab trip={trip} onModal={onModal} />}
+        {activeTab === "itinerary" && <ItineraryTab trip={trip} onModal={onModal} refreshKey={itinRefresh} />}
         {activeTab === "expenses" && <ExpensesTab trip={trip} onModal={onModal} />}
         {activeTab === "uploads" && <UploadsTab />}
         {activeTab === "members" && <MembersTab trip={trip} />}
@@ -332,9 +342,23 @@ function TripShell({ trip, activeTab, setActiveTab, onBack, onModal }) {
 
 // ─── ITINERARY TAB ────────────────────────────────────────────────────────────
 
-function ItineraryTab({ trip, onModal }) {
-  const days = [...new Set(ITINERARY.map(i => i.day))];
+function ItineraryTab({ trip, onModal, refreshKey }) {
+  const [items, setItems] = useState([]);
 
+  useEffect(() => {
+    const fetchItinerary = async () => {
+      const { data, error } = await supabase
+        .from('itinerary')
+        .select('*')
+        .eq('trip_id', trip.id)
+        .order('day', { ascending: true })
+      if (error) console.error(error)
+      else setItems(data)
+    }
+    fetchItinerary()
+  }, [trip.id, refreshKey])
+
+  const days = [...new Set(items.map(i => i.day))];
   return (
     <div style={S.tabScroll}>
       <div style={S.tabTopRow}>
@@ -347,7 +371,7 @@ function ItineraryTab({ trip, onModal }) {
       {days.map(day => (
         <div key={day} style={S.dayBlock}>
           <div style={S.dayLabel}>{day}</div>
-          {ITINERARY.filter(i => i.day === day).map(item => {
+          {items.filter(i => i.day === day).map(item => {
             const meta = ITINERARY_COLORS[item.type];
             return (
               <div key={item.id} style={{ ...S.iRow, background: meta.bg, borderColor: meta.border }}>
@@ -679,9 +703,30 @@ function AddExpenseModal({ members, onClose }) {
   );
 }
 
-function AddItineraryModal({ onClose }) {
-  const [form, setForm] = useState({ type: "activity", title: "", detail: "", day: "", time: "" });
+function AddItinModal({ onClose, trip, onAdd }) {
+  const [form, setForm] = useState({ type: "activity", title: "", detail: "", day: "", time: "", icon: "🎯", visibility: "group" });
   const types = ["flight", "stay", "activity", "restaurant", "transport"];
+  const meta = ITINERARY_COLORS[form.type];
+
+  const handleAdd = async () => {
+    if (!form.title) return;
+    const { data, error } = await supabase
+      .from('itinerary')
+      .insert([{
+        trip_id: trip.id,
+        day: form.day,
+        time: form.time,
+        type: form.type,
+        title: form.title,
+        detail: form.detail,
+        icon: form.icon,
+        visibility: form.visibility,
+      }])
+      .select()
+    if (error) { console.error(error); return; }
+    onAdd(data[0]);
+    onClose();
+  };
 
   return (
     <div style={S.overlay}>
@@ -696,10 +741,10 @@ function AddItineraryModal({ onClose }) {
             <div style={S.fieldLbl}>TYPE</div>
             <div style={S.catRow}>
               {types.map(t => {
-                const meta = ITINERARY_COLORS[t];
+                const m = ITINERARY_COLORS[t];
                 return (
                   <button key={t} onClick={() => setForm(f => ({ ...f, type: t }))}
-                    style={{ ...S.catBtn, textTransform: "capitalize", ...(form.type === t ? { background: meta.bg, color: meta.accent, borderColor: meta.accent } : {}) }}>
+                    style={{ ...S.catBtn, textTransform: "capitalize", ...(form.type === t ? { background: m.bg, color: m.accent, borderColor: m.accent + "80" } : {}) }}>
                     {t}
                   </button>
                 );
@@ -708,7 +753,7 @@ function AddItineraryModal({ onClose }) {
           </div>
           <div style={S.field}>
             <div style={S.fieldLbl}>TITLE</div>
-            <input style={S.input} placeholder="e.g. Dinner at Coco's"
+            <input style={S.input} placeholder="e.g. Fairmont Lake Louise"
               value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
           </div>
           <div style={S.field}>
@@ -716,7 +761,7 @@ function AddItineraryModal({ onClose }) {
             <input style={S.input} placeholder="Confirmation code, address, notes..."
               value={form.detail} onChange={e => setForm(f => ({ ...f, detail: e.target.value }))} />
           </div>
-          <div style={{ display: "flex", gap: 12 }}>
+          <div style={{ display: "flex", gap: 10 }}>
             <div style={{ ...S.field, flex: 1 }}>
               <div style={S.fieldLbl}>DATE</div>
               <input style={S.input} placeholder="Aug 5"
@@ -728,7 +773,10 @@ function AddItineraryModal({ onClose }) {
                 value={form.time} onChange={e => setForm(f => ({ ...f, time: e.target.value }))} />
             </div>
           </div>
-          <button style={{ ...S.primaryBtn, background: "#60a5fa", color: "#000" }} onClick={onClose}>
+          <button
+            style={{ ...S.primaryBtn, background: meta.accent, color: "#000", marginTop: 8 }}
+            onClick={handleAdd}
+          >
             Add to Itinerary
           </button>
         </div>
@@ -736,7 +784,6 @@ function AddItineraryModal({ onClose }) {
     </div>
   );
 }
-
 function SettleModal({ settlements, onClose }) {
   const [marked, setMarked] = useState([]);
   const toggle = (i) => setMarked(m => m.includes(i) ? m.filter(x => x !== i) : [...m, i]);
