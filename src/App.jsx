@@ -141,7 +141,7 @@ const [itinRefresh, setItinRefresh] = useState(0);
 />
         )}
         {modal === "addExpense" && (
-          <AddExpenseModal members={activeTrip?.members || []} onClose={() => setModal(null)} />
+          <AddExpenseModal trip={activeTrip} members={activeTrip?.members || []} onClose={() => setModal(null)} onAdd={() => setItinRefresh(r => r + 1)} />
         )}
         {modal === "addItinerary" && (
   <AddItinModal
@@ -313,7 +313,7 @@ function TripShell({ trip, activeTab, setActiveTab, onBack, onModal, itinRefresh
       {/* Tab Content */}
       <div style={S.tabContent}>
         {activeTab === "itinerary" && <ItineraryTab trip={trip} onModal={onModal} refreshKey={itinRefresh} />}
-        {activeTab === "expenses" && <ExpensesTab trip={trip} onModal={onModal} />}
+        {activeTab === "expenses" && <ExpensesTab trip={trip} onModal={onModal} expRefresh={itinRefresh} />}
         {activeTab === "uploads" && <UploadsTab />}
         {activeTab === "members" && <MembersTab trip={trip} />}
       </div>
@@ -400,13 +400,27 @@ function ItineraryTab({ trip, onModal, refreshKey }) {
 
 // ─── EXPENSES TAB ─────────────────────────────────────────────────────────────
 
-function ExpensesTab({ trip, onModal }) {
+function ExpensesTab({ trip, onModal, expRefresh }) {
   const [filter, setFilter] = useState("All");
-  const [showSettle, setShowSettle] = useState(false);
+  const [expenses, setExpenses] = useState([]);
   const cats = ["All", "Stay", "Food", "Activity", "Transport"];
-  const filtered = filter === "All" ? EXPENSES : EXPENSES.filter(e => e.category === filter);
-  const total = EXPENSES.reduce((a, e) => a + e.amount, 0);
-  const myOwed = SETTLEMENTS.filter(s => s.from === "Isaiah").reduce((a, s) => a + s.amount, 0);
+
+  useEffect(() => {
+    const fetchExpenses = async () => {
+      const { data, error } = await supabase
+        .from('expenses')
+        .select('*')
+        .eq('trip_id', trip.id)
+        .order('created_at', { ascending: false })
+      if (error) console.error(error)
+      else setExpenses(data)
+    }
+    fetchExpenses()
+  }, [trip.id, expRefresh])
+
+  const filtered = filter === "All" ? expenses : expenses.filter(e => e.category === filter);
+  const total = expenses.reduce((a, e) => a + e.amount, 0);
+  const myOwed = 0;
 
   return (
     <div style={S.tabScroll}>
@@ -454,7 +468,8 @@ function ExpensesTab({ trip, onModal }) {
       {/* Expense list */}
       {filtered.map(exp => {
         const meta = CATEGORY_META[exp.category];
-        const perPerson = (exp.amount / exp.splitWith.length).toFixed(0);
+        const splitWith = exp.split_with || exp.splitWith || [];
+const perPerson = splitWith.length ? (exp.amount / splitWith.length).toFixed(0) : 0;
         return (
           <div key={exp.id} style={S.expRow}>
             <div style={{ ...S.expIcon, background: meta.bg, color: meta.color }}>
@@ -463,7 +478,7 @@ function ExpensesTab({ trip, onModal }) {
             <div style={S.expBody}>
               <div style={S.expTitle}>{exp.title}</div>
               <div style={S.expMeta}>
-                {exp.date} · <span style={{ color: "#e2e8f0" }}>{exp.paidBy}</span> paid · ${perPerson}/person
+                {exp.date} · <span style={{ color: "#e2e8f0" }}>{exp.paid_by || exp.paidBy}</span> paid · ${perPerson}/person
               </div>
             </div>
             <div style={S.expRight}>
@@ -568,9 +583,10 @@ function MembersTab({ trip }) {
 }
 
 // ─── MODALS ───────────────────────────────────────────────────────────────────
+// ─── MODALS ───────────────────────────────────────────────────────────────────
 
-function AddExpenseModal({ members, onClose }) {
-  const [step, setStep] = useState(1); // 1: details, 2: split, 3: confirm
+function AddExpenseModal({ members, onClose, trip, onAdd }) {
+  const [step, setStep] = useState(1);
   const [exp, setExp] = useState({ title: "", amount: "", category: "Food", paidBy: "Isaiah", splitWith: [...members] });
 
   const perPerson = exp.amount && exp.splitWith.length
@@ -583,6 +599,25 @@ function AddExpenseModal({ members, onClose }) {
     }));
   };
 
+  const handleSubmit = async () => {
+    const { data, error } = await supabase
+      .from('expenses')
+      .insert([{
+        trip_id: trip?.id,
+        title: exp.title,
+        category: exp.category,
+        amount: parseFloat(exp.amount),
+        paid_by: exp.paidBy,
+        split_with: exp.splitWith,
+        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        receipt: false
+      }])
+      .select()
+    if (error) { console.error(error); return; }
+    if (onAdd) onAdd();
+    onClose();
+  };
+
   return (
     <div style={S.overlay}>
       <div style={S.sheet}>
@@ -593,8 +628,6 @@ function AddExpenseModal({ members, onClose }) {
           </div>
           <button style={S.closeBtn} onClick={onClose}>✕</button>
         </div>
-
-        {/* Step indicator */}
         <div style={S.stepRow}>
           {[1,2,3].map(s => (
             <div key={s} style={{ ...S.stepDot, ...(s <= step ? S.stepDotActive : {}) }} />
@@ -603,7 +636,6 @@ function AddExpenseModal({ members, onClose }) {
 
         {step === 1 && (
           <div style={S.sheetBody}>
-            {/* Receipt scan prompt */}
             <div style={S.receiptScan}>
               <span style={{ fontSize: 20 }}>📷</span>
               <div>
@@ -612,9 +644,7 @@ function AddExpenseModal({ members, onClose }) {
               </div>
               <span style={{ color: "#4ade80", fontSize: 12, fontWeight: 700 }}>Try it</span>
             </div>
-
             <div style={S.orDiv}><span style={S.orText}>or enter manually</span></div>
-
             <div style={S.field}>
               <div style={S.fieldLbl}>DESCRIPTION</div>
               <input style={S.input} placeholder="e.g. Dinner at Coco's"
@@ -692,7 +722,7 @@ function AddExpenseModal({ members, onClose }) {
             </div>
             <div style={{ display: "flex", gap: 10 }}>
               <button style={S.secondaryBtn} onClick={() => setStep(2)}>← Edit</button>
-              <button style={{ ...S.primaryBtn, background: "#22c55e", color: "#000" }} onClick={onClose}>
+              <button style={{ ...S.primaryBtn, background: "#22c55e", color: "#000" }} onClick={handleSubmit}>
                 ✓ Add Expense
               </button>
             </div>
@@ -784,6 +814,7 @@ function AddItinModal({ onClose, trip, onAdd }) {
     </div>
   );
 }
+
 function SettleModal({ settlements, onClose }) {
   const [marked, setMarked] = useState([]);
   const toggle = (i) => setMarked(m => m.includes(i) ? m.filter(x => x !== i) : [...m, i]);
@@ -838,7 +869,6 @@ function SettleModal({ settlements, onClose }) {
 }
 
 function ShareModal({ trip, onClose }) {
-  const [copied, setCopied] = useState(false);
   const options = [
     { icon: "🗓", label: "Full Itinerary", sub: "All stops, times & confirmations", color: "#60a5fa" },
     { icon: "📍", label: "Places & Recs", sub: "Restaurants, activities & stays only", color: "#4ade80" },
@@ -946,7 +976,6 @@ function NewTripModal({ onClose, onSave }) {
     </div>
   );
 }
-
 // ─── STYLES ───────────────────────────────────────────────────────────────────
 
 const S = {
