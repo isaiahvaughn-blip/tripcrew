@@ -112,12 +112,25 @@ const CATEGORY_META = {
 // ─── ROOT ─────────────────────────────────────────────────────────────────────
 
 export default function App() {
-  const [view, setView] = useState("profile"); // profile | trip
+  const [user, setUser] = useState(null);
+  const [view, setView] = useState("profile");
   const [activeTrip, setActiveTrip] = useState(null);
-const [activeTab, setActiveTab] = useState("itinerary");
+  const [activeTab, setActiveTab] = useState("itinerary");
+  const [modal, setModal] = useState(null);
+  const [itinRefresh, setItinRefresh] = useState(0);
 
-  const [modal, setModal] = useState(null); // null | "addExpense" | "addItinerary" | "settle" | "share"
-const [itinRefresh, setItinRefresh] = useState(0);
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  if (!user) return <AuthScreen onAuth={setUser} />;
+
   const openTrip = (trip) => {
     setActiveTrip(trip);
     setActiveTab("itinerary");
@@ -546,35 +559,71 @@ function UploadsTab() {
 
 function MembersTab({ trip }) {
   const colors = ["#4ade80", "#60a5fa", "#f472b6", "#fb923c", "#a78bfa"];
-  const myPaid = EXPENSES.filter(e => e.paidBy === "Isaiah").reduce((a, e) => a + e.amount, 0);
+  const [members, setMembers] = useState([]);
+  const [showInvite, setShowInvite] = useState(false);
+const [newName, setNewName] = useState("");
+
+  useEffect(() => {
+    const fetchMembers = async () => {
+      const { data, error } = await supabase
+        .from('members')
+        .select('*')
+        .eq('trip_id', trip.id)
+      if (error) console.error(error)
+      else setMembers(data)
+    }
+    fetchMembers()
+  }, [trip.id])
 
   return (
     <div style={S.tabScroll}>
       <div style={S.tabTopRow}>
         <div style={S.tabTitle}>Members</div>
-        <button style={S.actionBtn}>+ Invite</button>
+        <button style={S.actionBtn} onClick={() => setShowInvite(true)}>+ Invite</button>
       </div>
+      {showInvite && (
+  <div style={{ background: "#13131e", borderRadius: 14, padding: 16, marginBottom: 16, border: "1px solid #1e293b" }}>
+    <input
+      style={S.input}
+      placeholder="Name"
+      value={newName}
+      onChange={e => setNewName(e.target.value)}
+    />
+    <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+      <button style={S.secondaryBtn} onClick={() => setShowInvite(false)}>Cancel</button>
+      <button style={{ ...S.primaryBtn, background: "#22c55e", color: "#000" }} onClick={async () => {
+        if (!newName) return;
+        const { data, error } = await supabase
+          .from('members')
+          .insert([{ trip_id: trip.id, name: newName }])
+          .select()
+        if (error) { console.error(error); return; }
+        setMembers(prev => [...prev, data[0]]);
+        setNewName("");
+        setShowInvite(false);
+      }}>Add</button>
+    </div>
+  </div>
+)}
 
-      {(trip.members || []).map((m, i) => {
-        const paid = EXPENSES.filter(e => e.paidBy === m).reduce((a, e) => a + e.amount, 0);
-        const owes = SETTLEMENTS.filter(s => s.from === m).reduce((a, s) => a + s.amount, 0);
-        const owed = SETTLEMENTS.filter(s => s.to === m).reduce((a, s) => a + s.amount, 0);
+      {members.map((m, i) => {
+        const paid = 0;
+const owes = 0;
+const owed = 0;
         return (
-          <div key={m} style={S.memberRow}>
-            <div style={{ ...S.memberAvatar, background: colors[i % colors.length] + "25", color: colors[i % colors.length] }}>
-              {m[0]}
-            </div>
-            <div style={S.memberInfo}>
-              <div style={S.memberName}>{m} {m === "Isaiah" ? <span style={S.youTag}>you</span> : ""}</div>
-              <div style={S.memberMeta}>Paid ${paid.toLocaleString()}</div>
-            </div>
-            <div style={S.memberRight}>
-              {owes > 0 && <div style={S.owesBadge}>owes ${owes}</div>}
-              {owed > 0 && <div style={S.owedBadge}>owed ${owed}</div>}
-              {owes === 0 && owed === 0 && <div style={S.evenBadge}>even</div>}
-            </div>
-          </div>
-        );
+  <div key={m.id} style={S.memberRow}>
+    <div style={{ ...S.memberAvatar, background: colors[i % colors.length] + "25", color: colors[i % colors.length] }}>
+      {m.name[0]}
+    </div>
+    <div style={S.memberInfo}>
+      <div style={S.memberName}>{m.name} {m.name === "Isaiah" ? <span style={S.youTag}>you</span> : ""}</div>
+      <div style={S.memberMeta}>Member</div>
+    </div>
+    <div style={S.memberRight}>
+      <div style={S.evenBadge}>even</div>
+    </div>
+  </div>
+);
       })}
 
       <div style={{ height: 20 }} />
@@ -976,6 +1025,66 @@ function NewTripModal({ onClose, onSave }) {
     </div>
   );
 }
+
+// ─── LOG IN SCREEN  ────────────────────────────────────────────────────────────
+
+function AuthScreen({ onAuth }) {
+  const [mode, setMode] = useState("login"); // login | signup
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handle = async () => {
+    setLoading(true);
+    setError("");
+    const { data, error } = mode === "login"
+      ? await supabase.auth.signInWithPassword({ email, password })
+      : await supabase.auth.signUp({ email, password });
+    if (error) { setError(error.message); setLoading(false); return; }
+    onAuth(data.user);
+  };
+
+  return (
+    <div style={S.root}>
+      <div style={S.phone}>
+        <div style={{ padding: "60px 28px 0", textAlign: "center" }}>
+          <div style={{ fontSize: 40, marginBottom: 16 }}>🧭</div>
+          <div style={{ fontSize: 28, fontWeight: 900, color: "#f1f5f9", letterSpacing: "-1.2px", marginBottom: 6 }}>tripcrew</div>
+          <div style={{ fontSize: 13, color: "#475569", marginBottom: 40 }}>for trips, nights out, and everything in between</div>
+        </div>
+        <div style={{ padding: "0 28px" }}>
+          <div style={S.field}>
+            <div style={S.fieldLbl}>EMAIL</div>
+            <input style={S.input} type="email" placeholder="you@email.com"
+              value={email} onChange={e => setEmail(e.target.value)} />
+          </div>
+          <div style={S.field}>
+            <div style={S.fieldLbl}>PASSWORD</div>
+            <input style={S.input} type="password" placeholder="••••••••"
+              value={password} onChange={e => setPassword(e.target.value)} />
+          </div>
+          {error && <div style={{ color: "#f87171", fontSize: 12, marginBottom: 12 }}>{error}</div>}
+          <button
+            style={{ ...S.primaryBtn, background: loading ? "#1e293b" : "#22c55e", color: "#000", marginBottom: 12 }}
+            onClick={handle}
+            disabled={loading}
+          >
+            {loading ? "..." : mode === "login" ? "Sign In" : "Create Account"}
+          </button>
+          <div style={{ textAlign: "center", fontSize: 13, color: "#475569" }}>
+            {mode === "login" ? "No account? " : "Have an account? "}
+            <span style={{ color: "#4ade80", cursor: "pointer", fontWeight: 700 }}
+              onClick={() => setMode(mode === "login" ? "signup" : "login")}>
+              {mode === "login" ? "Sign up" : "Sign in"}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── STYLES ───────────────────────────────────────────────────────────────────
 
 const S = {
