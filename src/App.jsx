@@ -118,13 +118,24 @@ export default function App() {
   const [activeTab, setActiveTab] = useState("itinerary");
   const [modal, setModal] = useState(null);
   const [itinRefresh, setItinRefresh] = useState(0);
+  const [profile, setProfile] = useState(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
+      if (session?.user) {
+        supabase.from('profiles').select('*').eq('id', session.user.id).single()
+          .then(({ data }) => setProfile(data));
+      }
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      if (session?.user) {
+        supabase.from('profiles').select('*').eq('id', session.user.id).single()
+          .then(({ data }) => setProfile(data));
+      } else {
+        setProfile(null);
+      }
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -141,7 +152,9 @@ export default function App() {
     <div style={S.root}>
       <div style={S.phone}>
         {view === "profile" && (
-          <ProfileScreen onOpen={openTrip} />
+          <ProfileScreen onOpen={openTrip} user={user} onSignOut={async () => {
+  await supabase.auth.signOut();
+}} />
         )}
         {view === "trip" && activeTrip && (
           <TripShell
@@ -154,7 +167,7 @@ export default function App() {
 />
         )}
         {modal === "addExpense" && (
-          <AddExpenseModal trip={activeTrip} members={activeTrip?.members || []} onClose={() => setModal(null)} onAdd={() => setItinRefresh(r => r + 1)} />
+          <AddExpenseModal trip={activeTrip} user={user} profile={profile} onClose={() => setModal(null)} onAdd={() => setItinRefresh(r => r + 1)} />
         )}
         {modal === "addItinerary" && (
   <AddItinModal
@@ -180,15 +193,16 @@ export default function App() {
 
 // ─── PROFILE ──────────────────────────────────────────────────────────────────
 
-function ProfileScreen({ onOpen }) {
+function ProfileScreen({ onOpen, user, onSignOut }) {
   const [trips, setTrips] = useState([]);
 const [showNewTrip, setShowNewTrip] = useState(false);
 useEffect(() => {
   const fetchTrips = async () => {
     const { data, error } = await supabase
-      .from('trips')
-      .select('*')
-      .order('created_at', { ascending: false })
+  .from('trips')
+  .select('*')
+  .eq('user_id', user.id)
+  .order('created_at', { ascending: false })
     if (error) console.error(error)
     else setTrips(data)
   }
@@ -235,6 +249,12 @@ useEffect(() => {
           </div>
         </div>
       </div>
+      <button
+  style={{ background: "transparent", border: "1px solid #1e293b", color: "#475569", borderRadius: 20, padding: "6px 14px", fontSize: 11, fontWeight: 700, cursor: "pointer", marginTop: 12 }}
+  onClick={onSignOut}
+>
+  Sign out
+</button>
 
       <div style={{ padding: "0 20px 40px" }}>
         <div style={S.sectionRow}>
@@ -242,12 +262,13 @@ useEffect(() => {
           <button style={S.newBtn} onClick={() => setShowNewTrip(true)}>+ New</button>
           {showNewTrip && (
   <NewTripModal
-    onClose={() => setShowNewTrip(false)}
-    onSave={(trip) => {
-      setTrips(prev => [trip, ...prev]);
-      setShowNewTrip(false);
-    }}
-  />
+  onClose={() => setShowNewTrip(false)}
+  userId={user.id}
+  onSave={(trip) => {
+    setTrips(prev => [trip, ...prev]);
+    setShowNewTrip(false);
+  }}
+/>
 )}
         </div>
         {trips.map((t, i) => (
@@ -634,9 +655,24 @@ const owed = 0;
 // ─── MODALS ───────────────────────────────────────────────────────────────────
 // ─── MODALS ───────────────────────────────────────────────────────────────────
 
-function AddExpenseModal({ members, onClose, trip, onAdd }) {
+function AddExpenseModal({ onClose, trip, onAdd, user, profile }) {
+  const [members, setMembers] = useState([]);
   const [step, setStep] = useState(1);
-  const [exp, setExp] = useState({ title: "", amount: "", category: "Food", paidBy: "Isaiah", splitWith: [...members] });
+  const [exp, setExp] = useState({ title: "", amount: "", category: "Food", paidBy: "", splitWith: [] });
+
+  useEffect(() => {
+    supabase
+      .from('members')
+      .select('name')
+      .eq('trip_id', trip.id)
+      .then(({ data }) => {
+        const memberNames = data ? data.map(m => m.name) : [];
+        const userEmail = profile?.display_name || user?.email?.split('@')[0] || 'Me';
+        const names = [userEmail, ...memberNames.filter(n => n !== userEmail)];
+        setMembers(names);
+        setExp(e => ({ ...e, paidBy: userEmail, splitWith: names }));
+      });
+  }, [trip.id]);
 
   const perPerson = exp.amount && exp.splitWith.length
     ? (parseFloat(exp.amount) / exp.splitWith.length).toFixed(2) : null;
@@ -955,7 +991,7 @@ function ShareModal({ trip, onClose }) {
   );
 }
 
-function NewTripModal({ onClose, onSave }) {
+function NewTripModal({ onClose, onSave, userId }) {
   const [form, setForm] = useState({
     name: "", location: "", dates: "", emoji: "✈️",
     bg: "linear-gradient(135deg, #0d2b1e 0%, #1a4a32 100%)",
@@ -969,9 +1005,9 @@ function NewTripModal({ onClose, onSave }) {
     if (!form.name) return;
     setLoading(true);
     const { data, error } = await supabase
-      .from('trips')
-      .insert([{ ...form, total_spent: 0, settled: false, solo: false }])
-      .select()
+  .from('trips')
+  .insert([{ ...form, total_spent: 0, settled: false, solo: false, user_id: userId }])
+  .select()
     if (error) { console.error(error); setLoading(false); return; }
     onSave(data[0]);
   };
