@@ -152,9 +152,12 @@ export default function App() {
     <div style={S.root}>
       <div style={S.phone}>
         {view === "profile" && (
-          <ProfileScreen onOpen={openTrip} user={user} onSignOut={async () => {
+          <ProfileScreen onOpen={openTrip} user={user} profile={profile} onSignOut={async () => {
   await supabase.auth.signOut();
-}} />
+}} onSettings={() => setView("settings")} />
+        )}
+        {view === "settings" && (
+          <SettingsScreen user={user} profile={profile} onBack={() => setView("profile")} onProfileUpdate={(updated) => setProfile(updated)} />
         )}
         {view === "trip" && activeTrip && (
           <TripShell
@@ -193,7 +196,7 @@ export default function App() {
 
 // ─── PROFILE ──────────────────────────────────────────────────────────────────
 
-function ProfileScreen({ onOpen, user, onSignOut }) {
+function ProfileScreen({ onOpen, user, onSignOut, onSettings, profile }) {
   const [trips, setTrips] = useState([]);
 const [showNewTrip, setShowNewTrip] = useState(false);
 useEffect(() => {
@@ -239,8 +242,10 @@ const handleDeleteTrip = async (trip) => {
   return (
     <div style={S.screen}>
       <div style={S.profileHero}>
-        <div style={S.profileAvatar}>{ME.initials}</div>
-        <div style={S.profileName}>{ME.name}</div>
+        <div style={S.profileAvatar}>
+  {(profile?.display_name || ME.name).slice(0, 2).toUpperCase()}
+</div>
+        <div style={S.profileName}>{profile?.display_name || ME.name}</div>
         <div style={S.profileSub}>tripcrew member since {ME.since}</div>
         <div style={S.profileStats}>
           <div style={S.statItem}>
@@ -259,12 +264,20 @@ const handleDeleteTrip = async (trip) => {
           </div>
         </div>
       </div>
-      <button
-  style={{ background: "transparent", border: "1px solid #1e293b", color: "#475569", borderRadius: 20, padding: "6px 14px", fontSize: 11, fontWeight: 700, cursor: "pointer", marginTop: 12 }}
-  onClick={onSignOut}
->
-  Sign out
-</button>
+      <div style={{ display: "flex", gap: 8, justifyContent: "center", marginTop: 12 }}>
+  <button
+    style={{ background: "transparent", border: "1px solid #1e293b", color: "#475569", borderRadius: 20, padding: "6px 14px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+    onClick={onSettings}
+  >
+    ⚙️ Settings
+  </button>
+  <button
+    style={{ background: "transparent", border: "1px solid #1e293b", color: "#475569", borderRadius: 20, padding: "6px 14px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+    onClick={onSignOut}
+  >
+    Sign out
+  </button>
+</div>
 
       <div style={{ padding: "0 20px 40px" }}>
         <div style={S.sectionRow}>
@@ -453,6 +466,7 @@ function ItineraryTab({ trip, onModal, refreshKey }) {
 function ExpensesTab({ trip, onModal, expRefresh }) {
   const [filter, setFilter] = useState("All");
   const [expenses, setExpenses] = useState([]);
+  const [editingExpense, setEditingExpense] = useState(null);
   const cats = ["All", "Stay", "Food", "Activity", "Transport"];
 
   useEffect(() => {
@@ -471,7 +485,11 @@ function ExpensesTab({ trip, onModal, expRefresh }) {
   const filtered = filter === "All" ? expenses : expenses.filter(e => e.category === filter);
   const total = expenses.reduce((a, e) => a + e.amount, 0);
   const myOwed = 0;
-
+const handleDeleteExpense = async (exp) => {
+    if (!window.confirm(`Delete "${exp.title}"?`)) return;
+    const { error } = await supabase.from('expenses').delete().eq('id', exp.id);
+    if (!error) setExpenses(prev => prev.filter(e => e.id !== exp.id));
+  };
   return (
     <div style={S.tabScroll}>
       <div style={S.tabTopRow}>
@@ -519,9 +537,11 @@ function ExpensesTab({ trip, onModal, expRefresh }) {
       {filtered.map(exp => {
         const meta = CATEGORY_META[exp.category];
         const splitWith = exp.split_with || exp.splitWith || [];
-const perPerson = splitWith.length ? (exp.amount / splitWith.length).toFixed(0) : 0;
+        const perPerson = splitWith.length ? (exp.amount / splitWith.length).toFixed(0) : 0;
         return (
-          <div key={exp.id} style={S.expRow}>
+          <div key={exp.id} style={{ ...S.expRow, position: "relative" }}
+            onContextMenu={(e) => { e.preventDefault(); }}
+          >
             <div style={{ ...S.expIcon, background: meta.bg, color: meta.color }}>
               {exp.category[0]}
             </div>
@@ -535,10 +555,32 @@ const perPerson = splitWith.length ? (exp.amount / splitWith.length).toFixed(0) 
               <div style={S.expAmt}>${exp.amount}</div>
               {exp.receipt && <div style={S.receiptBadge}>📎</div>}
             </div>
+            <button
+              style={{ background: "#1e293b", border: "none", color: "#94a3b8", borderRadius: 8, padding: "6px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer", marginLeft: 4, flexShrink: 0 }}
+              onClick={() => setEditingExpense(exp)}
+            >
+              ✎
+            </button>
+            <button
+              style={{ background: "#450a0a", border: "none", color: "#f87171", borderRadius: 8, padding: "6px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer", marginLeft: 4, flexShrink: 0 }}
+              onClick={() => handleDeleteExpense(exp)}
+            >
+              ✕
+            </button>
           </div>
         );
       })}
       <div style={{ height: 20 }} />
+      {editingExpense && (
+        <AddExpenseModal
+          trip={trip}
+          user={null}
+          profile={null}
+          existingExpense={editingExpense}
+          onClose={() => setEditingExpense(null)}
+          onAdd={() => { setEditingExpense(null); }}
+        />
+      )}
     </div>
   );
 }
@@ -671,10 +713,16 @@ const owed = 0;
 // ─── MODALS ───────────────────────────────────────────────────────────────────
 // ─── MODALS ───────────────────────────────────────────────────────────────────
 
-function AddExpenseModal({ onClose, trip, onAdd, user, profile }) {
+function AddExpenseModal({ onClose, trip, onAdd, user, profile, existingExpense }) {
   const [members, setMembers] = useState([]);
   const [step, setStep] = useState(1);
-  const [exp, setExp] = useState({ title: "", amount: "", category: "Food", paidBy: "", splitWith: [] });
+  const [exp, setExp] = useState({
+    title: existingExpense?.title || "",
+    amount: existingExpense?.amount || "",
+    category: existingExpense?.category || "Food",
+    paidBy: existingExpense?.paid_by || "",
+    splitWith: existingExpense?.split_with || []
+  });
 
   useEffect(() => {
     supabase
@@ -683,10 +731,12 @@ function AddExpenseModal({ onClose, trip, onAdd, user, profile }) {
       .eq('trip_id', trip.id)
       .then(({ data }) => {
         const memberNames = data ? data.map(m => m.name) : [];
-        const userEmail = profile?.display_name || user?.email?.split('@')[0] || 'Me';
-        const names = [userEmail, ...memberNames.filter(n => n !== userEmail)];
+        const userDisplay = profile?.display_name || user?.email?.split('@')[0] || 'Me';
+        const names = [userDisplay, ...memberNames.filter(n => n !== userDisplay)];
         setMembers(names);
-        setExp(e => ({ ...e, paidBy: userEmail, splitWith: names }));
+        if (!existingExpense) {
+          setExp(e => ({ ...e, paidBy: userDisplay, splitWith: names }));
+        }
       });
   }, [trip.id]);
 
@@ -701,20 +751,33 @@ function AddExpenseModal({ onClose, trip, onAdd, user, profile }) {
   };
 
   const handleSubmit = async () => {
-    const { data, error } = await supabase
-      .from('expenses')
-      .insert([{
-        trip_id: trip?.id,
-        title: exp.title,
-        category: exp.category,
-        amount: parseFloat(exp.amount),
-        paid_by: exp.paidBy,
-        split_with: exp.splitWith,
-        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        receipt: false
-      }])
-      .select()
-    if (error) { console.error(error); return; }
+    if (existingExpense) {
+      const { error } = await supabase
+        .from('expenses')
+        .update({
+          title: exp.title,
+          category: exp.category,
+          amount: parseFloat(exp.amount),
+          paid_by: exp.paidBy,
+          split_with: exp.splitWith,
+        })
+        .eq('id', existingExpense.id);
+      if (error) { console.error(error); return; }
+    } else {
+      const { error } = await supabase
+        .from('expenses')
+        .insert([{
+          trip_id: trip?.id,
+          title: exp.title,
+          category: exp.category,
+          amount: parseFloat(exp.amount),
+          paid_by: exp.paidBy,
+          split_with: exp.splitWith,
+          date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          receipt: false
+        }]);
+      if (error) { console.error(error); return; }
+    }
     if (onAdd) onAdd();
     onClose();
   };
@@ -765,7 +828,7 @@ function AddExpenseModal({ onClose, trip, onAdd, user, profile }) {
               <div style={S.catRow}>
                 {["Food","Stay","Activity","Transport"].map(c => (
                   <button key={c} onClick={() => setExp(n => ({ ...n, category: c }))}
-                    style={{ ...S.catBtn, ...(exp.category === c ? { background: CATEGORY_META[c].bg, color: CATEGORY_META[c].color, borderColor: CATEGORY_META[c].color } : {}) }}>
+                    style={{ ...S.catBtn, ...(exp.category === c ? { background: CATEGORY_META[c].bg, color: CATEGORY_META[c].color, borderColor: CATEGORY_META[c].color } : { borderColor: "#1e293b", background: "#13131e", color: "#64748b" }) }}>
                     {c}
                   </button>
                 ))}
@@ -824,7 +887,7 @@ function AddExpenseModal({ onClose, trip, onAdd, user, profile }) {
             <div style={{ display: "flex", gap: 10 }}>
               <button style={S.secondaryBtn} onClick={() => setStep(2)}>← Edit</button>
               <button style={{ ...S.primaryBtn, background: "#22c55e", color: "#000" }} onClick={handleSubmit}>
-                ✓ Add Expense
+                {existingExpense ? "✓ Save Changes" : "✓ Add Expense"}
               </button>
             </div>
           </div>
@@ -875,7 +938,7 @@ function AddItinModal({ onClose, trip, onAdd }) {
                 const m = ITINERARY_COLORS[t];
                 return (
                   <button key={t} onClick={() => setForm(f => ({ ...f, type: t }))}
-                    style={{ ...S.catBtn, textTransform: "capitalize", ...(form.type === t ? { background: m.bg, color: m.accent, borderColor: m.accent + "80" } : {}) }}>
+                    style={{ ...S.catBtn, textTransform: "capitalize", ...(form.type === t ? { background: m.bg, color: m.accent, borderColor: m.accent + "80" } : { borderColor: "#1e293b", background: "#13131e", color: "#64748b" }) }}>
                     {t}
                   </button>
                 );
@@ -1136,6 +1199,142 @@ function AuthScreen({ onAuth }) {
     </div>
   );
 }
+function SettingsScreen({ user, profile, onBack, onProfileUpdate }) {
+  const [displayName, setDisplayName] = useState(profile?.display_name || "");
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [deletedTrips, setDeletedTrips] = useState([]);
+  const [restoring, setRestoring] = useState(null);
+
+  useEffect(() => {
+    supabase
+      .from('trips')
+      .select('*')
+      .eq('user_id', user.id)
+      .not('deleted_at', 'is', null)
+      .order('deleted_at', { ascending: false })
+      .then(({ data }) => setDeletedTrips(data || []));
+  }, [user.id]);
+
+  const handleSaveName = async () => {
+    setSaving(true);
+    const { data, error } = await supabase
+      .from('profiles')
+      .update({ display_name: displayName })
+      .eq('id', user.id)
+      .select()
+      .single();
+    if (!error) {
+      onProfileUpdate(data);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    }
+    setSaving(false);
+  };
+
+  const handleRestore = async (trip) => {
+    setRestoring(trip.id);
+    const { error } = await supabase
+      .from('trips')
+      .update({ deleted_at: null })
+      .eq('id', trip.id);
+    if (!error) {
+      setDeletedTrips(prev => prev.filter(t => t.id !== trip.id));
+    }
+    setRestoring(null);
+  };
+
+  const handlePermanentDelete = async (trip) => {
+    if (!window.confirm(`Permanently delete "${trip.name}"? This cannot be undone.`)) return;
+    const { error } = await supabase.from('trips').delete().eq('id', trip.id);
+    if (!error) setDeletedTrips(prev => prev.filter(t => t.id !== trip.id));
+  };
+
+  return (
+    <div style={S.screen}>
+      <div style={{ padding: "48px 24px 0", display: "flex", alignItems: "center", gap: 12, marginBottom: 28 }}>
+        <button style={S.backBtn} onClick={onBack}>←</button>
+        <div style={{ fontSize: 22, fontWeight: 900, color: "#f1f5f9", letterSpacing: "-0.8px" }}>Settings</div>
+      </div>
+
+      <div style={{ padding: "0 24px 40px" }}>
+
+        {/* Display Name */}
+        <div style={S.settingsSection}>
+          <div style={S.settingsSectionLabel}>PROFILE</div>
+          <div style={S.settingsCard}>
+            <div style={S.fieldLbl}>DISPLAY NAME</div>
+            <input
+              style={S.input}
+              value={displayName}
+              onChange={e => setDisplayName(e.target.value)}
+              placeholder="Your name"
+            />
+            <button
+              style={{ ...S.primaryBtn, background: saved ? "#14532d" : saving ? "#1e293b" : "#22c55e", color: saved ? "#4ade80" : "#000", marginTop: 12 }}
+              onClick={handleSaveName}
+              disabled={saving}
+            >
+              {saved ? "✓ Saved" : saving ? "Saving..." : "Save Name"}
+            </button>
+          </div>
+        </div>
+
+        {/* Recently Deleted */}
+        <div style={S.settingsSection}>
+          <div style={S.settingsSectionLabel}>RECENTLY DELETED</div>
+          {deletedTrips.length === 0 ? (
+            <div style={{ fontSize: 13, color: "#334155", padding: "16px 0" }}>No recently deleted trips.</div>
+          ) : (
+            deletedTrips.map(trip => (
+              <div key={trip.id} style={S.settingsCard}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: "#e2e8f0" }}>{trip.emoji} {trip.name}</div>
+                    <div style={{ fontSize: 12, color: "#475569", marginTop: 3 }}>{trip.location} · deleted {new Date(trip.deleted_at).toLocaleDateString()}</div>
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button
+                      style={{ background: "#14532d", border: "none", color: "#4ade80", borderRadius: 10, padding: "6px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                      onClick={() => handleRestore(trip)}
+                      disabled={restoring === trip.id}
+                    >
+                      {restoring === trip.id ? "..." : "Restore"}
+                    </button>
+                    <button
+                      style={{ background: "#450a0a", border: "none", color: "#f87171", borderRadius: 10, padding: "6px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                      onClick={() => handlePermanentDelete(trip)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Placeholder sections */}
+        <div style={S.settingsSection}>
+          <div style={S.settingsSectionLabel}>NOTIFICATIONS</div>
+          <div style={{ ...S.settingsCard, opacity: 0.4 }}>
+            <div style={{ fontSize: 13, color: "#475569" }}>Coming soon</div>
+          </div>
+        </div>
+
+        <div style={S.settingsSection}>
+          <div style={S.settingsSectionLabel}>CONNECTED ACCOUNTS</div>
+          <div style={{ ...S.settingsCard, opacity: 0.4 }}>
+            <div style={{ fontSize: 13, color: "#475569" }}>Coming soon</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+
 
 // ─── STYLES ───────────────────────────────────────────────────────────────────
 
@@ -1406,4 +1605,7 @@ const S = {
   shareOptSub: { fontSize: 12, color: "#475569" },
   copyBtn: { background: "transparent", border: "1px solid", borderRadius: 20, padding: "6px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer", flexShrink: 0 },
   shareNote: { background: "#131310", border: "1px solid #2a2a1a", borderRadius: 12, padding: "10px 14px", fontSize: 12, color: "#8a8a60", marginTop: 6 },
+  settingsSection: { marginBottom: 28 },
+settingsSectionLabel: { fontSize: 10, fontWeight: 800, color: "#334155", letterSpacing: "2.5px", marginBottom: 12 },
+settingsCard: { background: "#13131e", border: "1px solid #1e1e2e", borderRadius: 16, padding: "16px" },
 };
