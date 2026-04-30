@@ -202,6 +202,7 @@ useEffect(() => {
   .from('trips')
   .select('*')
   .eq('user_id', user.id)
+  .is('deleted_at', null)
   .order('created_at', { ascending: false })
     if (error) console.error(error)
     else setTrips(data)
@@ -226,6 +227,15 @@ useEffect(() => {
   if (error) console.error(error)
   else console.log('Trip created:', data)
 }
+const handleDeleteTrip = async (trip) => {
+    if (!window.confirm(`Delete "${trip.name}"? You can restore it from settings.`)) return;
+    const { error } = await supabase
+      .from('trips')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', trip.id);
+    if (error) { console.error(error); return; }
+    setTrips(prev => prev.filter(t => t.id !== trip.id));
+  };
   return (
     <div style={S.screen}>
       <div style={S.profileHero}>
@@ -272,23 +282,29 @@ useEffect(() => {
 )}
         </div>
         {trips.map((t, i) => (
-          <TripCard key={t.id} trip={t} idx={i} onOpen={onOpen} />
+          <TripCard key={t.id} trip={t} idx={i} onOpen={onOpen} onDelete={handleDeleteTrip} />
         ))}
       </div>
     </div>
   );
 }
 
-function TripCard({ trip, idx, onOpen }) {
+function TripCard({ trip, idx, onOpen, onDelete }) {
   const members = trip.members || [];
   const tag = trip.tag || "#4ade80";
   const bg = trip.bg || "linear-gradient(135deg, #0d2b1e 0%, #1a4a32 100%)";
 
   return (
     <div
-      style={{ ...S.tripCard, background: bg, animationDelay: `${idx * 80}ms` }}
+      style={{ ...S.tripCard, background: bg, animationDelay: `${idx * 80}ms`, position: "relative" }}
       onClick={() => onOpen(trip)}
     >
+      <button
+        style={{ position: "absolute", top: 12, right: 12, background: "#ffffff10", border: "none", color: "#94a3b8", borderRadius: 8, padding: "4px 8px", fontSize: 11, fontWeight: 700, cursor: "pointer", zIndex: 10 }}
+        onClick={(e) => { e.stopPropagation(); onDelete(trip); }}
+      >
+        ✕
+      </button>
       <div style={S.tcTop}>
         <span style={S.tcEmoji}>{trip.emoji || "✈️"}</span>
         <div style={{ display: "flex", gap: 6 }}>
@@ -1209,6 +1225,7 @@ const S = {
     marginBottom: 12,
     cursor: "pointer",
     border: "1px solid rgba(255,255,255,0.05)",
+    position: "relative",
   },
   tcTop: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 },
   tcEmoji: { fontSize: 30 },
