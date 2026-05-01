@@ -498,7 +498,20 @@ function ItineraryTab({ trip, onModal, refreshKey }) {
                     <span style={S.iEmoji}>{item.icon}</span>
                     {item.title}
                   </div>
-                  <div style={S.iDetail}>{item.detail}</div>
+                  <div style={{ ...S.iDetail, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span>{item.detail}</span>
+                  {(item.type === "stay" || item.type === "restaurant") && (
+                    
+                    <a  
+                    href={`https://maps.google.com/?q=${encodeURIComponent(item.title + " " + item.detail)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: "#60a5fa", fontSize: 10, fontWeight: 700, textDecoration: "none", flexShrink: 0, marginLeft: 8 }}
+                    >
+                      📍 Maps
+                    </a>
+                  )}
+                </div>
                   <div style={{ ...S.iType, color: meta.accent }}>{item.type}</div>
                 </div>
               </div>
@@ -1020,7 +1033,7 @@ function AddItinModal({ onClose, trip, onAdd }) {
           <div style={{ display: "flex", gap: 10 }}>
             <div style={{ ...S.field, flex: 1 }}>
               <div style={S.fieldLbl}>DATE</div>
-              <input style={S.input} placeholder="Aug 5"
+              <input style={{ ...S.input, colorScheme: "dark" }} type="date"
                 value={form.day} onChange={e => setForm(f => ({ ...f, day: e.target.value }))} />
             </div>
             <div style={{ ...S.field, flex: 1 }}>
@@ -1145,9 +1158,10 @@ function NewTripModal({ onClose, onSave, userId }) {
   const handleSave = async () => {
     if (!form.name) return;
     setLoading(true);
+    const { _startDate, _endDate, ...formData } = form;
     const { data, error } = await supabase
   .from('trips')
-  .insert([{ ...form, total_spent: 0, settled: false, solo: false, user_id: userId }])
+  .insert([{ ...formData, total_spent: 0, settled: false, solo: false, user_id: userId }])
   .select()
     if (error) { console.error(error); setLoading(false); return; }
     onSave(data[0]);
@@ -1174,8 +1188,23 @@ function NewTripModal({ onClose, onSave, userId }) {
           </div>
           <div style={S.field}>
             <div style={S.fieldLbl}>DATES</div>
-            <input style={S.input} placeholder="e.g. Jun 1–10, 2025"
-              value={form.dates} onChange={e => setForm(f => ({ ...f, dates: e.target.value }))} />
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <input style={{ ...S.input, colorScheme: "dark", flex: 1 }} type="date"
+                onChange={e => setForm(f => {
+                  const start = e.target.value;
+                  const end = f._endDate || "";
+                  const fmt = d => new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                  return { ...f, _startDate: start, dates: start && end ? `${fmt(start)} – ${fmt(end)}` : f.dates };
+                })} />
+              <span style={{ color: "#475569", fontSize: 13 }}>→</span>
+              <input style={{ ...S.input, colorScheme: "dark", flex: 1 }} type="date"
+                onChange={e => setForm(f => {
+                  const end = e.target.value;
+                  const start = f._startDate || "";
+                  const fmt = d => new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                  return { ...f, _endDate: end, dates: start && end ? `${fmt(start)} – ${fmt(end)}` : f.dates };
+                })} />
+            </div>
           </div>
           <div style={S.field}>
             <div style={S.fieldLbl}>EMOJI</div>
@@ -1429,9 +1458,10 @@ function EditTripModal({ trip, onClose, onSave }) {
   const handleSave = async () => {
     if (!form.name) return;
     setLoading(true);
+    const { _startDate, _endDate, ...formData } = form;
     const { data, error } = await supabase
       .from('trips')
-      .update(form)
+      .update(formData)
       .eq('id', trip.id)
       .select()
       .single();
@@ -1696,8 +1726,8 @@ const S = {
   evenBadge: { background: "#1e293b", color: "#64748b", fontSize: 11, fontWeight: 700, borderRadius: 8, padding: "4px 8px" },
 
   // Modals
-  overlay: { position: "absolute", inset: 0, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "flex-end", zIndex: 100, backdropFilter: "blur(6px)" },
-  sheet: { background: "#12121c", borderRadius: "24px 24px 0 0", width: "100%", maxHeight: "88%", overflowY: "auto", paddingBottom: 20 },
+  overlay: { position: "absolute", bottom: 0, left: 0, right: 0, display: "flex", alignItems: "flex-end", zIndex: 100 },
+  sheet: { background: "#12121c", borderRadius: "24px 24px 0 0", width: "100%", maxHeight: "72%", overflowY: "auto", paddingBottom: 20, boxShadow: "0 -20px 60px rgba(0,0,0,0.8), 0 -1px 0 rgba(255,255,255,0.06)" },
   sheetHandle: { width: 36, height: 4, background: "#2d2d4a", borderRadius: 10, margin: "12px auto 0" },
   sheetHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 12px" },
   sheetTitle: { fontSize: 18, fontWeight: 900, color: "#f1f5f9", letterSpacing: "-0.5px" },
