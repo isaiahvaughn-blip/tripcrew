@@ -167,6 +167,11 @@ export default function App() {
   onBack={() => setView("profile")}
   onModal={setModal}
   itinRefresh={itinRefresh}
+  modal={modal}
+  setModal={setModal}
+  user={user}
+  profile={profile}
+  onItinRefresh={() => setItinRefresh(r => r + 1)}
 />
         )}
         {modal === "addExpense" && (
@@ -230,6 +235,7 @@ useEffect(() => {
   if (error) console.error(error)
   else console.log('Trip created:', data)
 }
+const [editingTrip, setEditingTrip] = useState(null);
 const handleDeleteTrip = async (trip) => {
     if (!window.confirm(`Delete "${trip.name}"? You can restore it from settings.`)) return;
     const { error } = await supabase
@@ -243,8 +249,8 @@ const handleDeleteTrip = async (trip) => {
     <div style={S.screen}>
       <div style={S.profileHero}>
         <div style={S.profileAvatar}>
-  {(profile?.display_name || ME.name).slice(0, 2).toUpperCase()}
-</div>
+          {(profile?.display_name || ME.name).slice(0, 2).toUpperCase()}
+        </div>
         <div style={S.profileName}>{profile?.display_name || ME.name}</div>
         <div style={S.profileSub}>tripcrew member since {ME.since}</div>
         <div style={S.profileStats}>
@@ -264,45 +270,54 @@ const handleDeleteTrip = async (trip) => {
           </div>
         </div>
       </div>
+      {editingTrip && (
+        <EditTripModal
+          trip={editingTrip}
+          onClose={() => setEditingTrip(null)}
+          onSave={(updated) => {
+            setTrips(prev => prev.map(t => t.id === updated.id ? updated : t));
+            setEditingTrip(null);
+          }}
+        />
+      )}
       <div style={{ display: "flex", gap: 8, justifyContent: "center", marginTop: 12 }}>
-  <button
-    style={{ background: "transparent", border: "1px solid #1e293b", color: "#475569", borderRadius: 20, padding: "6px 14px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}
-    onClick={onSettings}
-  >
-    ⚙️ Settings
-  </button>
-  <button
-    style={{ background: "transparent", border: "1px solid #1e293b", color: "#475569", borderRadius: 20, padding: "6px 14px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}
-    onClick={onSignOut}
-  >
-    Sign out
-  </button>
-</div>
-
+        <button
+          style={{ background: "transparent", border: "1px solid #1e293b", color: "#475569", borderRadius: 20, padding: "6px 14px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+          onClick={onSettings}
+        >
+          ⚙️ Settings
+        </button>
+        <button
+          style={{ background: "transparent", border: "1px solid #1e293b", color: "#475569", borderRadius: 20, padding: "6px 14px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+          onClick={onSignOut}
+        >
+          Sign out
+        </button>
+      </div>
       <div style={{ padding: "0 20px 40px" }}>
         <div style={S.sectionRow}>
           <div style={S.sectionLabel}>YOUR TRIPS</div>
           <button style={S.newBtn} onClick={() => setShowNewTrip(true)}>+ New</button>
           {showNewTrip && (
-  <NewTripModal
-  onClose={() => setShowNewTrip(false)}
-  userId={user.id}
-  onSave={(trip) => {
-    setTrips(prev => [trip, ...prev]);
-    setShowNewTrip(false);
-  }}
-/>
-)}
+            <NewTripModal
+              onClose={() => setShowNewTrip(false)}
+              userId={user.id}
+              onSave={(trip) => {
+                setTrips(prev => [trip, ...prev]);
+                setShowNewTrip(false);
+              }}
+            />
+          )}
         </div>
         {trips.map((t, i) => (
-          <TripCard key={t.id} trip={t} idx={i} onOpen={onOpen} onDelete={handleDeleteTrip} />
+          <TripCard key={t.id} trip={t} idx={i} onOpen={onOpen} onDelete={handleDeleteTrip} onEdit={setEditingTrip} />
         ))}
       </div>
     </div>
   );
 }
 
-function TripCard({ trip, idx, onOpen, onDelete }) {
+function TripCard({ trip, idx, onOpen, onDelete, onEdit }) {
   const members = trip.members || [];
   const tag = trip.tag || "#4ade80";
   const bg = trip.bg || "linear-gradient(135deg, #0d2b1e 0%, #1a4a32 100%)";
@@ -312,6 +327,12 @@ function TripCard({ trip, idx, onOpen, onDelete }) {
       style={{ ...S.tripCard, background: bg, animationDelay: `${idx * 80}ms`, position: "relative" }}
       onClick={() => onOpen(trip)}
     >
+      <button
+        style={{ position: "absolute", top: 12, right: 44, background: "#ffffff10", border: "none", color: "#94a3b8", borderRadius: 8, padding: "4px 8px", fontSize: 11, fontWeight: 700, cursor: "pointer", zIndex: 10 }}
+        onClick={(e) => { e.stopPropagation(); onEdit(trip); }}
+      >
+        ✎
+      </button>
       <button
         style={{ position: "absolute", top: 12, right: 12, background: "#ffffff10", border: "none", color: "#94a3b8", borderRadius: 8, padding: "4px 8px", fontSize: 11, fontWeight: 700, cursor: "pointer", zIndex: 10 }}
         onClick={(e) => { e.stopPropagation(); onDelete(trip); }}
@@ -347,13 +368,29 @@ function TripCard({ trip, idx, onOpen, onDelete }) {
 }
 // ─── TRIP SHELL ───────────────────────────────────────────────────────────────
 
-function TripShell({ trip, activeTab, setActiveTab, onBack, onModal, itinRefresh }) {
+function TripShell({ trip, activeTab, setActiveTab, onBack, onModal, itinRefresh, modal, setModal, user, profile, onItinRefresh }) {
   
   const tabs = [
-    { id: "itinerary", label: "Itinerary", icon: "🗓" },
-    { id: "expenses", label: "Expenses", icon: "💸" },
-    { id: "uploads", label: "Uploads", icon: "📸" },
-    { id: "members", label: "Members", icon: "👥" },
+    { id: "itinerary", label: "Itinerary", icon: (active, color) => (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={active ? color : "#475569"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+      </svg>
+    )},
+    { id: "expenses", label: "Expenses", icon: (active, color) => (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={active ? color : "#475569"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+      </svg>
+    )},
+    { id: "uploads", label: "Uploads", icon: (active, color) => (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={active ? color : "#475569"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+      </svg>
+    )},
+    { id: "members", label: "Members", icon: (active, color) => (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={active ? color : "#475569"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+      </svg>
+    )},
   ];
 
   return (
@@ -374,13 +411,25 @@ function TripShell({ trip, activeTab, setActiveTab, onBack, onModal, itinRefresh
       </div>
 
       {/* Tab Content */}
-      <div style={S.tabContent}>
+      <div style={{ ...S.tabContent, position: "relative" }}>
         {activeTab === "itinerary" && <ItineraryTab trip={trip} onModal={onModal} refreshKey={itinRefresh} />}
         {activeTab === "expenses" && <ExpensesTab trip={trip} onModal={onModal} expRefresh={itinRefresh} />}
         {activeTab === "uploads" && <UploadsTab />}
         {activeTab === "members" && <MembersTab trip={trip} />}
+        {modal === "addExpense" && (
+          <AddExpenseModal trip={trip} user={user} profile={profile} onClose={() => setModal(null)} onAdd={onItinRefresh} />
+        )}
+        {modal === "addItinerary" && (
+          <AddItinModal trip={trip} onClose={() => setModal(null)} onAdd={() => { setModal(null); onItinRefresh(); setTimeout(onItinRefresh, 100); }} />
+        )}
+        {modal === "settle" && (
+          <SettleModal settlements={SETTLEMENTS} onClose={() => setModal(null)} />
+        )}
+        {modal === "share" && (
+          <ShareModal trip={trip} onClose={() => setModal(null)} />
+        )}
       </div>
-
+      
       {/* Bottom Tab Bar */}
       <div style={S.tabBar}>
         {tabs.map(tab => (
@@ -389,7 +438,7 @@ function TripShell({ trip, activeTab, setActiveTab, onBack, onModal, itinRefresh
             style={{ ...S.tabBtn, ...(activeTab === tab.id ? S.tabBtnActive : {}) }}
             onClick={() => setActiveTab(tab.id)}
           >
-            <span style={S.tabIcon}>{tab.icon}</span>
+            {tab.icon(activeTab === tab.id, trip.tag)}
             <span style={{ ...S.tabLabel, ...(activeTab === tab.id ? { color: trip.tag } : {}) }}>
               {tab.label}
             </span>
@@ -399,6 +448,7 @@ function TripShell({ trip, activeTab, setActiveTab, onBack, onModal, itinRefresh
           </button>
         ))}
       </div>
+  
     </div>
   );
 }
@@ -699,7 +749,19 @@ const owed = 0;
       <div style={S.memberMeta}>Member</div>
     </div>
     <div style={S.memberRight}>
-      <div style={S.evenBadge}>even</div>
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <div style={S.evenBadge}>even</div>
+        <button
+          style={{ background: "#450a0a", border: "none", color: "#f87171", borderRadius: 8, padding: "6px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+          onClick={async () => {
+            if (!window.confirm(`Remove ${m.name}?`)) return;
+            const { error } = await supabase.from('members').delete().eq('id', m.id);
+            if (!error) setMembers(prev => prev.filter(mb => mb.id !== m.id));
+          }}
+        >
+          ✕
+        </button>
+      </div>
     </div>
   </div>
 );
@@ -1354,7 +1416,78 @@ function SettingsScreen({ user, profile, onBack, onProfileUpdate }) {
   );
 }
 
+function EditTripModal({ trip, onClose, onSave }) {
+  const [form, setForm] = useState({
+    name: trip.name || "",
+    location: trip.location || "",
+    dates: trip.dates || "",
+    emoji: trip.emoji || "✈️",
+  });
+  const [loading, setLoading] = useState(false);
+  const emojis = ["✈️","🏔️","🚴","🏖️","🗾","🎿","🚗","⛵","🏕️","🎭"];
 
+  const handleSave = async () => {
+    if (!form.name) return;
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('trips')
+      .update(form)
+      .eq('id', trip.id)
+      .select()
+      .single();
+    if (error) { console.error(error); setLoading(false); return; }
+    onSave(data);
+  };
+
+  return (
+    <div style={S.overlay}>
+      <div style={S.sheet}>
+        <div style={S.sheetHandle} />
+        <div style={S.sheetHeader}>
+          <div style={S.sheetTitle}>Edit Trip</div>
+          <button style={S.closeBtn} onClick={onClose}>✕</button>
+        </div>
+        <div style={S.sheetBody}>
+          <div style={S.field}>
+            <div style={S.fieldLbl}>TRIP NAME</div>
+            <input style={S.input} placeholder="e.g. Tokyo 2025"
+              value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+          </div>
+          <div style={S.field}>
+            <div style={S.fieldLbl}>LOCATION</div>
+            <input style={S.input} placeholder="e.g. Japan"
+              value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} />
+          </div>
+          <div style={S.field}>
+            <div style={S.fieldLbl}>DATES</div>
+            <input style={S.input} placeholder="e.g. Jun 1–10, 2025"
+              value={form.dates} onChange={e => setForm(f => ({ ...f, dates: e.target.value }))} />
+          </div>
+          <div style={S.field}>
+            <div style={S.fieldLbl}>EMOJI</div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {emojis.map(e => (
+                <button key={e} onClick={() => setForm(f => ({ ...f, emoji: e }))}
+                  style={{ fontSize: 24, background: form.emoji === e ? "#1e293b" : "transparent",
+                    border: form.emoji === e ? "1px solid #4ade80" : "1px solid transparent",
+                    borderRadius: 10, padding: 6, cursor: "pointer" }}>
+                  {e}
+                </button>
+              ))}
+            </div>
+          </div>
+          <button
+            style={{ ...S.primaryBtn, background: loading ? "#1e293b" : "#22c55e", color: "#000", marginTop: 8 }}
+            onClick={handleSave}
+            disabled={loading}
+          >
+            {loading ? "Saving..." : "Save Changes"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ─── STYLES ───────────────────────────────────────────────────────────────────
 
@@ -1376,6 +1509,7 @@ const S = {
     overflow: "hidden",
     boxShadow: "0 40px 100px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.05)",
     minHeight: 750,
+    height: 750,
     position: "relative",
     display: "flex",
     flexDirection: "column",
@@ -1458,7 +1592,7 @@ const S = {
   tcTotal: { fontSize: 20, fontWeight: 900, letterSpacing: "-1px" },
 
   // Trip Shell
-  tripShell: { flex: 1, display: "flex", flexDirection: "column", height: 750 },
+  tripShell: { flex: 1, display: "flex", flexDirection: "column", height: "100%", position: "relative" },
   tripHeader: {
     padding: "24px 20px 20px",
     display: "flex",
@@ -1471,7 +1605,7 @@ const S = {
   thName: { fontSize: 17, fontWeight: 900, color: "#f8fafc", letterSpacing: "-0.5px" },
   thSub: { fontSize: 11, color: "#94a3b8", marginTop: 1 },
   shareHeaderBtn: { background: "transparent", border: "none", fontSize: 12, fontWeight: 800, cursor: "pointer", letterSpacing: "0.3px", flexShrink: 0 },
-  tabContent: { flex: 1, overflow: "hidden" },
+  tabContent: { flex: 1, overflow: "hidden", position: "relative", display: "flex", flexDirection: "column", minHeight: 0 },
   tabScroll: { height: "100%", overflowY: "auto", padding: "0 18px" },
   tabTopRow: { display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 20, paddingBottom: 16 },
   tabTitle: { fontSize: 20, fontWeight: 900, color: "#f1f5f9", letterSpacing: "-0.8px" },
