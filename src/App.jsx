@@ -174,20 +174,6 @@ export default function App() {
   onItinRefresh={() => setItinRefresh(r => r + 1)}
 />
         )}
-        {modal === "addExpense" && (
-          <AddExpenseModal trip={activeTrip} user={user} profile={profile} onClose={() => setModal(null)} onAdd={() => setItinRefresh(r => r + 1)} />
-        )}
-        {modal === "addItinerary" && (
-  <AddItinModal
-    trip={activeTrip}
-    onClose={() => setModal(null)}
-    onAdd={(item) => {
-  setModal(null);
-  setItinRefresh(r => r + 1);
-  setTimeout(() => setItinRefresh(r => r + 1), 100);
-}}
-  />
-)}
         {modal === "settle" && (
           <SettleModal settlements={SETTLEMENTS} onClose={() => setModal(null)} />
         )}
@@ -436,7 +422,7 @@ function TripShell({ trip, activeTab, setActiveTab, onBack, onModal, itinRefresh
           <button
             key={tab.id}
             style={{ ...S.tabBtn, ...(activeTab === tab.id ? S.tabBtnActive : {}) }}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => { setActiveTab(tab.id); setModal(null); }}
           >
             {tab.icon(activeTab === tab.id, trip.tag)}
             <span style={{ ...S.tabLabel, ...(activeTab === tab.id ? { color: trip.tag } : {}) }}>
@@ -920,7 +906,9 @@ function AddExpenseModal({ onClose, trip, onAdd, user, profile, existingExpense 
                 ))}
               </div>
             </div>
-            <button style={S.primaryBtn} onClick={() => setStep(2)}>Next → Split</button>
+            <button style={S.primaryBtn} onClick={() => members.length <= 1 ? setStep(3) : setStep(2)}>
+              {members.length <= 1 ? "Review" : "Next → Split"}
+            </button>
           </div>
         )}
 
@@ -1033,12 +1021,12 @@ function AddItinModal({ onClose, trip, onAdd }) {
           <div style={{ display: "flex", gap: 10 }}>
             <div style={{ ...S.field, flex: 1 }}>
               <div style={S.fieldLbl}>DATE</div>
-              <input style={{ ...S.input, colorScheme: "dark" }} type="date"
+              <input style={{ ...S.input, colorScheme: "dark", width: "100%", boxSizing: "border-box" }} type="date"
                 value={form.day} onChange={e => setForm(f => ({ ...f, day: e.target.value }))} />
             </div>
             <div style={{ ...S.field, flex: 1 }}>
               <div style={S.fieldLbl}>TIME</div>
-              <input style={S.input} placeholder="7:00 PM"
+              <input style={{ ...S.input, colorScheme: "dark", width: "100%", boxSizing: "border-box" }} type="time"
                 value={form.time} onChange={e => setForm(f => ({ ...f, time: e.target.value }))} />
             </div>
           </div>
