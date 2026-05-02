@@ -443,6 +443,13 @@ function TripShell({ trip, activeTab, setActiveTab, onBack, onModal, itinRefresh
 
 function ItineraryTab({ trip, onModal, refreshKey }) {
   const [items, setItems] = useState([]);
+  const [editingItem, setEditingItem] = useState(null);
+
+  const handleDeleteItem = async (item) => {
+    if (!window.confirm(`Delete "${item.title}"?`)) return;
+    const { error } = await supabase.from('itinerary').delete().eq('id', item.id);
+    if (!error) setItems(prev => prev.filter(i => i.id !== item.id));
+  };
 
   useEffect(() => {
     const fetchItinerary = async () => {
@@ -474,7 +481,17 @@ function ItineraryTab({ trip, onModal, refreshKey }) {
             const meta = ITINERARY_COLORS[item.type];
             return (
               <div key={item.id} style={{ ...S.iRow, background: meta.bg, borderColor: meta.border }}>
-                <div style={S.iTime}>{item.time}</div>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                  <div style={S.iTime}>{item.time}</div>
+                  <button
+                    style={{ background: "#1e3a5f", border: "none", color: "#60a5fa", fontSize: 11, cursor: "pointer", padding: "3px 6px", borderRadius: 6, marginTop: 4 }}
+                    onClick={() => setEditingItem(item)}
+                  >✎</button>
+                  <button
+                    style={{ background: "#450a0a", border: "none", color: "#f87171", fontSize: 11, cursor: "pointer", padding: "3px 6px", borderRadius: 6, marginTop: 6 }}
+                    onClick={() => handleDeleteItem(item)}
+                  >✕</button>
+                </div>
                 <div style={S.iLine}>
                   <div style={{ ...S.iDot, background: meta.accent }} />
                   <div style={S.iConnector} />
@@ -506,6 +523,16 @@ function ItineraryTab({ trip, onModal, refreshKey }) {
         </div>
       ))}
       <div style={{ height: 20 }} />
+      {editingItem && (
+        <EditItinModal
+          item={editingItem}
+          onClose={() => setEditingItem(null)}
+          onSave={(updated) => {
+            setItems(prev => prev.map(i => i.id === updated.id ? updated : i));
+            setEditingItem(null);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -861,15 +888,12 @@ function AddExpenseModal({ onClose, trip, onAdd, user, profile, existingExpense 
 
         {step === 1 && (
           <div style={S.sheetBody}>
-            <div style={S.receiptScan}>
-              <span style={{ fontSize: 20 }}>📷</span>
-              <div>
-                <div style={S.scanTitle}>Scan a receipt</div>
-                <div style={S.scanSub}>Auto-fill amount & merchant</div>
-              </div>
-              <span style={{ color: "#4ade80", fontSize: 12, fontWeight: 700 }}>Try it</span>
+            <div style={S.orDiv}>
+              <span style={S.orText}>
+                <span style={{ color: "#4ade80", cursor: "pointer", fontWeight: 700 }}>📷 Scan receipt</span>
+                {" "}to auto-fill
+              </span>
             </div>
-            <div style={S.orDiv}><span style={S.orText}>or enter manually</span></div>
             <div style={S.field}>
               <div style={S.fieldLbl}>DESCRIPTION</div>
               <input style={S.input} placeholder="e.g. Dinner at Coco's"
@@ -1035,6 +1059,90 @@ function AddItinModal({ onClose, trip, onAdd }) {
             onClick={handleAdd}
           >
             Add to Itinerary
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EditItinModal({ item, onClose, onSave }) {
+  const [form, setForm] = useState({
+    type: item.type || "activity",
+    title: item.title || "",
+    detail: item.detail || "",
+    day: item.day || "",
+    time: item.time || "",
+    icon: item.icon || "🎯",
+  });
+  const types = ["flight", "stay", "activity", "restaurant", "transport"];
+  const meta = ITINERARY_COLORS[form.type];
+  const [loading, setLoading] = useState(false);
+
+  const handleSave = async () => {
+    if (!form.title) return;
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('itinerary')
+      .update(form)
+      .eq('id', item.id)
+      .select()
+      .single();
+    if (error) { console.error(error); setLoading(false); return; }
+    onSave(data);
+  };
+
+  return (
+    <div style={S.overlay}>
+      <div style={S.sheet}>
+        <div style={S.sheetHandle} />
+        <div style={S.sheetHeader}>
+          <div style={S.sheetTitle}>Edit Item</div>
+          <button style={S.closeBtn} onClick={onClose}>✕</button>
+        </div>
+        <div style={S.sheetBody}>
+          <div style={S.field}>
+            <div style={S.fieldLbl}>TYPE</div>
+            <div style={S.catRow}>
+              {types.map(t => {
+                const m = ITINERARY_COLORS[t];
+                return (
+                  <button key={t} onClick={() => setForm(f => ({ ...f, type: t }))}
+                    style={{ ...S.catBtn, textTransform: "capitalize", ...(form.type === t ? { background: m.bg, color: m.accent, borderColor: m.accent + "80" } : { borderColor: "#1e293b", background: "#13131e", color: "#64748b" }) }}>
+                    {t}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div style={S.field}>
+            <div style={S.fieldLbl}>TITLE</div>
+            <input style={S.input} value={form.title}
+              onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
+          </div>
+          <div style={S.field}>
+            <div style={S.fieldLbl}>DETAILS / CONFIRMATION #</div>
+            <input style={S.input} value={form.detail}
+              onChange={e => setForm(f => ({ ...f, detail: e.target.value }))} />
+          </div>
+          <div style={{ display: "flex", gap: 10 }}>
+            <div style={{ ...S.field, flex: 1 }}>
+              <div style={S.fieldLbl}>DATE</div>
+              <input style={{ ...S.input, colorScheme: "dark", width: "100%", boxSizing: "border-box" }} type="date"
+                value={form.day} onChange={e => setForm(f => ({ ...f, day: e.target.value }))} />
+            </div>
+            <div style={{ ...S.field, flex: 1 }}>
+              <div style={S.fieldLbl}>TIME</div>
+              <input style={{ ...S.input, colorScheme: "dark", width: "100%", boxSizing: "border-box" }} type="time"
+                value={form.time} onChange={e => setForm(f => ({ ...f, time: e.target.value }))} />
+            </div>
+          </div>
+          <button
+            style={{ ...S.primaryBtn, background: loading ? "#1e293b" : meta.accent, color: "#000", marginTop: 8 }}
+            onClick={handleSave}
+            disabled={loading}
+          >
+            {loading ? "Saving..." : "Save Changes"}
           </button>
         </div>
       </div>
