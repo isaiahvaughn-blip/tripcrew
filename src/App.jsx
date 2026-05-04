@@ -140,6 +140,27 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Link pending invites when user logs in
+  useEffect(() => {
+    if (!user) return;
+    const linkPendingInvites = async () => {
+      const { data: pending } = await supabase
+        .from('trip_members')
+        .select('*')
+        .eq('invited_email', user.email)
+        .eq('status', 'pending')
+        .is('user_id', null);
+      if (!pending?.length) return;
+      for (const invite of pending) {
+        await supabase
+          .from('trip_members')
+          .update({ user_id: user.id, status: 'accepted' })
+          .eq('id', invite.id);
+      }
+    };
+    linkPendingInvites();
+  }, [user]);
+
   if (!user) return <AuthScreen onAuth={setUser} />;
 
   const openTrip = (trip) => {
@@ -192,14 +213,25 @@ function ProfileScreen({ onOpen, user, onSignOut, onSettings, profile }) {
 const [showNewTrip, setShowNewTrip] = useState(false);
 useEffect(() => {
   const fetchTrips = async () => {
+    // Get trip IDs the user belongs to
+    const { data: memberRows } = await supabase
+      .from('trip_members')
+      .select('trip_id')
+      .eq('user_id', user.id);
+    
+    if (!memberRows?.length) { setTrips([]); return; }
+    
+    const tripIds = memberRows.map(r => r.trip_id);
+    
     const { data, error } = await supabase
-  .from('trips')
-  .select('*')
-  .eq('user_id', user.id)
-  .is('deleted_at', null)
-  .order('created_at', { ascending: false })
-    if (error) console.error(error)
-    else setTrips(data)
+      .from('trips')
+      .select('*')
+      .in('id', tripIds)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false });
+    
+    if (error) console.error(error);
+    else setTrips(data);
   }
   fetchTrips()
 }, [])
@@ -738,25 +770,53 @@ const [newName, setNewName] = useState("");
       </div>
       {showInvite && (
   <div style={{ background: "#13131e", borderRadius: 14, padding: 16, marginBottom: 16, border: "1px solid #1e293b" }}>
+    <div style={S.fieldLbl}>INVITE BY EMAIL</div>
     <input
       style={S.input}
-      placeholder="Name"
+      placeholder="friend@email.com"
       value={newName}
       onChange={e => setNewName(e.target.value)}
+      type="email"
     />
-    <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+    <div style={{ fontSize: 11, color: "#475569", marginTop: 6, marginBottom: 10 }}>
+      They'll see this trip when they sign in to tripcrew.
+    </div>
+    <div style={{ display: "flex", gap: 8 }}>
       <button style={S.secondaryBtn} onClick={() => setShowInvite(false)}>Cancel</button>
       <button style={{ ...S.primaryBtn, background: "#22c55e", color: "#000" }} onClick={async () => {
         if (!newName) return;
+        const email = newName.trim().toLowerCase();
+        // Check if user exists
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('id, display_name')
+          .eq('id', (await supabase.from('profiles').select('id').eq('id', email)).data?.[0]?.id)
+          .single();
+        // Look up user by email via auth
+        const { data: existingMembers } = await supabase
+          .from('trip_members')
+          .select('*, profiles(display_name)')
+          .eq('trip_id', trip.id);
+        // Insert into trip_members with email, matched later when they sign up
         const { data, error } = await supabase
-          .from('members')
-          .insert([{ trip_id: trip.id, name: newName }])
+          .from('trip_members')
+          .insert([{ 
+            trip_id: trip.id, 
+            invited_email: email,
+            role: 'member',
+            status: 'pending'
+          }])
           .select()
         if (error) { console.error(error); return; }
-        setMembers(prev => [...prev, data[0]]);
+        // Also add to members table for display name
+        const { data: memberData } = await supabase
+          .from('members')
+          .insert([{ trip_id: trip.id, name: email.split('@')[0] }])
+          .select()
+        if (memberData) setMembers(prev => [...prev, memberData[0]]);
         setNewName("");
         setShowInvite(false);
-      }}>Add</button>
+      }}>Invite</button>
     </div>
   </div>
 )}
