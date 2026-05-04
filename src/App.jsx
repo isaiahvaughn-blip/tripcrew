@@ -148,8 +148,7 @@ export default function App() {
         .from('trip_members')
         .select('*')
         .eq('invited_email', user.email)
-        .eq('status', 'pending')
-        .is('user_id', null);
+        .eq('status', 'pending');
       if (!pending?.length) return;
       for (const invite of pending) {
         await supabase
@@ -194,12 +193,6 @@ export default function App() {
   profile={profile}
   onItinRefresh={() => setItinRefresh(r => r + 1)}
 />
-        )}
-        {modal === "settle" && (
-          <SettleModal settlements={SETTLEMENTS} onClose={() => setModal(null)} />
-        )}
-        {modal === "share" && (
-          <ShareModal trip={activeTrip} onClose={() => setModal(null)} />
         )}
       </div>
     </div>
@@ -387,6 +380,8 @@ function TripCard({ trip, idx, onOpen, onDelete, onEdit }) {
 // ─── TRIP SHELL ───────────────────────────────────────────────────────────────
 
 function TripShell({ trip, activeTab, setActiveTab, onBack, onModal, itinRefresh, modal, setModal, user, profile, onItinRefresh }) {
+  const [settlements, setSettlements] = useState([]);
+  const myName = profile?.display_name || user?.email?.split('@')[0] || 'Me';
   
   const tabs = [
     { id: "itinerary", label: "Itinerary", icon: (active, color) => (
@@ -431,7 +426,7 @@ function TripShell({ trip, activeTab, setActiveTab, onBack, onModal, itinRefresh
       {/* Tab Content */}
       <div style={{ ...S.tabContent, position: "relative" }}>
         {activeTab === "itinerary" && <ItineraryTab trip={trip} onModal={onModal} refreshKey={itinRefresh} />}
-        {activeTab === "expenses" && <ExpensesTab trip={trip} onModal={onModal} expRefresh={itinRefresh} />}
+        {activeTab === "expenses" && <ExpensesTab trip={trip} onModal={onModal} expRefresh={itinRefresh} profile={profile} user={user} onSettlementsChange={setSettlements} />}
         {activeTab === "uploads" && <UploadsTab />}
         {activeTab === "members" && <MembersTab trip={trip} />}
         {modal === "addExpense" && (
@@ -441,7 +436,7 @@ function TripShell({ trip, activeTab, setActiveTab, onBack, onModal, itinRefresh
           <AddItinModal trip={trip} onClose={() => setModal(null)} onAdd={() => { setModal(null); onItinRefresh(); setTimeout(onItinRefresh, 100); }} />
         )}
         {modal === "settle" && (
-          <SettleModal settlements={SETTLEMENTS} onClose={() => setModal(null)} />
+          <SettleModal settlements={settlements} myName={myName} onClose={() => setModal(null)} />
         )}
         {modal === "share" && (
           <ShareModal trip={trip} onClose={() => setModal(null)} />
@@ -571,7 +566,7 @@ function ItineraryTab({ trip, onModal, refreshKey }) {
 
 // ─── EXPENSES TAB ─────────────────────────────────────────────────────────────
 
-function ExpensesTab({ trip, onModal, expRefresh }) {
+function ExpensesTab({ trip, onModal, expRefresh, profile, user, onSettlementsChange }) {
   const [filter, setFilter] = useState("All");
   const [expenses, setExpenses] = useState([]);
   const [editingExpense, setEditingExpense] = useState(null);
@@ -592,7 +587,43 @@ function ExpensesTab({ trip, onModal, expRefresh }) {
 
   const filtered = filter === "All" ? expenses : expenses.filter(e => e.category === filter);
   const total = expenses.reduce((a, e) => a + e.amount, 0);
-  const myOwed = 0;
+
+  // Calculate real settlements
+  const calcSettlements = (expenses, currentUser) => {
+    const balances = {};
+    expenses.forEach(exp => {
+      const paidBy = exp.paid_by;
+      const splitWith = exp.split_with || [];
+      if (!splitWith.length) return;
+      const share = exp.amount / splitWith.length;
+      if (!balances[paidBy]) balances[paidBy] = 0;
+      balances[paidBy] += exp.amount;
+      splitWith.forEach(person => {
+        if (!balances[person]) balances[person] = 0;
+        balances[person] -= share;
+      });
+    });
+    const settlements = [];
+    const debtors = Object.entries(balances).filter(([_, v]) => v < -0.01).map(([k, v]) => ({ name: k, amount: v }));
+    const creditors = Object.entries(balances).filter(([_, v]) => v > 0.01).map(([k, v]) => ({ name: k, amount: v }));
+    debtors.forEach(debtor => {
+      let remaining = Math.abs(debtor.amount);
+      creditors.forEach(creditor => {
+        if (remaining < 0.01 || creditor.amount < 0.01) return;
+        const payment = Math.min(remaining, creditor.amount);
+        settlements.push({ from: debtor.name, to: creditor.name, amount: Math.round(payment) });
+        remaining -= payment;
+        creditor.amount -= payment;
+      });
+    });
+    return settlements;
+  };
+useEffect(() => {
+    onSettlementsChange?.(settlements);
+  }, [settlements]);
+  const settlements = calcSettlements(expenses, profile?.display_name || user?.email?.split('@')[0] || 'Me');
+  const myName = profile?.display_name || user?.email?.split('@')[0] || 'Me';
+  const myOwed = settlements.filter(s => s.from === myName).reduce((a, s) => a + s.amount, 0);
 const handleDeleteExpense = async (exp) => {
     if (!window.confirm(`Delete "${exp.title}"?`)) return;
     const { error } = await supabase.from('expenses').delete().eq('id', exp.id);
@@ -626,10 +657,12 @@ const handleDeleteExpense = async (exp) => {
       </div>
 
       {/* Settle CTA */}
-      <button style={S.settleCta} onClick={() => onModal("settle")}>
-        <span>⚖️ Settle Up — {SETTLEMENTS.filter(s => s.from === "Isaiah").length} transfers pending</span>
-        <span style={S.settleArrow}>→</span>
-      </button>
+      {settlements.length > 0 && (
+        <button style={S.settleCta} onClick={() => onModal("settle")}>
+          <span>⚖️ Settle Up — {settlements.filter(s => s.from === myName).length} transfers pending</span>
+          <span style={S.settleArrow}>→</span>
+        </button>
+      )}
 
       {/* Filters */}
       <div style={S.filterRow}>
@@ -786,34 +819,43 @@ const [newName, setNewName] = useState("");
       <button style={{ ...S.primaryBtn, background: "#22c55e", color: "#000" }} onClick={async () => {
         if (!newName) return;
         const email = newName.trim().toLowerCase();
-        // Check if user exists
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('id, display_name')
-          .eq('id', (await supabase.from('profiles').select('id').eq('id', email)).data?.[0]?.id)
-          .single();
-        // Look up user by email via auth
-        const { data: existingMembers } = await supabase
-          .from('trip_members')
-          .select('*, profiles(display_name)')
-          .eq('trip_id', trip.id);
-        // Insert into trip_members with email, matched later when they sign up
-        const { data, error } = await supabase
+
+        // Check if user already exists
+        const { data: existingUser } = await supabase.rpc('get_user_id_by_email', { email_input: email });
+        const linkedUserId = existingUser?.[0]?.id || null;
+
+        // Add to trip_members
+        const { error: tmError } = await supabase
           .from('trip_members')
           .insert([{ 
-            trip_id: trip.id, 
+            trip_id: trip.id,
+            user_id: linkedUserId,
             invited_email: email,
             role: 'member',
-            status: 'pending'
+            status: linkedUserId ? 'accepted' : 'pending'
           }])
-          .select()
-        if (error) { console.error(error); return; }
-        // Also add to members table for display name
-        const { data: memberData } = await supabase
+          .select();
+        if (tmError && tmError.code !== '23505') { console.error(tmError); return; }
+
+        // Get display name
+        let displayName = email.split('@')[0];
+        if (linkedUserId) {
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('display_name')
+            .eq('id', linkedUserId)
+            .single();
+          if (profileData?.display_name) displayName = profileData.display_name;
+        }
+
+        // Add to members table for display
+        const { data: memberData, error: memberError } = await supabase
           .from('members')
-          .insert([{ trip_id: trip.id, name: email.split('@')[0] }])
-          .select()
-        if (memberData) setMembers(prev => [...prev, memberData[0]]);
+          .insert([{ trip_id: trip.id, name: displayName }])
+          .select();
+        if (memberError) console.error('member insert error:', memberError);
+        else if (memberData) setMembers(prev => [...prev, memberData[0]]);
+
         setNewName("");
         setShowInvite(false);
       }}>Invite</button>
@@ -837,16 +879,18 @@ const owed = 0;
     <div style={S.memberRight}>
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
         <div style={S.evenBadge}>even</div>
-        <button
-          style={{ background: "#450a0a", border: "none", color: "#f87171", borderRadius: 8, padding: "6px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}
-          onClick={async () => {
-            if (!window.confirm(`Remove ${m.name}?`)) return;
-            const { error } = await supabase.from('members').delete().eq('id', m.id);
-            if (!error) setMembers(prev => prev.filter(mb => mb.id !== m.id));
-          }}
-        >
-          ✕
-        </button>
+        {trip.user_id !== m.user_id && (
+          <button
+            style={{ background: "#450a0a", border: "none", color: "#f87171", borderRadius: 8, padding: "6px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+            onClick={async () => {
+              if (!window.confirm(`Remove ${m.name}?`)) return;
+              const { error } = await supabase.from('members').delete().eq('id', m.id);
+              if (!error) setMembers(prev => prev.filter(mb => mb.id !== m.id));
+            }}
+          >
+            ✕
+          </button>
+        )}
       </div>
     </div>
   </div>
@@ -1210,11 +1254,11 @@ function EditItinModal({ item, onClose, onSave }) {
   );
 }
 
-function SettleModal({ settlements, onClose }) {
+function SettleModal({ settlements, myName, onClose }) {
   const [marked, setMarked] = useState([]);
   const toggle = (i) => setMarked(m => m.includes(i) ? m.filter(x => x !== i) : [...m, i]);
-  const mine = settlements.filter(s => s.from === "Isaiah");
-  const others = settlements.filter(s => s.from !== "Isaiah");
+  const mine = settlements.filter(s => s.from === myName);
+  const others = settlements.filter(s => s.from !== myName);
 
   return (
     <div style={S.overlay}>
