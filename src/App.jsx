@@ -489,6 +489,17 @@ function ItineraryTab({ trip, onModal, refreshKey }) {
       else setItems(data)
     }
     fetchItinerary()
+
+    const subscription = supabase
+      .channel(`itinerary:${trip.id}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'itinerary',
+      }, () => fetchItinerary())
+      .subscribe()
+
+    return () => subscription.unsubscribe()
   }, [trip.id, refreshKey])
 
   const days = [...new Set(items.map(i => i.day))];
@@ -583,6 +594,17 @@ function ExpensesTab({ trip, onModal, expRefresh, profile, user, onSettlementsCh
       else setExpenses(data)
     }
     fetchExpenses()
+
+    const subscription = supabase
+      .channel(`expenses:${trip.id}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'expenses',
+      }, () => fetchExpenses())
+      .subscribe()
+
+    return () => subscription.unsubscribe()
   }, [trip.id, expRefresh])
 
   const filtered = filter === "All" ? expenses : expenses.filter(e => e.category === filter);
@@ -618,10 +640,10 @@ function ExpensesTab({ trip, onModal, expRefresh, profile, user, onSettlementsCh
     });
     return settlements;
   };
-useEffect(() => {
+const settlements = calcSettlements(expenses, profile?.display_name || user?.email?.split('@')[0] || 'Me');
+  useEffect(() => {
     onSettlementsChange?.(settlements);
-  }, [settlements]);
-  const settlements = calcSettlements(expenses, profile?.display_name || user?.email?.split('@')[0] || 'Me');
+  }, [expenses]);
   const myName = profile?.display_name || user?.email?.split('@')[0] || 'Me';
   const myOwed = settlements.filter(s => s.from === myName).reduce((a, s) => a + s.amount, 0);
 const handleDeleteExpense = async (exp) => {
