@@ -263,20 +263,24 @@ const handleDeleteTrip = async (trip) => {
           {(profile?.display_name || ME.name).slice(0, 2).toUpperCase()}
         </div>
         <div style={S.profileName}>{profile?.display_name || ME.name}</div>
-        <div style={S.profileSub}>tripcrew member since {ME.since}</div>
+        <div style={S.profileSub}>tripcrew member since {profile?.created_at ? new Date(profile.created_at).getFullYear() : ME.since}</div>
         <div style={S.profileStats}>
           <div style={S.statItem}>
-            <div style={S.statNum}>{ME.tripsCount}</div>
+            <div style={S.statNum}>{trips.length}</div>
             <div style={S.statLbl}>trips</div>
           </div>
           <div style={S.statDiv} />
           <div style={S.statItem}>
-            <div style={S.statNum}>{ME.countriesCount}</div>
-            <div style={S.statLbl}>countries</div>
+            <div style={S.statNum}>
+              {new Set(trips.map(t => t.city).filter(Boolean)).size}
+            </div>
+            <div style={S.statLbl}>cities</div>
           </div>
           <div style={S.statDiv} />
           <div style={S.statItem}>
-            <div style={S.statNum}>3</div>
+            <div style={S.statNum}>
+              {trips.filter(t => new Date(t.created_at).getFullYear() === new Date().getFullYear()).length}
+            </div>
             <div style={S.statLbl}>this year</div>
           </div>
         </div>
@@ -1369,7 +1373,7 @@ function ShareModal({ trip, onClose }) {
 
 function NewTripModal({ onClose, onSave, userId }) {
   const [form, setForm] = useState({
-    name: "", location: "", dates: "", emoji: "✈️",
+    name: "", location: "", city: "", country: "", dates: "", emoji: "✈️",
     bg: "linear-gradient(135deg, #0d2b1e 0%, #1a4a32 100%)",
     tag: "#4ade80"
   });
@@ -1382,9 +1386,9 @@ function NewTripModal({ onClose, onSave, userId }) {
     setLoading(true);
     const { _startDate, _endDate, ...formData } = form;
     const { data, error } = await supabase
-  .from('trips')
-  .insert([{ ...formData, total_spent: 0, settled: false, solo: false, user_id: userId }])
-  .select()
+      .from('trips')
+      .insert([{ ...formData, total_spent: 0, settled: false, solo: false, user_id: userId }])
+      .select()
     if (error) { console.error(error); setLoading(false); return; }
     onSave(data[0]);
   };
@@ -1407,6 +1411,18 @@ function NewTripModal({ onClose, onSave, userId }) {
             <div style={S.fieldLbl}>LOCATION</div>
             <input style={S.input} placeholder="e.g. Japan"
               value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} />
+          </div>
+          <div style={{ display: "flex", gap: 10 }}>
+            <div style={{ ...S.field, flex: 1 }}>
+              <div style={S.fieldLbl}>CITY</div>
+              <input style={S.input} placeholder="e.g. Tokyo"
+                value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} />
+            </div>
+            <div style={{ ...S.field, flex: 1 }}>
+              <div style={S.fieldLbl}>COUNTRY</div>
+              <input style={S.input} placeholder="e.g. Japan"
+                value={form.country} onChange={e => setForm(f => ({ ...f, country: e.target.value }))} />
+            </div>
           </div>
           <div style={S.field}>
             <div style={S.fieldLbl}>DATES</div>
@@ -1673,6 +1689,8 @@ function EditTripModal({ trip, onClose, onSave }) {
     location: trip.location || "",
     dates: trip.dates || "",
     emoji: trip.emoji || "✈️",
+    city: trip.city || "",
+    country: trip.country || "",
   });
   const [loading, setLoading] = useState(false);
   const emojis = ["✈️","🏔️","🚴","🏖️","🗾","🎿","🚗","⛵","🏕️","🎭"];
@@ -1705,10 +1723,22 @@ function EditTripModal({ trip, onClose, onSave }) {
             <input style={S.input} placeholder="e.g. Tokyo 2025"
               value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
           </div>
+          <div style={{ display: "flex", gap: 10 }}>
+            <div style={{ ...S.field, flex: 1 }}>
+              <div style={S.fieldLbl}>CITY</div>
+              <input style={S.input} placeholder="e.g. Tokyo"
+                value={form.city || ""} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} />
+            </div>
+            <div style={{ ...S.field, flex: 1 }}>
+              <div style={S.fieldLbl}>COUNTRY</div>
+              <input style={S.input} placeholder="e.g. Japan"
+                value={form.country || ""} onChange={e => setForm(f => ({ ...f, country: e.target.value }))} />
+            </div>
+          </div>
           <div style={S.field}>
-            <div style={S.fieldLbl}>LOCATION</div>
-            <input style={S.input} placeholder="e.g. Japan"
-              value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} />
+            <div style={S.fieldLbl}>DATES</div>
+            <input style={S.input} placeholder="e.g. Jun 1–10, 2025"
+              value={form.dates} onChange={e => setForm(f => ({ ...f, dates: e.target.value }))} />
           </div>
           <div style={S.field}>
             <div style={S.fieldLbl}>DATES</div>
