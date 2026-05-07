@@ -1,112 +1,53 @@
 import { supabase } from './supabase'
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import {
+  Plane, Mountain, Bike, Umbrella, Map, Snowflake, Car, Anchor, Tent, Theater,
+  UtensilsCrossed, Hotel, Zap, Train, Calendar, DollarSign, Image, Users,
+  MapPin, ChevronRight, Mic, MicOff, Sparkles, Loader
+} from "lucide-react";
 
 // ─── DATA ────────────────────────────────────────────────────────────────────
 
-const ME = {
-  name: "Isaiah",
-  initials: "IJ",
-  tripsCount: 14,
-  countriesCount: 9,
-  since: "2019",
-};
-
-const TRIPS = [
-  {
-    id: 1,
-    name: "Banff & Jasper",
-    dates: "Aug 3–10, 2025",
-    location: "Alberta, Canada",
-    members: ["Isaiah", "Marcus", "Priya", "Derek", "Sofia"],
-    bg: "linear-gradient(135deg, #0d2b1e 0%, #1a4a32 100%)",
-    tag: "#4ade80",
-    emoji: "🏔️",
-    totalSpent: 3840,
-    settled: false,
-    solo: false,
-  },
-  {
-    id: 2,
-    name: "Portland → Bend",
-    dates: "Mar 14–16, 2025",
-    location: "Oregon, USA",
-    members: ["Isaiah", "Marcus", "Derek"],
-    bg: "linear-gradient(135deg, #1a1a2e 0%, #2d1b4e 100%)",
-    tag: "#c084fc",
-    emoji: "🚴",
-    totalSpent: 960,
-    settled: true,
-    solo: false,
-  },
-  {
-    id: 3,
-    name: "Tokyo Solo",
-    dates: "Nov 8–18, 2024",
-    location: "Japan",
-    members: ["Isaiah"],
-    bg: "linear-gradient(135deg, #1a0a0a 0%, #3a1515 100%)",
-    tag: "#f87171",
-    emoji: "🗾",
-    totalSpent: 2200,
-    settled: true,
-    solo: true,
-  },
-];
-
-const ITINERARY = [
-  { id: 1, day: "Aug 3", time: "6:00 AM", type: "flight", title: "YVR → YYC", detail: "Air Canada AC 302 · Conf: XK92JA", icon: "✈️", status: "confirmed" },
-  { id: 2, day: "Aug 3", time: "2:00 PM", type: "stay", title: "Fairmont Lake Louise", detail: "Check-in · 5 nights · Conf: FL-889234", icon: "🏨", status: "confirmed" },
-  { id: 3, day: "Aug 4", time: "9:00 AM", type: "activity", title: "Lake Louise Morning Hike", detail: "Plain of Six Glaciers Trail · ~4hrs", icon: "🥾", status: "confirmed" },
-  { id: 4, day: "Aug 5", time: "8:00 AM", type: "transport", title: "Icefields Parkway Drive", detail: "Lake Louise → Jasper · ~3.5hrs", icon: "🚗", status: "confirmed" },
-  { id: 5, day: "Aug 5", time: "12:30 PM", type: "restaurant", title: "Lunch at Sunwapta Falls", detail: "Sunwapta Falls Resort Restaurant", icon: "🍽️", status: "confirmed" },
-  { id: 6, day: "Aug 5", time: "3:00 PM", type: "activity", title: "Icefields Parkway Tour", detail: "Glacier Adventure · Booking #ICE-4821", icon: "🧊", status: "confirmed" },
-  { id: 7, day: "Aug 6", time: "7:00 AM", type: "activity", title: "Sunrise Hike — Whistlers", detail: "Meeting Marcus & Derek at trailhead", icon: "🌅", status: "confirmed" },
-  { id: 8, day: "Aug 7", time: "7:00 PM", type: "restaurant", title: "Dinner — Coco's Café", detail: "Res for 5 · Jasper Ave · Conf: R-7721", icon: "🍷", status: "confirmed" },
-  { id: 9, day: "Aug 8", time: "10:00 AM", type: "activity", title: "Jasper SkyTram", detail: "5 tickets · Booking #JST-0044", icon: "🚡", status: "confirmed" },
-  { id: 10, day: "Aug 10", time: "11:00 AM", type: "flight", title: "YYC → PDX", detail: "Air Canada AC 561 · Conf: MN44TX", icon: "✈️", status: "confirmed" },
-];
-
-const EXPENSES = [
-  { id: 1, title: "Fairmont Lake Louise", category: "Stay", amount: 1240, paidBy: "Marcus", splitWith: ["Isaiah", "Marcus", "Priya", "Derek", "Sofia"], date: "Aug 3", receipt: false },
-  { id: 2, title: "Groceries & Snacks", category: "Food", amount: 186, paidBy: "Isaiah", splitWith: ["Isaiah", "Marcus", "Priya", "Derek", "Sofia"], date: "Aug 4", receipt: false },
-  { id: 3, title: "Icefields Parkway Tour", category: "Activity", amount: 320, paidBy: "Sofia", splitWith: ["Isaiah", "Marcus", "Priya", "Derek", "Sofia"], date: "Aug 5", receipt: true },
-  { id: 4, title: "Dinner at Coco's", category: "Food", amount: 218, paidBy: "Priya", splitWith: ["Isaiah", "Marcus", "Priya"], date: "Aug 7", receipt: true },
-  { id: 5, title: "Rental Car", category: "Transport", amount: 640, paidBy: "Derek", splitWith: ["Isaiah", "Marcus", "Priya", "Derek", "Sofia"], date: "Aug 3", receipt: false },
-  { id: 6, title: "Jasper Brewing Co", category: "Food", amount: 145, paidBy: "Isaiah", splitWith: ["Isaiah", "Marcus", "Derek"], date: "Aug 7", receipt: false },
-  { id: 7, title: "SkyTram Tickets", category: "Activity", amount: 275, paidBy: "Marcus", splitWith: ["Isaiah", "Marcus", "Priya", "Derek", "Sofia"], date: "Aug 8", receipt: true },
-  { id: 8, title: "Gas", category: "Transport", amount: 96, paidBy: "Isaiah", splitWith: ["Isaiah", "Marcus", "Priya", "Derek", "Sofia"], date: "Aug 4", receipt: false },
-];
-
-const PHOTOS = [
-  { id: 1, uploader: "Sofia", caption: "First morning at the lake", date: "Aug 3", color: "#1a3a2a", emoji: "🏔️", wide: true, sensitive: false },
-  { id: 2, uploader: "Marcus", caption: "The SkyTram crew", date: "Aug 8", color: "#1e1535", emoji: "🚡", wide: false, sensitive: false },
-  { id: 3, uploader: "Isaiah", caption: "Icefields stop", date: "Aug 5", color: "#1a2535", emoji: "🧊", wide: false, sensitive: false },
-  { id: 4, uploader: "Priya", caption: "Dinner vibes", date: "Aug 7", color: "#251520", emoji: "🍷", wide: false, sensitive: true },
-  { id: 5, uploader: "Derek", caption: "Sunrise on Whistlers", date: "Aug 6", color: "#1e2a1a", emoji: "🌅", wide: true, sensitive: false },
-  { id: 6, uploader: "Marcus", caption: "Columbia Icefield walk", date: "Aug 5", color: "#151a25", emoji: "❄️", wide: false, sensitive: false },
-];
-
-const SETTLEMENTS = [
-  { from: "Isaiah", to: "Marcus", amount: 168 },
-  { from: "Isaiah", to: "Derek", amount: 84 },
-  { from: "Priya", to: "Marcus", amount: 92 },
-  { from: "Sofia", to: "Marcus", amount: 140 },
-  { from: "Sofia", to: "Derek", amount: 56 },
-];
-
 const ITINERARY_COLORS = {
-  flight: { bg: "#0f2744", accent: "#60a5fa", border: "#1e3a5f" },
-  stay: { bg: "#1a2c0f", accent: "#86efac", border: "#2d4a1e" },
-  activity: { bg: "#2a1505", accent: "#fb923c", border: "#4a2a0f" },
+  flight:     { bg: "#0f2744", accent: "#60a5fa", border: "#1e3a5f" },
+  stay:       { bg: "#1a2c0f", accent: "#86efac", border: "#2d4a1e" },
+  activity:   { bg: "#2a1505", accent: "#fb923c", border: "#4a2a0f" },
   restaurant: { bg: "#250f1a", accent: "#f472b6", border: "#4a1e35" },
-  transport: { bg: "#1a1505", accent: "#fbbf24", border: "#3a2a0f" },
+  transport:  { bg: "#1a1505", accent: "#fbbf24", border: "#3a2a0f" },
 };
 
 const CATEGORY_META = {
-  Stay: { color: "#86efac", bg: "#14532d" },
-  Food: { color: "#34d399", bg: "#065f46" },
-  Activity: { color: "#fb923c", bg: "#7c2d12" },
+  Stay:      { color: "#86efac", bg: "#14532d" },
+  Food:      { color: "#34d399", bg: "#065f46" },
+  Activity:  { color: "#fb923c", bg: "#7c2d12" },
   Transport: { color: "#fbbf24", bg: "#713f12" },
+};
+
+const PHOTOS = [
+  { id: 1, uploader: "Sofia",  caption: "First morning at the lake", date: "Aug 3", color: "#1a3a2a", emoji: "🏔️", wide: true,  sensitive: false },
+  { id: 2, uploader: "Marcus", caption: "The SkyTram crew",          date: "Aug 8", color: "#1e1535", emoji: "🚡", wide: false, sensitive: false },
+  { id: 3, uploader: "Isaiah", caption: "Icefields stop",            date: "Aug 5", color: "#1a2535", emoji: "🧊", wide: false, sensitive: false },
+  { id: 4, uploader: "Priya",  caption: "Dinner vibes",              date: "Aug 7", color: "#251520", emoji: "🍷", wide: false, sensitive: true  },
+  { id: 5, uploader: "Derek",  caption: "Sunrise on Whistlers",      date: "Aug 6", color: "#1e2a1a", emoji: "🌅", wide: true,  sensitive: false },
+  { id: 6, uploader: "Marcus", caption: "Columbia Icefield walk",    date: "Aug 5", color: "#151a25", emoji: "❄️", wide: false, sensitive: false },
+];
+
+// Trip icon mapping — emoji key → Lucide component
+const TRIP_ICONS = {
+  "✈️": Plane, "🏔️": Mountain, "🚴": Bike,   "🏖️": Umbrella,
+  "🗾": Map,   "🎿": Snowflake, "🚗": Car,    "⛵": Anchor,
+  "🏕️": Tent, "🎭": Theater,
+};
+const TRIP_ICON_LIST = [
+  { key: "✈️", Icon: Plane },   { key: "🏔️", Icon: Mountain },
+  { key: "🚴", Icon: Bike },    { key: "🏖️", Icon: Umbrella },
+  { key: "🗾", Icon: Map },     { key: "🎿", Icon: Snowflake },
+  { key: "🚗", Icon: Car },     { key: "⛵", Icon: Anchor },
+  { key: "🏕️", Icon: Tent },   { key: "🎭", Icon: Theater },
+];
+const ITIN_TYPE_ICONS = {
+  flight: Plane, stay: Hotel, activity: Zap,
+  restaurant: UtensilsCrossed, transport: Train,
 };
 
 // ─── ROOT ─────────────────────────────────────────────────────────────────────
@@ -140,21 +81,16 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Link pending invites when user logs in
   useEffect(() => {
     if (!user) return;
     const linkPendingInvites = async () => {
       const { data: pending } = await supabase
-        .from('trip_members')
-        .select('*')
-        .eq('invited_email', user.email)
-        .eq('status', 'pending');
+        .from('trip_members').select('*')
+        .eq('invited_email', user.email).eq('status', 'pending');
       if (!pending?.length) return;
       for (const invite of pending) {
-        await supabase
-          .from('trip_members')
-          .update({ user_id: user.id, status: 'accepted' })
-          .eq('id', invite.id);
+        await supabase.from('trip_members')
+          .update({ user_id: user.id, status: 'accepted' }).eq('id', invite.id);
       }
     };
     linkPendingInvites();
@@ -172,27 +108,22 @@ export default function App() {
     <div style={S.root}>
       <div style={S.phone}>
         {view === "profile" && (
-          <ProfileScreen onOpen={openTrip} user={user} profile={profile} onSignOut={async () => {
-  await supabase.auth.signOut();
-}} onSettings={() => setView("settings")} />
+          <ProfileScreen onOpen={openTrip} user={user} profile={profile}
+            onSignOut={async () => { await supabase.auth.signOut(); }}
+            onSettings={() => setView("settings")} />
         )}
         {view === "settings" && (
-          <SettingsScreen user={user} profile={profile} onBack={() => setView("profile")} onProfileUpdate={(updated) => setProfile(updated)} />
+          <SettingsScreen user={user} profile={profile} onBack={() => setView("profile")}
+            onProfileUpdate={(updated) => setProfile(updated)} />
         )}
         {view === "trip" && activeTrip && (
           <TripShell
-  trip={activeTrip}
-  activeTab={activeTab}
-  setActiveTab={setActiveTab}
-  onBack={() => setView("profile")}
-  onModal={setModal}
-  itinRefresh={itinRefresh}
-  modal={modal}
-  setModal={setModal}
-  user={user}
-  profile={profile}
-  onItinRefresh={() => setItinRefresh(r => r + 1)}
-/>
+            trip={activeTrip} activeTab={activeTab} setActiveTab={setActiveTab}
+            onBack={() => setView("profile")} onModal={setModal}
+            itinRefresh={itinRefresh} modal={modal} setModal={setModal}
+            user={user} profile={profile}
+            onItinRefresh={() => setItinRefresh(r => r + 1)}
+          />
         )}
       </div>
     </div>
@@ -203,67 +134,42 @@ export default function App() {
 
 function ProfileScreen({ onOpen, user, onSignOut, onSettings, profile }) {
   const [trips, setTrips] = useState([]);
-const [showNewTrip, setShowNewTrip] = useState(false);
-useEffect(() => {
-  const fetchTrips = async () => {
-    // Get trip IDs the user belongs to
-    const { data: memberRows } = await supabase
-      .from('trip_members')
-      .select('trip_id')
-      .eq('user_id', user.id);
-    
-    if (!memberRows?.length) { setTrips([]); return; }
-    
-    const tripIds = memberRows.map(r => r.trip_id);
-    
-    const { data, error } = await supabase
-      .from('trips')
-      .select('*')
-      .in('id', tripIds)
-      .is('deleted_at', null)
-      .order('created_at', { ascending: false });
-    
-    if (error) console.error(error);
-    else setTrips(data);
-  }
-  fetchTrips()
-}, [])
-  const handleNewTrip = async () => {
-  const { data, error } = await supabase
-    .from('trips')
-    .insert([{
-      name: 'New Trip',
-      location: 'Somewhere',
-      dates: 'TBD',
-      emoji: '✈️',
-      bg: 'linear-gradient(135deg, #0d2b1e 0%, #1a4a32 100%)',
-      tag: '#4ade80',
-      total_spent: 0,
-      settled: false,
-      solo: false
-    }])
-    .select()
-  if (error) console.error(error)
-  else console.log('Trip created:', data)
-}
-const [editingTrip, setEditingTrip] = useState(null);
-const handleDeleteTrip = async (trip) => {
+  const [showNewTrip, setShowNewTrip] = useState(false);
+  const [editingTrip, setEditingTrip] = useState(null);
+
+  useEffect(() => {
+    const fetchTrips = async () => {
+      const { data: memberRows } = await supabase
+        .from('trip_members').select('trip_id').eq('user_id', user.id);
+      if (!memberRows?.length) { setTrips([]); return; }
+      const tripIds = memberRows.map(r => r.trip_id);
+      const { data, error } = await supabase
+        .from('trips').select('*').in('id', tripIds)
+        .is('deleted_at', null).order('created_at', { ascending: false });
+      if (error) console.error(error);
+      else setTrips(data);
+    };
+    fetchTrips();
+  }, []);
+
+  const handleDeleteTrip = async (trip) => {
     if (!window.confirm(`Delete "${trip.name}"? You can restore it from settings.`)) return;
-    const { error } = await supabase
-      .from('trips')
-      .update({ deleted_at: new Date().toISOString() })
-      .eq('id', trip.id);
+    const { error } = await supabase.from('trips')
+      .update({ deleted_at: new Date().toISOString() }).eq('id', trip.id);
     if (error) { console.error(error); return; }
     setTrips(prev => prev.filter(t => t.id !== trip.id));
   };
+
   return (
     <div style={S.screen}>
       <div style={S.profileHero}>
         <div style={S.profileAvatar}>
-          {(profile?.display_name || ME.name).slice(0, 2).toUpperCase()}
+          {(profile?.display_name || user.email).slice(0, 2).toUpperCase()}
         </div>
-        <div style={S.profileName}>{profile?.display_name || ME.name}</div>
-        <div style={S.profileSub}>tripcrew member since {profile?.created_at ? new Date(profile.created_at).getFullYear() : ME.since}</div>
+        <div style={S.profileName}>{profile?.display_name || user.email}</div>
+        <div style={S.profileSub}>
+          tripcrew member since {profile?.created_at ? new Date(profile.created_at).getFullYear() : "—"}
+        </div>
         <div style={S.profileStats}>
           <div style={S.statItem}>
             <div style={S.statNum}>{trips.length}</div>
@@ -271,9 +177,7 @@ const handleDeleteTrip = async (trip) => {
           </div>
           <div style={S.statDiv} />
           <div style={S.statItem}>
-            <div style={S.statNum}>
-              {new Set(trips.map(t => t.city).filter(Boolean)).size}
-            </div>
+            <div style={S.statNum}>{new Set(trips.map(t => t.city).filter(Boolean)).size}</div>
             <div style={S.statLbl}>cities</div>
           </div>
           <div style={S.statDiv} />
@@ -285,47 +189,32 @@ const handleDeleteTrip = async (trip) => {
           </div>
         </div>
       </div>
+
       {editingTrip && (
-        <EditTripModal
-          trip={editingTrip}
-          onClose={() => setEditingTrip(null)}
+        <EditTripModal trip={editingTrip} onClose={() => setEditingTrip(null)}
           onSave={(updated) => {
             setTrips(prev => prev.map(t => t.id === updated.id ? updated : t));
             setEditingTrip(null);
-          }}
-        />
+          }} />
       )}
+
       <div style={{ display: "flex", gap: 8, justifyContent: "center", marginTop: 12 }}>
-        <button
-          style={{ background: "transparent", border: "1px solid #1e293b", color: "#475569", borderRadius: 20, padding: "6px 14px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}
-          onClick={onSettings}
-        >
-          ⚙️ Settings
-        </button>
-        <button
-          style={{ background: "transparent", border: "1px solid #1e293b", color: "#475569", borderRadius: 20, padding: "6px 14px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}
-          onClick={onSignOut}
-        >
-          Sign out
-        </button>
+        <button style={S.ghostBtn} onClick={onSettings}>⚙️ Settings</button>
+        <button style={S.ghostBtn} onClick={onSignOut}>Sign out</button>
       </div>
+
       <div style={{ padding: "0 20px 40px" }}>
         <div style={S.sectionRow}>
           <div style={S.sectionLabel}>YOUR TRIPS</div>
           <button style={S.newBtn} onClick={() => setShowNewTrip(true)}>+ New</button>
-          {showNewTrip && (
-            <NewTripModal
-              onClose={() => setShowNewTrip(false)}
-              userId={user.id}
-              onSave={(trip) => {
-                setTrips(prev => [trip, ...prev]);
-                setShowNewTrip(false);
-              }}
-            />
-          )}
         </div>
+        {showNewTrip && (
+          <NewTripModal onClose={() => setShowNewTrip(false)} userId={user.id}
+            onSave={(trip) => { setTrips(prev => [trip, ...prev]); setShowNewTrip(false); }} />
+        )}
         {trips.map((t, i) => (
-          <TripCard key={t.id} trip={t} idx={i} onOpen={onOpen} onDelete={handleDeleteTrip} onEdit={setEditingTrip} />
+          <TripCard key={t.id} trip={t} idx={i} onOpen={onOpen}
+            onDelete={handleDeleteTrip} onEdit={setEditingTrip} />
         ))}
       </div>
     </div>
@@ -333,29 +222,18 @@ const handleDeleteTrip = async (trip) => {
 }
 
 function TripCard({ trip, idx, onOpen, onDelete, onEdit }) {
-  const members = trip.members || [];
   const tag = trip.tag || "#4ade80";
   const bg = trip.bg || "linear-gradient(135deg, #0d2b1e 0%, #1a4a32 100%)";
+  const IconComp = TRIP_ICONS[trip.emoji] || Plane;
 
   return (
-    <div
-      style={{ ...S.tripCard, background: bg, animationDelay: `${idx * 80}ms`, position: "relative" }}
-      onClick={() => onOpen(trip)}
-    >
-      <button
-        style={{ position: "absolute", top: 12, right: 44, background: "#ffffff10", border: "none", color: "#94a3b8", borderRadius: 8, padding: "4px 8px", fontSize: 11, fontWeight: 700, cursor: "pointer", zIndex: 10 }}
-        onClick={(e) => { e.stopPropagation(); onEdit(trip); }}
-      >
-        ✎
-      </button>
-      <button
-        style={{ position: "absolute", top: 12, right: 12, background: "#ffffff10", border: "none", color: "#94a3b8", borderRadius: 8, padding: "4px 8px", fontSize: 11, fontWeight: 700, cursor: "pointer", zIndex: 10 }}
-        onClick={(e) => { e.stopPropagation(); onDelete(trip); }}
-      >
-        ✕
-      </button>
+    <div style={{ ...S.tripCard, background: bg }} onClick={() => onOpen(trip)}>
+      <button style={S.tcEditBtn} onClick={(e) => { e.stopPropagation(); onEdit(trip); }}>✎</button>
+      <button style={S.tcDeleteBtn} onClick={(e) => { e.stopPropagation(); onDelete(trip); }}>✕</button>
       <div style={S.tcTop}>
-        <span style={S.tcEmoji}>{trip.emoji || "✈️"}</span>
+        <div style={{ ...S.tcIconWrap, background: tag + "20", border: `1px solid ${tag}30` }}>
+          <IconComp size={22} color={tag} strokeWidth={1.5} />
+        </div>
         <div style={{ display: "flex", gap: 6 }}>
           {trip.solo && <span style={S.soloBadge}>SOLO</span>}
           {trip.settled && <span style={S.settledBadge}>SETTLED</span>}
@@ -364,59 +242,37 @@ function TripCard({ trip, idx, onOpen, onDelete, onEdit }) {
       <div style={S.tcName}>{trip.name}</div>
       <div style={S.tcLocation}>{trip.location} · {trip.dates}</div>
       <div style={S.tcBottom}>
-        <div style={S.tcMembers}>
-          {members.slice(0, 4).map((m, i) => (
-            <div key={i} style={{ ...S.mDot, background: tag + "30", color: tag, borderColor: bg, marginLeft: i > 0 ? -7 : 0 }}>
-              {m[0]}
-            </div>
-          ))}
-          {members.length > 4 && (
-            <div style={{ ...S.mDot, background: "#ffffff10", color: "#94a3b8", borderColor: bg, marginLeft: -7 }}>
-              +{members.length - 4}
-            </div>
-          )}
-        </div>
         <div style={{ ...S.tcTotal, color: tag }}>${(trip.total_spent || 0).toLocaleString()}</div>
+        <div style={{ ...S.tcViewBtn, color: tag, borderColor: tag + "40" }}>
+          View <ChevronRight size={12} />
+        </div>
       </div>
     </div>
   );
 }
+
 // ─── TRIP SHELL ───────────────────────────────────────────────────────────────
 
 function TripShell({ trip, activeTab, setActiveTab, onBack, onModal, itinRefresh, modal, setModal, user, profile, onItinRefresh }) {
   const [settlements, setSettlements] = useState([]);
   const myName = profile?.display_name || user?.email?.split('@')[0] || 'Me';
-  
+  const IconComp = TRIP_ICONS[trip.emoji] || Plane;
+
   const tabs = [
-    { id: "itinerary", label: "Itinerary", icon: (active, color) => (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={active ? color : "#475569"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-      </svg>
-    )},
-    { id: "expenses", label: "Expenses", icon: (active, color) => (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={active ? color : "#475569"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
-      </svg>
-    )},
-    { id: "uploads", label: "Uploads", icon: (active, color) => (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={active ? color : "#475569"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
-      </svg>
-    )},
-    { id: "members", label: "Members", icon: (active, color) => (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={active ? color : "#475569"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-      </svg>
-    )},
+    { id: "itinerary", label: "Itinerary", Icon: Calendar },
+    { id: "expenses",  label: "Expenses",  Icon: DollarSign },
+    { id: "uploads",   label: "Uploads",   Icon: Image },
+    { id: "members",   label: "Members",   Icon: Users },
   ];
 
   return (
     <div style={S.tripShell}>
-      {/* Header */}
       <div style={{ ...S.tripHeader, background: trip.bg }}>
         <button style={S.backBtn} onClick={onBack}>←</button>
         <div style={S.thMid}>
-          <div style={S.thEmoji}>{trip.emoji}</div>
+          <div style={{ ...S.thIconWrap, background: (trip.tag || "#4ade80") + "20" }}>
+            <IconComp size={20} color={trip.tag || "#4ade80"} strokeWidth={1.5} />
+          </div>
           <div>
             <div style={S.thName}>{trip.name}</div>
             <div style={S.thSub}>{trip.location} · {trip.dates}</div>
@@ -427,45 +283,28 @@ function TripShell({ trip, activeTab, setActiveTab, onBack, onModal, itinRefresh
         </button>
       </div>
 
-      {/* Tab Content */}
       <div style={{ ...S.tabContent, position: "relative" }}>
         {activeTab === "itinerary" && <ItineraryTab trip={trip} onModal={onModal} refreshKey={itinRefresh} />}
-        {activeTab === "expenses" && <ExpensesTab trip={trip} onModal={onModal} expRefresh={itinRefresh} profile={profile} user={user} onSettlementsChange={setSettlements} />}
-        {activeTab === "uploads" && <UploadsTab />}
-        {activeTab === "members" && <MembersTab trip={trip} />}
-        {modal === "addExpense" && (
-          <AddExpenseModal trip={trip} user={user} profile={profile} onClose={() => setModal(null)} onAdd={onItinRefresh} />
-        )}
-        {modal === "addItinerary" && (
-          <AddItinModal trip={trip} onClose={() => setModal(null)} onAdd={() => { setModal(null); onItinRefresh(); setTimeout(onItinRefresh, 100); }} />
-        )}
-        {modal === "settle" && (
-          <SettleModal settlements={settlements} myName={myName} onClose={() => setModal(null)} />
-        )}
-        {modal === "share" && (
-          <ShareModal trip={trip} onClose={() => setModal(null)} />
-        )}
+        {activeTab === "expenses"  && <ExpensesTab  trip={trip} onModal={onModal} expRefresh={itinRefresh} profile={profile} user={user} onSettlementsChange={setSettlements} />}
+        {activeTab === "uploads"   && <UploadsTab />}
+        {activeTab === "members"   && <MembersTab trip={trip} profile={profile} />}
+        {modal === "addExpense"    && <AddExpenseModal trip={trip} user={user} profile={profile} onClose={() => setModal(null)} onAdd={onItinRefresh} />}
+        {modal === "addItinerary"  && <AddItinModal trip={trip} onClose={() => setModal(null)} onAdd={() => { setModal(null); onItinRefresh(); setTimeout(onItinRefresh, 100); }} />}
+        {modal === "settle"        && <SettleModal settlements={settlements} myName={myName} onClose={() => setModal(null)} />}
+        {modal === "share"         && <ShareModal trip={trip} onClose={() => setModal(null)} />}
       </div>
-      
-      {/* Bottom Tab Bar */}
+
       <div style={S.tabBar}>
-        {tabs.map(tab => (
-          <button
-            key={tab.id}
-            style={{ ...S.tabBtn, ...(activeTab === tab.id ? S.tabBtnActive : {}) }}
-            onClick={() => { setActiveTab(tab.id); setModal(null); }}
-          >
-            {tab.icon(activeTab === tab.id, trip.tag)}
-            <span style={{ ...S.tabLabel, ...(activeTab === tab.id ? { color: trip.tag } : {}) }}>
-              {tab.label}
+        {tabs.map(({ id, label, Icon }) => (
+          <button key={id} style={S.tabBtn} onClick={() => { setActiveTab(id); setModal(null); }}>
+            <Icon size={20} color={activeTab === id ? (trip.tag || "#4ade80") : "#475569"} strokeWidth={activeTab === id ? 2 : 1.5} />
+            <span style={{ ...S.tabLabel, ...(activeTab === id ? { color: trip.tag || "#4ade80" } : {}) }}>
+              {label}
             </span>
-            {activeTab === tab.id && (
-              <div style={{ ...S.tabDot, background: trip.tag }} />
-            )}
+            {activeTab === id && <div style={{ ...S.tabDot, background: trip.tag }} />}
           </button>
         ))}
       </div>
-  
     </div>
   );
 }
@@ -484,55 +323,41 @@ function ItineraryTab({ trip, onModal, refreshKey }) {
 
   useEffect(() => {
     const fetchItinerary = async () => {
-      const { data, error } = await supabase
-        .from('itinerary')
-        .select('*')
-        .eq('trip_id', trip.id)
-        .order('day', { ascending: true })
-      if (error) console.error(error)
-      else setItems(data)
-    }
-    fetchItinerary()
-
-    const subscription = supabase
-      .channel(`itinerary:${trip.id}`)
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'itinerary',
-      }, () => fetchItinerary())
-      .subscribe()
-
-    return () => subscription.unsubscribe()
-  }, [trip.id, refreshKey])
+      const { data, error } = await supabase.from('itinerary').select('*')
+        .eq('trip_id', trip.id).order('day', { ascending: true });
+      if (error) console.error(error);
+      else setItems(data);
+    };
+    fetchItinerary();
+    const subscription = supabase.channel(`itinerary:${trip.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'itinerary' }, () => fetchItinerary())
+      .subscribe();
+    return () => subscription.unsubscribe();
+  }, [trip.id, refreshKey]);
 
   const days = [...new Set(items.map(i => i.day))];
+
   return (
     <div style={S.tabScroll}>
       <div style={S.tabTopRow}>
         <div style={S.tabTitle}>Itinerary</div>
-        <button style={{ ...S.actionBtn, borderColor: trip.tag + "60", color: trip.tag }} onClick={() => onModal("addItinerary")}>
-          + Add
-        </button>
+        <button style={{ ...S.actionBtn, borderColor: trip.tag + "60", color: trip.tag }}
+          onClick={() => onModal("addItinerary")}>+ Add</button>
       </div>
-
       {days.map(day => (
         <div key={day} style={S.dayBlock}>
           <div style={S.dayLabel}>{day}</div>
           {items.filter(i => i.day === day).map(item => {
             const meta = ITINERARY_COLORS[item.type];
+            const TypeIcon = ITIN_TYPE_ICONS[item.type] || Zap;
             return (
               <div key={item.id} style={{ ...S.iRow, background: meta.bg, borderColor: meta.border }}>
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
                   <div style={S.iTime}>{item.time}</div>
-                  <button
-                    style={{ background: "#1e3a5f", border: "none", color: "#60a5fa", fontSize: 11, cursor: "pointer", padding: "3px 6px", borderRadius: 6, marginTop: 4 }}
-                    onClick={() => setEditingItem(item)}
-                  >✎</button>
-                  <button
-                    style={{ background: "#450a0a", border: "none", color: "#f87171", fontSize: 11, cursor: "pointer", padding: "3px 6px", borderRadius: 6, marginTop: 6 }}
-                    onClick={() => handleDeleteItem(item)}
-                  >✕</button>
+                  <button style={{ ...S.iActionBtn, background: "#1e3a5f", color: "#60a5fa" }}
+                    onClick={() => setEditingItem(item)}>✎</button>
+                  <button style={{ ...S.iActionBtn, background: "#450a0a", color: "#f87171" }}
+                    onClick={() => handleDeleteItem(item)}>✕</button>
                 </div>
                 <div style={S.iLine}>
                   <div style={{ ...S.iDot, background: meta.accent }} />
@@ -540,23 +365,19 @@ function ItineraryTab({ trip, onModal, refreshKey }) {
                 </div>
                 <div style={S.iBody}>
                   <div style={S.iTitle}>
-                    <span style={S.iEmoji}>{item.icon}</span>
+                    <TypeIcon size={13} color={meta.accent} strokeWidth={2} />
                     {item.title}
                   </div>
                   <div style={{ ...S.iDetail, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <span>{item.detail}</span>
-                  {(item.type === "stay" || item.type === "restaurant") && (
-                    
-                    <a  
-                    href={`https://maps.google.com/?q=${encodeURIComponent(item.title + " " + item.detail)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ color: "#60a5fa", fontSize: 10, fontWeight: 700, textDecoration: "none", flexShrink: 0, marginLeft: 8 }}
-                    >
-                      📍 Maps
-                    </a>
-                  )}
-                </div>
+                    <span>{item.detail}</span>
+                    {(item.type === "stay" || item.type === "restaurant") && (
+                      <a href={`https://maps.google.com/?q=${encodeURIComponent(item.title + " " + item.detail)}`}
+                        target="_blank" rel="noopener noreferrer"
+                        style={{ color: "#60a5fa", fontSize: 10, fontWeight: 700, textDecoration: "none", flexShrink: 0, marginLeft: 8, display: "flex", alignItems: "center", gap: 3 }}>
+                        <MapPin size={10} /> Maps
+                      </a>
+                    )}
+                  </div>
                   <div style={{ ...S.iType, color: meta.accent }}>{item.type}</div>
                 </div>
               </div>
@@ -566,14 +387,8 @@ function ItineraryTab({ trip, onModal, refreshKey }) {
       ))}
       <div style={{ height: 20 }} />
       {editingItem && (
-        <EditItinModal
-          item={editingItem}
-          onClose={() => setEditingItem(null)}
-          onSave={(updated) => {
-            setItems(prev => prev.map(i => i.id === updated.id ? updated : i));
-            setEditingItem(null);
-          }}
-        />
+        <EditItinModal item={editingItem} onClose={() => setEditingItem(null)}
+          onSave={(updated) => { setItems(prev => prev.map(i => i.id === updated.id ? updated : i)); setEditingItem(null); }} />
       )}
     </div>
   );
@@ -585,37 +400,32 @@ function ExpensesTab({ trip, onModal, expRefresh, profile, user, onSettlementsCh
   const [filter, setFilter] = useState("All");
   const [expenses, setExpenses] = useState([]);
   const [editingExpense, setEditingExpense] = useState(null);
+  const [memberCount, setMemberCount] = useState(0);
   const cats = ["All", "Stay", "Food", "Activity", "Transport"];
 
   useEffect(() => {
+    supabase.from('members').select('id').eq('trip_id', trip.id)
+      .then(({ data }) => setMemberCount(data?.length || 0));
+  }, [trip.id]);
+
+  useEffect(() => {
     const fetchExpenses = async () => {
-      const { data, error } = await supabase
-        .from('expenses')
-        .select('*')
-        .eq('trip_id', trip.id)
-        .order('created_at', { ascending: false })
-      if (error) console.error(error)
-      else setExpenses(data)
-    }
-    fetchExpenses()
-
-    const subscription = supabase
-      .channel(`expenses:${trip.id}`)
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'expenses',
-      }, () => fetchExpenses())
-      .subscribe()
-
-    return () => subscription.unsubscribe()
-  }, [trip.id, expRefresh])
+      const { data, error } = await supabase.from('expenses').select('*')
+        .eq('trip_id', trip.id).order('created_at', { ascending: false });
+      if (error) console.error(error);
+      else setExpenses(data);
+    };
+    fetchExpenses();
+    const subscription = supabase.channel(`expenses:${trip.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, () => fetchExpenses())
+      .subscribe();
+    return () => subscription.unsubscribe();
+  }, [trip.id, expRefresh]);
 
   const filtered = filter === "All" ? expenses : expenses.filter(e => e.category === filter);
   const total = expenses.reduce((a, e) => a + e.amount, 0);
 
-  // Calculate real settlements
-  const calcSettlements = (expenses, currentUser) => {
+  const calcSettlements = (expenses) => {
     const balances = {};
     expenses.forEach(exp => {
       const paidBy = exp.paid_by;
@@ -644,27 +454,26 @@ function ExpensesTab({ trip, onModal, expRefresh, profile, user, onSettlementsCh
     });
     return settlements;
   };
-const settlements = calcSettlements(expenses, profile?.display_name || user?.email?.split('@')[0] || 'Me');
-  useEffect(() => {
-    onSettlementsChange?.(settlements);
-  }, [expenses]);
+
+  const settlements = calcSettlements(expenses);
+  useEffect(() => { onSettlementsChange?.(settlements); }, [expenses]);
+
   const myName = profile?.display_name || user?.email?.split('@')[0] || 'Me';
   const myOwed = settlements.filter(s => s.from === myName).reduce((a, s) => a + s.amount, 0);
-const handleDeleteExpense = async (exp) => {
+
+  const handleDeleteExpense = async (exp) => {
     if (!window.confirm(`Delete "${exp.title}"?`)) return;
     const { error } = await supabase.from('expenses').delete().eq('id', exp.id);
     if (!error) setExpenses(prev => prev.filter(e => e.id !== exp.id));
   };
+
   return (
     <div style={S.tabScroll}>
       <div style={S.tabTopRow}>
         <div style={S.tabTitle}>Expenses</div>
-        <button style={{ ...S.actionBtn, borderColor: trip.tag + "60", color: trip.tag }} onClick={() => onModal("addExpense")}>
-          + Add
-        </button>
+        <button style={{ ...S.actionBtn, borderColor: trip.tag + "60", color: trip.tag }}
+          onClick={() => onModal("addExpense")}>+ Add</button>
       </div>
-
-      {/* Summary strip */}
       <div style={S.expSummary}>
         <div style={S.expSumItem}>
           <div style={S.expSumVal}>${total.toLocaleString()}</div>
@@ -672,7 +481,7 @@ const handleDeleteExpense = async (exp) => {
         </div>
         <div style={S.expSumDiv} />
         <div style={S.expSumItem}>
-          <div style={S.expSumVal}>{(trip.members || []).length}</div>
+          <div style={S.expSumVal}>{memberCount}</div>
           <div style={S.expSumLbl}>travelers</div>
         </div>
         <div style={S.expSumDiv} />
@@ -681,16 +490,12 @@ const handleDeleteExpense = async (exp) => {
           <div style={S.expSumLbl}>you owe</div>
         </div>
       </div>
-
-      {/* Settle CTA */}
       {settlements.length > 0 && (
         <button style={S.settleCta} onClick={() => onModal("settle")}>
           <span>⚖️ Settle Up — {settlements.filter(s => s.from === myName).length} transfers pending</span>
           <span style={S.settleArrow}>→</span>
         </button>
       )}
-
-      {/* Filters */}
       <div style={S.filterRow}>
         {cats.map(c => (
           <button key={c} onClick={() => setFilter(c)}
@@ -699,19 +504,13 @@ const handleDeleteExpense = async (exp) => {
           </button>
         ))}
       </div>
-
-      {/* Expense list */}
       {filtered.map(exp => {
         const meta = CATEGORY_META[exp.category];
         const splitWith = exp.split_with || exp.splitWith || [];
         const perPerson = splitWith.length ? (exp.amount / splitWith.length).toFixed(0) : 0;
         return (
-          <div key={exp.id} style={{ ...S.expRow, position: "relative" }}
-            onContextMenu={(e) => { e.preventDefault(); }}
-          >
-            <div style={{ ...S.expIcon, background: meta.bg, color: meta.color }}>
-              {exp.category[0]}
-            </div>
+          <div key={exp.id} style={S.expRow}>
+            <div style={{ ...S.expIcon, background: meta.bg, color: meta.color }}>{exp.category[0]}</div>
             <div style={S.expBody}>
               <div style={S.expTitle}>{exp.title}</div>
               <div style={S.expMeta}>
@@ -722,31 +521,17 @@ const handleDeleteExpense = async (exp) => {
               <div style={S.expAmt}>${exp.amount}</div>
               {exp.receipt && <div style={S.receiptBadge}>📎</div>}
             </div>
-            <button
-              style={{ background: "#1e293b", border: "none", color: "#94a3b8", borderRadius: 8, padding: "6px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer", marginLeft: 4, flexShrink: 0 }}
-              onClick={() => setEditingExpense(exp)}
-            >
-              ✎
-            </button>
-            <button
-              style={{ background: "#450a0a", border: "none", color: "#f87171", borderRadius: 8, padding: "6px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer", marginLeft: 4, flexShrink: 0 }}
-              onClick={() => handleDeleteExpense(exp)}
-            >
-              ✕
-            </button>
+            <button style={S.rowEditBtn} onClick={() => setEditingExpense(exp)}>✎</button>
+            <button style={S.rowDeleteBtn} onClick={() => handleDeleteExpense(exp)}>✕</button>
           </div>
         );
       })}
       <div style={{ height: 20 }} />
       {editingExpense && (
-        <AddExpenseModal
-          trip={trip}
-          user={null}
-          profile={null}
+        <AddExpenseModal trip={trip} user={null} profile={null}
           existingExpense={editingExpense}
           onClose={() => setEditingExpense(null)}
-          onAdd={() => { setEditingExpense(null); }}
-        />
+          onAdd={() => setEditingExpense(null)} />
       )}
     </div>
   );
@@ -756,22 +541,14 @@ const handleDeleteExpense = async (exp) => {
 
 function UploadsTab() {
   const [photos, setPhotos] = useState(PHOTOS);
-
-  const toggleSensitive = (id) => {
-    setPhotos(p => p.map(ph => ph.id === id ? { ...ph, sensitive: !ph.sensitive } : ph));
-  };
-
+  const toggleSensitive = (id) => setPhotos(p => p.map(ph => ph.id === id ? { ...ph, sensitive: !ph.sensitive } : ph));
   return (
     <div style={S.tabScroll}>
       <div style={S.tabTopRow}>
         <div style={S.tabTitle}>Memories</div>
         <button style={S.actionBtn}>+ Upload</button>
       </div>
-
-      <div style={S.sensitiveNote}>
-        🔒 Mark photos as sensitive to exclude them from Wrapped and shared exports.
-      </div>
-
+      <div style={S.sensitiveNote}>🔒 Mark photos as sensitive to exclude them from Wrapped and shared exports.</div>
       <div style={S.photoGrid}>
         {photos.map(ph => (
           <div key={ph.id} style={{ ...S.photoCard, ...(ph.wide ? S.photoWide : {}), background: ph.color, opacity: ph.sensitive ? 0.5 : 1 }}>
@@ -780,17 +557,14 @@ function UploadsTab() {
             <div style={S.photoOverlay}>
               <div style={S.photoCaption}>{ph.caption}</div>
               <div style={S.photoMeta}>{ph.uploader} · {ph.date}</div>
-              <button
-                style={{ ...S.sensitiveBtn, ...(ph.sensitive ? S.sensitiveBtnOn : {}) }}
-                onClick={() => toggleSensitive(ph.id)}
-              >
+              <button style={{ ...S.sensitiveBtn, ...(ph.sensitive ? S.sensitiveBtnOn : {}) }}
+                onClick={() => toggleSensitive(ph.id)}>
                 {ph.sensitive ? "Sensitive" : "Mark sensitive"}
               </button>
             </div>
           </div>
         ))}
       </div>
-
       <div style={S.uploadDrop}>
         <div style={S.uploadIcon}>📎</div>
         <div style={S.uploadText}>Drop anything here</div>
@@ -803,23 +577,17 @@ function UploadsTab() {
 
 // ─── MEMBERS TAB ──────────────────────────────────────────────────────────────
 
-function MembersTab({ trip }) {
+function MembersTab({ trip, profile }) {
   const colors = ["#4ade80", "#60a5fa", "#f472b6", "#fb923c", "#a78bfa"];
   const [members, setMembers] = useState([]);
   const [showInvite, setShowInvite] = useState(false);
-const [newName, setNewName] = useState("");
+  const [newName, setNewName] = useState("");
+  const myName = profile?.display_name || "";
 
   useEffect(() => {
-    const fetchMembers = async () => {
-      const { data, error } = await supabase
-        .from('members')
-        .select('*')
-        .eq('trip_id', trip.id)
-      if (error) console.error(error)
-      else setMembers(data)
-    }
-    fetchMembers()
-  }, [trip.id])
+    supabase.from('members').select('*').eq('trip_id', trip.id)
+      .then(({ data, error }) => { if (error) console.error(error); else setMembers(data); });
+  }, [trip.id]);
 
   return (
     <div style={S.tabScroll}>
@@ -828,107 +596,283 @@ const [newName, setNewName] = useState("");
         <button style={S.actionBtn} onClick={() => setShowInvite(true)}>+ Invite</button>
       </div>
       {showInvite && (
-  <div style={{ background: "#13131e", borderRadius: 14, padding: 16, marginBottom: 16, border: "1px solid #1e293b" }}>
-    <div style={S.fieldLbl}>INVITE BY EMAIL</div>
-    <input
-      style={S.input}
-      placeholder="friend@email.com"
-      value={newName}
-      onChange={e => setNewName(e.target.value)}
-      type="email"
-    />
-    <div style={{ fontSize: 11, color: "#475569", marginTop: 6, marginBottom: 10 }}>
-      They'll see this trip when they sign in to tripcrew.
-    </div>
-    <div style={{ display: "flex", gap: 8 }}>
-      <button style={S.secondaryBtn} onClick={() => setShowInvite(false)}>Cancel</button>
-      <button style={{ ...S.primaryBtn, background: "#22c55e", color: "#000" }} onClick={async () => {
-        if (!newName) return;
-        const email = newName.trim().toLowerCase();
-
-        // Check if user already exists
-        const { data: existingUser } = await supabase.rpc('get_user_id_by_email', { email_input: email });
-        const linkedUserId = existingUser?.[0]?.id || null;
-
-        // Add to trip_members
-        const { error: tmError } = await supabase
-          .from('trip_members')
-          .insert([{ 
-            trip_id: trip.id,
-            user_id: linkedUserId,
-            invited_email: email,
-            role: 'member',
-            status: linkedUserId ? 'accepted' : 'pending'
-          }])
-          .select();
-        if (tmError && tmError.code !== '23505') { console.error(tmError); return; }
-
-        // Get display name
-        let displayName = email.split('@')[0];
-        if (linkedUserId) {
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('display_name')
-            .eq('id', linkedUserId)
-            .single();
-          if (profileData?.display_name) displayName = profileData.display_name;
-        }
-
-        // Add to members table for display
-        const { data: memberData, error: memberError } = await supabase
-          .from('members')
-          .insert([{ trip_id: trip.id, name: displayName }])
-          .select();
-        if (memberError) console.error('member insert error:', memberError);
-        else if (memberData) setMembers(prev => [...prev, memberData[0]]);
-
-        setNewName("");
-        setShowInvite(false);
-      }}>Invite</button>
-    </div>
-  </div>
-)}
-
-      {members.map((m, i) => {
-        const paid = 0;
-const owes = 0;
-const owed = 0;
-        return (
-  <div key={m.id} style={S.memberRow}>
-    <div style={{ ...S.memberAvatar, background: colors[i % colors.length] + "25", color: colors[i % colors.length] }}>
-      {m.name[0]}
-    </div>
-    <div style={S.memberInfo}>
-      <div style={S.memberName}>{m.name} {m.name === "Isaiah" ? <span style={S.youTag}>you</span> : ""}</div>
-      <div style={S.memberMeta}>Member</div>
-    </div>
-    <div style={S.memberRight}>
-      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-        <div style={S.evenBadge}>even</div>
-        {trip.user_id !== m.user_id && (
-          <button
-            style={{ background: "#450a0a", border: "none", color: "#f87171", borderRadius: 8, padding: "6px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}
-            onClick={async () => {
-              if (!window.confirm(`Remove ${m.name}?`)) return;
-              const { error } = await supabase.from('members').delete().eq('id', m.id);
-              if (!error) setMembers(prev => prev.filter(mb => mb.id !== m.id));
-            }}
-          >
-            ✕
-          </button>
-        )}
-      </div>
-    </div>
-  </div>
-);
-      })}
-
+        <div style={{ background: "#13131e", borderRadius: 14, padding: 16, marginBottom: 16, border: "1px solid #1e293b" }}>
+          <div style={S.fieldLbl}>INVITE BY EMAIL</div>
+          <input style={S.input} placeholder="friend@email.com" value={newName}
+            onChange={e => setNewName(e.target.value)} type="email" />
+          <div style={{ fontSize: 11, color: "#475569", marginTop: 6, marginBottom: 10 }}>
+            They'll see this trip when they sign in to tripcrew.
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button style={S.secondaryBtn} onClick={() => setShowInvite(false)}>Cancel</button>
+            <button style={{ ...S.primaryBtn, background: "#22c55e", color: "#000" }} onClick={async () => {
+              if (!newName) return;
+              const email = newName.trim().toLowerCase();
+              const { data: existingUser } = await supabase.rpc('get_user_id_by_email', { email_input: email });
+              const linkedUserId = existingUser?.[0]?.id || null;
+              const { error: tmError } = await supabase.from('trip_members')
+                .insert([{ trip_id: trip.id, user_id: linkedUserId, invited_email: email, role: 'member', status: linkedUserId ? 'accepted' : 'pending' }]).select();
+              if (tmError && tmError.code !== '23505') { console.error(tmError); return; }
+              let displayName = email.split('@')[0];
+              if (linkedUserId) {
+                const { data: profileData } = await supabase.from('profiles').select('display_name').eq('id', linkedUserId).single();
+                if (profileData?.display_name) displayName = profileData.display_name;
+              }
+              const { data: memberData, error: memberError } = await supabase.from('members')
+                .insert([{ trip_id: trip.id, name: displayName }]).select();
+              if (memberError) console.error(memberError);
+              else if (memberData) setMembers(prev => [...prev, memberData[0]]);
+              setNewName(""); setShowInvite(false);
+            }}>Invite</button>
+          </div>
+        </div>
+      )}
+      {members.map((m, i) => (
+        <div key={m.id} style={S.memberRow}>
+          <div style={{ ...S.memberAvatar, background: colors[i % colors.length] + "25", color: colors[i % colors.length] }}>
+            {m.name[0]}
+          </div>
+          <div style={S.memberInfo}>
+            <div style={S.memberName}>
+              {m.name}
+              {myName && m.name === myName ? <span style={S.youTag}>you</span> : ""}
+            </div>
+            <div style={S.memberMeta}>Member</div>
+          </div>
+          <div style={S.memberRight}>
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <div style={S.evenBadge}>even</div>
+              {m.name !== myName && (
+                <button style={S.rowDeleteBtn} onClick={async () => {
+                  if (!window.confirm(`Remove ${m.name}?`)) return;
+                  const { error } = await supabase.from('members').delete().eq('id', m.id);
+                  if (!error) setMembers(prev => prev.filter(mb => mb.id !== m.id));
+                }}>✕</button>
+              )}
+            </div>
+          </div>
+        </div>
+      ))}
       <div style={{ height: 20 }} />
     </div>
   );
 }
 
-// ─── MODALS ───────────────────────────────────────────────────────────────────
+// ─── NEW TRIP MODAL — chat-first with voice ───────────────────────────────────
+
+function NewTripModal({ onClose, onSave, userId }) {
+  const [stage, setStage] = useState("prompt");
+  const [prompt, setPrompt] = useState("");
+  const [listening, setListening] = useState(false);
+  const [parsing, setParsing] = useState(false);
+  const [parseError, setParseError] = useState("");
+  const recognitionRef = useRef(null);
+
+  const EXAMPLES = [
+    "10 days in Tokyo with Marcus and Priya, late October",
+    "Dinner Saturday at Ox, just me and Jasmin",
+    "Banff long weekend, 5 people, early August",
+    "Coffee Tuesday morning with Derek",
+  ];
+  const [exampleIdx] = useState(() => Math.floor(Math.random() * EXAMPLES.length));
+
+  const toggleVoice = () => {
+    if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+      alert("Voice input isn't supported in this browser. Try Chrome on your phone.");
+      return;
+    }
+    if (listening) {
+      recognitionRef.current?.stop();
+      setListening(false);
+      return;
+    }
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SR();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = 'en-US';
+    recognition.onresult = (e) => {
+      const transcript = e.results[0][0].transcript;
+      setPrompt(prev => prev ? `${prev} ${transcript}` : transcript);
+      setListening(false);
+    };
+    recognition.onerror = () => setListening(false);
+    recognition.onend = () => setListening(false);
+    recognitionRef.current = recognition;
+    recognition.start();
+    setListening(true);
+  };
+
+  const [form, setForm] = useState({
+    name: "", location: "", city: "", country: "", dates: "",
+    emoji: "✈️", bg: "linear-gradient(135deg, #0d2b1e 0%, #1a4a32 100%)", tag: "#4ade80"
+  });
+  const [loading, setLoading] = useState(false);
+
+  const parseWithClaude = async () => {
+    if (!prompt.trim()) return;
+    setParsing(true);
+    setParseError("");
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 1000,
+          system: `You are a trip/plan parser. Extract details from natural language and return ONLY a valid JSON object with these exact fields:
+- name: string (short descriptive name, e.g. "Tokyo October" or "Dinner at Ox" or "Banff Weekend" or "Coffee with Derek")
+- location: string (place name, city, or venue — e.g. "Japan" or "Portland, OR" or "Ox Restaurant")
+- city: string (primary city, empty string if unclear)
+- country: string (country name, empty string if not applicable)
+- dates: string (human-readable timeframe, e.g. "Oct 18–28, 2025" or "Sat May 10" or "Tuesday morning")
+- emoji: string (one of exactly: ✈️ 🏔️ 🚴 🏖️ 🗾 🎿 🚗 ⛵ 🏕️ 🎭 — pick most fitting)
+- type: string (one of: trip, night_out, date, day_trip, coffee)
+- tag: string (hex color matching the vibe: #4ade80 nature/outdoors, #60a5fa city/culture, #f472b6 romantic/social, #fb923c adventure, #a78bfa nightlife/dinner)
+- bg: string (CSS linear-gradient using very dark versions of tag color, e.g. for #4ade80: "linear-gradient(135deg, #0d2b1e 0%, #1a4a32 100%)")
+
+Return ONLY the JSON. No markdown, no explanation, no backticks.`,
+          messages: [{ role: "user", content: prompt }]
+        })
+      });
+      const data = await res.json();
+      const text = data.content?.[0]?.text || "";
+      const clean = text.replace(/```json|```/g, "").trim();
+      const parsed = JSON.parse(clean);
+      setForm(f => ({ ...f, ...parsed }));
+      setStage("confirm");
+    } catch (e) {
+      console.error(e);
+      setParseError("Couldn't parse that — try rephrasing or fill in manually.");
+      setStage("confirm");
+    } finally {
+      setParsing(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!form.name) return;
+    setLoading(true);
+    const { type, ...formData } = form;
+    const { data, error } = await supabase.from('trips')
+      .insert([{ ...formData, total_spent: 0, settled: false, solo: false, user_id: userId }]).select();
+    if (error) { console.error(error); setLoading(false); return; }
+    onSave(data[0]);
+  };
+
+  const IconComp = TRIP_ICONS[form.emoji] || Plane;
+
+  return (
+    <div style={S.overlay}>
+      <div style={S.sheet}>
+        <div style={S.sheetHandle} />
+        <div style={S.sheetHeader}>
+          <div style={S.sheetTitle}>
+            {stage === "prompt" ? "What's the plan?" : "Looks right?"}
+          </div>
+          <button style={S.closeBtn} onClick={onClose}>✕</button>
+        </div>
+
+        {stage === "prompt" && (
+          <div style={S.sheetBody}>
+            <div style={S.promptWrap}>
+              <textarea
+                style={S.promptInput}
+                placeholder={EXAMPLES[exampleIdx]}
+                value={prompt}
+                onChange={e => setPrompt(e.target.value)}
+                rows={3}
+                autoFocus
+              />
+              <button style={{ ...S.micBtn, ...(listening ? S.micBtnActive : {}) }} onClick={toggleVoice}>
+                {listening ? <MicOff size={18} color="#f87171" /> : <Mic size={18} color="#475569" />}
+              </button>
+            </div>
+            {listening && (
+              <div style={S.listeningBadge}>
+                <div style={S.listeningDot} />
+                Listening...
+              </div>
+            )}
+            <div style={S.examplesLabel}>TRY SAYING</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 20 }}>
+              {EXAMPLES.map((ex, i) => (
+                <button key={i} style={S.exampleChip} onClick={() => setPrompt(ex)}>{ex}</button>
+              ))}
+            </div>
+            <button
+              style={{ ...S.primaryBtn, background: parsing ? "#1e293b" : "#22c55e", color: parsing ? "#64748b" : "#000", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+              onClick={parseWithClaude}
+              disabled={parsing || !prompt.trim()}
+            >
+              {parsing
+                ? <><Loader size={16} style={{ animation: "spin 1s linear infinite" }} /> Thinking...</>
+                : <><Sparkles size={16} /> Build it</>}
+            </button>
+            <button style={{ ...S.secondaryBtn, marginTop: 10, width: "100%" }}
+              onClick={() => setStage("confirm")}>
+              Fill in manually →
+            </button>
+            <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+          </div>
+        )}
+
+        {stage === "confirm" && (
+          <div style={S.sheetBody}>
+            {parseError && (
+              <div style={{ background: "#2a0f0f", border: "1px solid #7f1d1d", borderRadius: 10, padding: "10px 12px", fontSize: 12, color: "#f87171", marginBottom: 14 }}>
+                {parseError}
+              </div>
+            )}
+            <div style={{ ...S.previewCard, background: form.bg }}>
+              <div style={{ ...S.tcIconWrap, background: (form.tag || "#4ade80") + "20", border: `1px solid ${form.tag || "#4ade80"}30`, marginBottom: 10 }}>
+                <IconComp size={22} color={form.tag || "#4ade80"} strokeWidth={1.5} />
+              </div>
+              <div style={{ fontSize: 20, fontWeight: 900, color: "#f8fafc", letterSpacing: "-0.8px" }}>{form.name || "Untitled"}</div>
+              <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>{form.location}{form.dates ? ` · ${form.dates}` : ""}</div>
+            </div>
+            <div style={S.field}>
+              <div style={S.fieldLbl}>NAME</div>
+              <input style={S.input} value={form.name}
+                onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Plan name" />
+            </div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <div style={{ ...S.field, flex: 1 }}>
+                <div style={S.fieldLbl}>LOCATION</div>
+                <input style={S.input} value={form.location}
+                  onChange={e => setForm(f => ({ ...f, location: e.target.value }))} placeholder="Where" />
+              </div>
+              <div style={{ ...S.field, flex: 1 }}>
+                <div style={S.fieldLbl}>DATES</div>
+                <input style={S.input} value={form.dates}
+                  onChange={e => setForm(f => ({ ...f, dates: e.target.value }))} placeholder="When" />
+              </div>
+            </div>
+            <div style={S.field}>
+              <div style={S.fieldLbl}>ICON</div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {TRIP_ICON_LIST.map(({ key, Icon }) => (
+                  <button key={key} onClick={() => setForm(f => ({ ...f, emoji: key }))}
+                    style={{ background: form.emoji === key ? "#1e293b" : "transparent", border: form.emoji === key ? "1px solid #4ade80" : "1px solid #1e293b", borderRadius: 10, padding: 8, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Icon size={20} color={form.emoji === key ? "#4ade80" : "#475569"} strokeWidth={1.5} />
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button style={S.secondaryBtn} onClick={() => setStage("prompt")}>← Redo</button>
+              <button style={{ ...S.primaryBtn, background: loading ? "#1e293b" : "#22c55e", color: "#000" }}
+                onClick={handleSave} disabled={loading}>
+                {loading ? "Saving..." : "Create ✓"}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── MODALS ───────────────────────────────────────────────────────────────────
 
 function AddExpenseModal({ onClose, trip, onAdd, user, profile, existingExpense }) {
@@ -943,57 +887,35 @@ function AddExpenseModal({ onClose, trip, onAdd, user, profile, existingExpense 
   });
 
   useEffect(() => {
-    supabase
-      .from('members')
-      .select('name')
-      .eq('trip_id', trip.id)
-      .then(({ data }) => {
-        const memberNames = data ? data.map(m => m.name) : [];
-        const userDisplay = profile?.display_name || user?.email?.split('@')[0] || 'Me';
-        const names = [userDisplay, ...memberNames.filter(n => n !== userDisplay)];
-        setMembers(names);
-        if (!existingExpense) {
-          setExp(e => ({ ...e, paidBy: userDisplay, splitWith: names }));
-        }
-      });
+    supabase.from('members').select('name').eq('trip_id', trip.id).then(({ data }) => {
+      const memberNames = data ? data.map(m => m.name) : [];
+      const userDisplay = profile?.display_name || user?.email?.split('@')[0] || 'Me';
+      const names = [userDisplay, ...memberNames.filter(n => n !== userDisplay)];
+      setMembers(names);
+      if (!existingExpense) setExp(e => ({ ...e, paidBy: userDisplay, splitWith: names }));
+    });
   }, [trip.id]);
 
   const perPerson = exp.amount && exp.splitWith.length
     ? (parseFloat(exp.amount) / exp.splitWith.length).toFixed(2) : null;
 
-  const toggleMember = (m) => {
-    setExp(e => ({
-      ...e,
-      splitWith: e.splitWith.includes(m) ? e.splitWith.filter(x => x !== m) : [...e.splitWith, m]
-    }));
-  };
+  const toggleMember = (m) => setExp(e => ({
+    ...e, splitWith: e.splitWith.includes(m) ? e.splitWith.filter(x => x !== m) : [...e.splitWith, m]
+  }));
 
   const handleSubmit = async () => {
     if (existingExpense) {
-      const { error } = await supabase
-        .from('expenses')
-        .update({
-          title: exp.title,
-          category: exp.category,
-          amount: parseFloat(exp.amount),
-          paid_by: exp.paidBy,
-          split_with: exp.splitWith,
-        })
-        .eq('id', existingExpense.id);
+      const { error } = await supabase.from('expenses').update({
+        title: exp.title, category: exp.category, amount: parseFloat(exp.amount),
+        paid_by: exp.paidBy, split_with: exp.splitWith,
+      }).eq('id', existingExpense.id);
       if (error) { console.error(error); return; }
     } else {
-      const { error } = await supabase
-        .from('expenses')
-        .insert([{
-          trip_id: trip?.id,
-          title: exp.title,
-          category: exp.category,
-          amount: parseFloat(exp.amount),
-          paid_by: exp.paidBy,
-          split_with: exp.splitWith,
-          date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-          receipt: false
-        }]);
+      const { error } = await supabase.from('expenses').insert([{
+        trip_id: trip?.id, title: exp.title, category: exp.category,
+        amount: parseFloat(exp.amount), paid_by: exp.paidBy, split_with: exp.splitWith,
+        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), receipt: false
+      }]);
       if (error) { console.error(error); return; }
     }
     if (onAdd) onAdd();
@@ -1011,19 +933,10 @@ function AddExpenseModal({ onClose, trip, onAdd, user, profile, existingExpense 
           <button style={S.closeBtn} onClick={onClose}>✕</button>
         </div>
         <div style={S.stepRow}>
-          {[1,2,3].map(s => (
-            <div key={s} style={{ ...S.stepDot, ...(s <= step ? S.stepDotActive : {}) }} />
-          ))}
+          {[1,2,3].map(s => <div key={s} style={{ ...S.stepDot, ...(s <= step ? S.stepDotActive : {}) }} />)}
         </div>
-
         {step === 1 && (
           <div style={S.sheetBody}>
-            <div style={S.orDiv}>
-              <span style={S.orText}>
-                <span style={{ color: "#4ade80", cursor: "pointer", fontWeight: 700 }}>📷 Scan receipt</span>
-                {" "}to auto-fill
-              </span>
-            </div>
             <div style={S.field}>
               <div style={S.fieldLbl}>DESCRIPTION</div>
               <input style={S.input} placeholder="e.g. Dinner at Coco's"
@@ -1054,9 +967,7 @@ function AddExpenseModal({ onClose, trip, onAdd, user, profile, existingExpense 
               <div style={S.paidRow}>
                 {members.map(m => (
                   <button key={m} onClick={() => setExp(n => ({ ...n, paidBy: m }))}
-                    style={{ ...S.paidBtn, ...(exp.paidBy === m ? S.paidBtnActive : {}) }}>
-                    {m}
-                  </button>
+                    style={{ ...S.paidBtn, ...(exp.paidBy === m ? S.paidBtnActive : {}) }}>{m}</button>
                 ))}
               </div>
             </div>
@@ -1065,7 +976,6 @@ function AddExpenseModal({ onClose, trip, onAdd, user, profile, existingExpense 
             </button>
           </div>
         )}
-
         {step === 2 && (
           <div style={S.sheetBody}>
             <div style={S.splitInfo}>
@@ -1077,9 +987,7 @@ function AddExpenseModal({ onClose, trip, onAdd, user, profile, existingExpense 
               {members.map(m => (
                 <button key={m} onClick={() => toggleMember(m)}
                   style={{ ...S.splitMember, ...(exp.splitWith.includes(m) ? S.splitMemberOn : {}) }}>
-                  <div style={{ ...S.splitAvatar, ...(exp.splitWith.includes(m) ? { background: "#14532d", color: "#4ade80" } : {}) }}>
-                    {m[0]}
-                  </div>
+                  <div style={{ ...S.splitAvatar, ...(exp.splitWith.includes(m) ? { background: "#14532d", color: "#4ade80" } : {}) }}>{m[0]}</div>
                   <div style={S.splitName}>{m}</div>
                   {exp.splitWith.includes(m) && <div style={S.splitCheck}>✓</div>}
                 </button>
@@ -1091,7 +999,6 @@ function AddExpenseModal({ onClose, trip, onAdd, user, profile, existingExpense 
             </div>
           </div>
         )}
-
         {step === 3 && (
           <div style={S.sheetBody}>
             <div style={S.confirmCard}>
@@ -1121,19 +1028,8 @@ function AddItinModal({ onClose, trip, onAdd }) {
 
   const handleAdd = async () => {
     if (!form.title) return;
-    const { data, error } = await supabase
-      .from('itinerary')
-      .insert([{
-        trip_id: trip.id,
-        day: form.day,
-        time: form.time,
-        type: form.type,
-        title: form.title,
-        detail: form.detail,
-        icon: form.icon,
-        visibility: form.visibility,
-      }])
-      .select()
+    const { data, error } = await supabase.from('itinerary')
+      .insert([{ trip_id: trip.id, day: form.day, time: form.time, type: form.type, title: form.title, detail: form.detail, icon: form.icon, visibility: form.visibility }]).select();
     if (error) { console.error(error); return; }
     onAdd(data[0]);
     onClose();
@@ -1153,10 +1049,11 @@ function AddItinModal({ onClose, trip, onAdd }) {
             <div style={S.catRow}>
               {types.map(t => {
                 const m = ITINERARY_COLORS[t];
+                const TIcon = ITIN_TYPE_ICONS[t];
                 return (
                   <button key={t} onClick={() => setForm(f => ({ ...f, type: t }))}
-                    style={{ ...S.catBtn, textTransform: "capitalize", ...(form.type === t ? { background: m.bg, color: m.accent, borderColor: m.accent + "80" } : { borderColor: "#1e293b", background: "#13131e", color: "#64748b" }) }}>
-                    {t}
+                    style={{ ...S.catBtn, display: "flex", alignItems: "center", gap: 5, textTransform: "capitalize", ...(form.type === t ? { background: m.bg, color: m.accent, borderColor: m.accent + "80" } : { borderColor: "#1e293b", background: "#13131e", color: "#64748b" }) }}>
+                    <TIcon size={12} strokeWidth={2} />{t}
                   </button>
                 );
               })}
@@ -1184,10 +1081,7 @@ function AddItinModal({ onClose, trip, onAdd }) {
                 value={form.time} onChange={e => setForm(f => ({ ...f, time: e.target.value }))} />
             </div>
           </div>
-          <button
-            style={{ ...S.primaryBtn, background: meta.accent, color: "#000", marginTop: 8 }}
-            onClick={handleAdd}
-          >
+          <button style={{ ...S.primaryBtn, background: meta.accent, color: "#000", marginTop: 8 }} onClick={handleAdd}>
             Add to Itinerary
           </button>
         </div>
@@ -1198,12 +1092,9 @@ function AddItinModal({ onClose, trip, onAdd }) {
 
 function EditItinModal({ item, onClose, onSave }) {
   const [form, setForm] = useState({
-    type: item.type || "activity",
-    title: item.title || "",
-    detail: item.detail || "",
-    day: item.day || "",
-    time: item.time || "",
-    icon: item.icon || "🎯",
+    type: item.type || "activity", title: item.title || "",
+    detail: item.detail || "", day: item.day || "",
+    time: item.time || "", icon: item.icon || "🎯",
   });
   const types = ["flight", "stay", "activity", "restaurant", "transport"];
   const meta = ITINERARY_COLORS[form.type];
@@ -1212,12 +1103,7 @@ function EditItinModal({ item, onClose, onSave }) {
   const handleSave = async () => {
     if (!form.title) return;
     setLoading(true);
-    const { data, error } = await supabase
-      .from('itinerary')
-      .update(form)
-      .eq('id', item.id)
-      .select()
-      .single();
+    const { data, error } = await supabase.from('itinerary').update(form).eq('id', item.id).select().single();
     if (error) { console.error(error); setLoading(false); return; }
     onSave(data);
   };
@@ -1236,10 +1122,11 @@ function EditItinModal({ item, onClose, onSave }) {
             <div style={S.catRow}>
               {types.map(t => {
                 const m = ITINERARY_COLORS[t];
+                const TIcon = ITIN_TYPE_ICONS[t];
                 return (
                   <button key={t} onClick={() => setForm(f => ({ ...f, type: t }))}
-                    style={{ ...S.catBtn, textTransform: "capitalize", ...(form.type === t ? { background: m.bg, color: m.accent, borderColor: m.accent + "80" } : { borderColor: "#1e293b", background: "#13131e", color: "#64748b" }) }}>
-                    {t}
+                    style={{ ...S.catBtn, display: "flex", alignItems: "center", gap: 5, textTransform: "capitalize", ...(form.type === t ? { background: m.bg, color: m.accent, borderColor: m.accent + "80" } : { borderColor: "#1e293b", background: "#13131e", color: "#64748b" }) }}>
+                    <TIcon size={12} strokeWidth={2} />{t}
                   </button>
                 );
               })}
@@ -1247,13 +1134,11 @@ function EditItinModal({ item, onClose, onSave }) {
           </div>
           <div style={S.field}>
             <div style={S.fieldLbl}>TITLE</div>
-            <input style={S.input} value={form.title}
-              onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
+            <input style={S.input} value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
           </div>
           <div style={S.field}>
             <div style={S.fieldLbl}>DETAILS / CONFIRMATION #</div>
-            <input style={S.input} value={form.detail}
-              onChange={e => setForm(f => ({ ...f, detail: e.target.value }))} />
+            <input style={S.input} value={form.detail} onChange={e => setForm(f => ({ ...f, detail: e.target.value }))} />
           </div>
           <div style={{ display: "flex", gap: 10 }}>
             <div style={{ ...S.field, flex: 1 }}>
@@ -1267,11 +1152,8 @@ function EditItinModal({ item, onClose, onSave }) {
                 value={form.time} onChange={e => setForm(f => ({ ...f, time: e.target.value }))} />
             </div>
           </div>
-          <button
-            style={{ ...S.primaryBtn, background: loading ? "#1e293b" : meta.accent, color: "#000", marginTop: 8 }}
-            onClick={handleSave}
-            disabled={loading}
-          >
+          <button style={{ ...S.primaryBtn, background: loading ? "#1e293b" : meta.accent, color: "#000", marginTop: 8 }}
+            onClick={handleSave} disabled={loading}>
             {loading ? "Saving..." : "Save Changes"}
           </button>
         </div>
@@ -1285,7 +1167,6 @@ function SettleModal({ settlements, myName, onClose }) {
   const toggle = (i) => setMarked(m => m.includes(i) ? m.filter(x => x !== i) : [...m, i]);
   const mine = settlements.filter(s => s.from === myName);
   const others = settlements.filter(s => s.from !== myName);
-
   return (
     <div style={S.overlay}>
       <div style={S.sheet}>
@@ -1339,7 +1220,6 @@ function ShareModal({ trip, onClose }) {
     { icon: "📍", label: "Places & Recs", sub: "Restaurants, activities & stays only", color: "#4ade80" },
     { icon: "📋", label: "Trip Summary", sub: "Overview with spend & members", color: "#fb923c" },
   ];
-
   return (
     <div style={S.overlay}>
       <div style={S.sheet}>
@@ -1357,131 +1237,27 @@ function ShareModal({ trip, onClose }) {
                 <div style={{ ...S.shareOptTitle, color: opt.color }}>{opt.label}</div>
                 <div style={S.shareOptSub}>{opt.sub}</div>
               </div>
-              <button style={{ ...S.copyBtn, borderColor: opt.color + "50", color: opt.color }}>
-                Copy link
-              </button>
+              <button style={{ ...S.copyBtn, borderColor: opt.color + "50", color: opt.color }}>Copy link</button>
             </div>
           ))}
-          <div style={S.shareNote}>
-            🔒 Sensitive photos and private notes are always excluded from shared exports.
-          </div>
+          <div style={S.shareNote}>🔒 Sensitive photos and private notes are always excluded from shared exports.</div>
         </div>
       </div>
     </div>
   );
 }
 
-function NewTripModal({ onClose, onSave, userId }) {
-  const [form, setForm] = useState({
-    name: "", location: "", city: "", country: "", dates: "", emoji: "✈️",
-    bg: "linear-gradient(135deg, #0d2b1e 0%, #1a4a32 100%)",
-    tag: "#4ade80"
-  });
-  const [loading, setLoading] = useState(false);
-
-  const emojis = ["✈️","🏔️","🚴","🏖️","🗾","🎿","🚗","⛵","🏕️","🎭"];
-
-  const handleSave = async () => {
-    if (!form.name) return;
-    setLoading(true);
-    const { _startDate, _endDate, ...formData } = form;
-    const { data, error } = await supabase
-      .from('trips')
-      .insert([{ ...formData, total_spent: 0, settled: false, solo: false, user_id: userId }])
-      .select()
-    if (error) { console.error(error); setLoading(false); return; }
-    onSave(data[0]);
-  };
-
-  return (
-    <div style={S.overlay}>
-      <div style={S.sheet}>
-        <div style={S.sheetHandle} />
-        <div style={S.sheetHeader}>
-          <div style={S.sheetTitle}>New Trip</div>
-          <button style={S.closeBtn} onClick={onClose}>✕</button>
-        </div>
-        <div style={S.sheetBody}>
-          <div style={S.field}>
-            <div style={S.fieldLbl}>TRIP NAME</div>
-            <input style={S.input} placeholder="e.g. Tokyo 2025"
-              value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
-          </div>
-          <div style={S.field}>
-            <div style={S.fieldLbl}>LOCATION</div>
-            <input style={S.input} placeholder="e.g. Japan"
-              value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} />
-          </div>
-          <div style={{ display: "flex", gap: 10 }}>
-            <div style={{ ...S.field, flex: 1 }}>
-              <div style={S.fieldLbl}>CITY</div>
-              <input style={S.input} placeholder="e.g. Tokyo"
-                value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} />
-            </div>
-            <div style={{ ...S.field, flex: 1 }}>
-              <div style={S.fieldLbl}>COUNTRY</div>
-              <input style={S.input} placeholder="e.g. Japan"
-                value={form.country} onChange={e => setForm(f => ({ ...f, country: e.target.value }))} />
-            </div>
-          </div>
-          <div style={S.field}>
-            <div style={S.fieldLbl}>DATES</div>
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <input style={{ ...S.input, colorScheme: "dark", flex: 1 }} type="date"
-                onChange={e => setForm(f => {
-                  const start = e.target.value;
-                  const end = f._endDate || "";
-                  const fmt = d => new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                  return { ...f, _startDate: start, dates: start && end ? `${fmt(start)} – ${fmt(end)}` : f.dates };
-                })} />
-              <span style={{ color: "#475569", fontSize: 13 }}>→</span>
-              <input style={{ ...S.input, colorScheme: "dark", flex: 1 }} type="date"
-                onChange={e => setForm(f => {
-                  const end = e.target.value;
-                  const start = f._startDate || "";
-                  const fmt = d => new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                  return { ...f, _endDate: end, dates: start && end ? `${fmt(start)} – ${fmt(end)}` : f.dates };
-                })} />
-            </div>
-          </div>
-          <div style={S.field}>
-            <div style={S.fieldLbl}>EMOJI</div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {emojis.map(e => (
-                <button key={e} onClick={() => setForm(f => ({ ...f, emoji: e }))}
-                  style={{ fontSize: 24, background: form.emoji === e ? "#1e293b" : "transparent",
-                    border: form.emoji === e ? "1px solid #4ade80" : "1px solid transparent",
-                    borderRadius: 10, padding: 6, cursor: "pointer" }}>
-                  {e}
-                </button>
-              ))}
-            </div>
-          </div>
-          <button
-            style={{ ...S.primaryBtn, background: loading ? "#1e293b" : "#22c55e", color: "#000", marginTop: 8 }}
-            onClick={handleSave}
-            disabled={loading}
-          >
-            {loading ? "Saving..." : "Create Trip"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── LOG IN SCREEN  ────────────────────────────────────────────────────────────
+// ─── AUTH SCREEN ──────────────────────────────────────────────────────────────
 
 function AuthScreen({ onAuth }) {
-  const [mode, setMode] = useState("login"); // login | signup
+  const [mode, setMode] = useState("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const handle = async () => {
-    setLoading(true);
-    setError("");
+    setLoading(true); setError("");
     const { data, error } = mode === "login"
       ? await supabase.auth.signInWithPassword({ email, password })
       : await supabase.auth.signUp({ email, password });
@@ -1500,20 +1276,15 @@ function AuthScreen({ onAuth }) {
         <div style={{ padding: "0 28px" }}>
           <div style={S.field}>
             <div style={S.fieldLbl}>EMAIL</div>
-            <input style={S.input} type="email" placeholder="you@email.com"
-              value={email} onChange={e => setEmail(e.target.value)} />
+            <input style={S.input} type="email" placeholder="you@email.com" value={email} onChange={e => setEmail(e.target.value)} />
           </div>
           <div style={S.field}>
             <div style={S.fieldLbl}>PASSWORD</div>
-            <input style={S.input} type="password" placeholder="••••••••"
-              value={password} onChange={e => setPassword(e.target.value)} />
+            <input style={S.input} type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} />
           </div>
           {error && <div style={{ color: "#f87171", fontSize: 12, marginBottom: 12 }}>{error}</div>}
-          <button
-            style={{ ...S.primaryBtn, background: loading ? "#1e293b" : "#22c55e", color: "#000", marginBottom: 12 }}
-            onClick={handle}
-            disabled={loading}
-          >
+          <button style={{ ...S.primaryBtn, background: loading ? "#1e293b" : "#22c55e", color: "#000", marginBottom: 12 }}
+            onClick={handle} disabled={loading}>
             {loading ? "..." : mode === "login" ? "Sign In" : "Create Account"}
           </button>
           <div style={{ display: "flex", alignItems: "center", margin: "16px 0" }}>
@@ -1521,19 +1292,12 @@ function AuthScreen({ onAuth }) {
             <span style={{ color: "#334155", fontSize: 12, padding: "0 12px" }}>or</span>
             <div style={{ flex: 1, height: 1, background: "#1e293b" }} />
           </div>
-          <button
-            style={{ ...S.primaryBtn, background: "#fff", color: "#000", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 16 }}
+          <button style={{ ...S.primaryBtn, background: "#fff", color: "#000", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 16 }}
             onClick={async () => {
-              const { error } = await supabase.auth.signInWithOAuth({
-                provider: 'google',
-                options: {
-                  redirectTo: window.location.origin
-                }
-              });
+              const { error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } });
               if (error) console.error(error);
-            }}
-          >
-            <img src="https://www.google.com/favicon.ico" style={{ width: 16, height: 16 }} />
+            }}>
+            <img src="https://www.google.com/favicon.ico" style={{ width: 16, height: 16 }} alt="Google" />
             Continue with Google
           </button>
           <div style={{ textAlign: "center", fontSize: 13, color: "#475569" }}>
@@ -1548,6 +1312,9 @@ function AuthScreen({ onAuth }) {
     </div>
   );
 }
+
+// ─── SETTINGS SCREEN ──────────────────────────────────────────────────────────
+
 function SettingsScreen({ user, profile, onBack, onProfileUpdate }) {
   const [displayName, setDisplayName] = useState(profile?.display_name || "");
   const [saving, setSaving] = useState(false);
@@ -1556,40 +1323,23 @@ function SettingsScreen({ user, profile, onBack, onProfileUpdate }) {
   const [restoring, setRestoring] = useState(null);
 
   useEffect(() => {
-    supabase
-      .from('trips')
-      .select('*')
-      .eq('user_id', user.id)
-      .not('deleted_at', 'is', null)
-      .order('deleted_at', { ascending: false })
+    supabase.from('trips').select('*').eq('user_id', user.id)
+      .not('deleted_at', 'is', null).order('deleted_at', { ascending: false })
       .then(({ data }) => setDeletedTrips(data || []));
   }, [user.id]);
 
   const handleSaveName = async () => {
     setSaving(true);
-    const { data, error } = await supabase
-      .from('profiles')
-      .update({ display_name: displayName })
-      .eq('id', user.id)
-      .select()
-      .single();
-    if (!error) {
-      onProfileUpdate(data);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
-    }
+    const { data, error } = await supabase.from('profiles').update({ display_name: displayName })
+      .eq('id', user.id).select().single();
+    if (!error) { onProfileUpdate(data); setSaved(true); setTimeout(() => setSaved(false), 2000); }
     setSaving(false);
   };
 
   const handleRestore = async (trip) => {
     setRestoring(trip.id);
-    const { error } = await supabase
-      .from('trips')
-      .update({ deleted_at: null })
-      .eq('id', trip.id);
-    if (!error) {
-      setDeletedTrips(prev => prev.filter(t => t.id !== trip.id));
-    }
+    const { error } = await supabase.from('trips').update({ deleted_at: null }).eq('id', trip.id);
+    if (!error) setDeletedTrips(prev => prev.filter(t => t.id !== trip.id));
     setRestoring(null);
   };
 
@@ -1605,106 +1355,68 @@ function SettingsScreen({ user, profile, onBack, onProfileUpdate }) {
         <button style={S.backBtn} onClick={onBack}>←</button>
         <div style={{ fontSize: 22, fontWeight: 900, color: "#f1f5f9", letterSpacing: "-0.8px" }}>Settings</div>
       </div>
-
       <div style={{ padding: "0 24px 40px" }}>
-
-        {/* Display Name */}
         <div style={S.settingsSection}>
           <div style={S.settingsSectionLabel}>PROFILE</div>
           <div style={S.settingsCard}>
             <div style={S.fieldLbl}>DISPLAY NAME</div>
-            <input
-              style={S.input}
-              value={displayName}
-              onChange={e => setDisplayName(e.target.value)}
-              placeholder="Your name"
-            />
-            <button
-              style={{ ...S.primaryBtn, background: saved ? "#14532d" : saving ? "#1e293b" : "#22c55e", color: saved ? "#4ade80" : "#000", marginTop: 12 }}
-              onClick={handleSaveName}
-              disabled={saving}
-            >
+            <input style={S.input} value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Your name" />
+            <button style={{ ...S.primaryBtn, background: saved ? "#14532d" : saving ? "#1e293b" : "#22c55e", color: saved ? "#4ade80" : "#000", marginTop: 12 }}
+              onClick={handleSaveName} disabled={saving}>
               {saved ? "✓ Saved" : saving ? "Saving..." : "Save Name"}
             </button>
           </div>
         </div>
-
-        {/* Recently Deleted */}
         <div style={S.settingsSection}>
           <div style={S.settingsSectionLabel}>RECENTLY DELETED</div>
-          {deletedTrips.length === 0 ? (
-            <div style={{ fontSize: 13, color: "#334155", padding: "16px 0" }}>No recently deleted trips.</div>
-          ) : (
-            deletedTrips.map(trip => (
+          {deletedTrips.length === 0
+            ? <div style={{ fontSize: 13, color: "#334155", padding: "16px 0" }}>No recently deleted trips.</div>
+            : deletedTrips.map(trip => (
               <div key={trip.id} style={S.settingsCard}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: "#e2e8f0" }}>{trip.emoji} {trip.name}</div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: "#e2e8f0" }}>{trip.name}</div>
                     <div style={{ fontSize: 12, color: "#475569", marginTop: 3 }}>{trip.location} · deleted {new Date(trip.deleted_at).toLocaleDateString()}</div>
                   </div>
                   <div style={{ display: "flex", gap: 8 }}>
-                    <button
-                      style={{ background: "#14532d", border: "none", color: "#4ade80", borderRadius: 10, padding: "6px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
-                      onClick={() => handleRestore(trip)}
-                      disabled={restoring === trip.id}
-                    >
+                    <button style={{ background: "#14532d", border: "none", color: "#4ade80", borderRadius: 10, padding: "6px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                      onClick={() => handleRestore(trip)} disabled={restoring === trip.id}>
                       {restoring === trip.id ? "..." : "Restore"}
                     </button>
-                    <button
-                      style={{ background: "#450a0a", border: "none", color: "#f87171", borderRadius: 10, padding: "6px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
-                      onClick={() => handlePermanentDelete(trip)}
-                    >
-                      Delete
-                    </button>
+                    <button style={{ background: "#450a0a", border: "none", color: "#f87171", borderRadius: 10, padding: "6px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                      onClick={() => handlePermanentDelete(trip)}>Delete</button>
                   </div>
                 </div>
               </div>
             ))
-          )}
+          }
         </div>
-
-        {/* Placeholder sections */}
         <div style={S.settingsSection}>
           <div style={S.settingsSectionLabel}>NOTIFICATIONS</div>
-          <div style={{ ...S.settingsCard, opacity: 0.4 }}>
-            <div style={{ fontSize: 13, color: "#475569" }}>Coming soon</div>
-          </div>
+          <div style={{ ...S.settingsCard, opacity: 0.4 }}><div style={{ fontSize: 13, color: "#475569" }}>Coming soon</div></div>
         </div>
-
         <div style={S.settingsSection}>
           <div style={S.settingsSectionLabel}>CONNECTED ACCOUNTS</div>
-          <div style={{ ...S.settingsCard, opacity: 0.4 }}>
-            <div style={{ fontSize: 13, color: "#475569" }}>Coming soon</div>
-          </div>
+          <div style={{ ...S.settingsCard, opacity: 0.4 }}><div style={{ fontSize: 13, color: "#475569" }}>Coming soon</div></div>
         </div>
-
       </div>
     </div>
   );
 }
 
+// ─── EDIT TRIP MODAL ──────────────────────────────────────────────────────────
+
 function EditTripModal({ trip, onClose, onSave }) {
   const [form, setForm] = useState({
-    name: trip.name || "",
-    location: trip.location || "",
-    dates: trip.dates || "",
-    emoji: trip.emoji || "✈️",
-    city: trip.city || "",
-    country: trip.country || "",
+    name: trip.name || "", location: trip.location || "", dates: trip.dates || "",
+    emoji: trip.emoji || "✈️", city: trip.city || "", country: trip.country || "",
   });
   const [loading, setLoading] = useState(false);
-  const emojis = ["✈️","🏔️","🚴","🏖️","🗾","🎿","🚗","⛵","🏕️","🎭"];
 
   const handleSave = async () => {
     if (!form.name) return;
     setLoading(true);
-    const { _startDate, _endDate, ...formData } = form;
-    const { data, error } = await supabase
-      .from('trips')
-      .update(formData)
-      .eq('id', trip.id)
-      .select()
-      .single();
+    const { data, error } = await supabase.from('trips').update(form).eq('id', trip.id).select().single();
     if (error) { console.error(error); setLoading(false); return; }
     onSave(data);
   };
@@ -1720,49 +1432,39 @@ function EditTripModal({ trip, onClose, onSave }) {
         <div style={S.sheetBody}>
           <div style={S.field}>
             <div style={S.fieldLbl}>TRIP NAME</div>
-            <input style={S.input} placeholder="e.g. Tokyo 2025"
-              value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+            <input style={S.input} placeholder="e.g. Tokyo 2025" value={form.name}
+              onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
           </div>
           <div style={{ display: "flex", gap: 10 }}>
             <div style={{ ...S.field, flex: 1 }}>
               <div style={S.fieldLbl}>CITY</div>
-              <input style={S.input} placeholder="e.g. Tokyo"
-                value={form.city || ""} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} />
+              <input style={S.input} placeholder="e.g. Tokyo" value={form.city}
+                onChange={e => setForm(f => ({ ...f, city: e.target.value }))} />
             </div>
             <div style={{ ...S.field, flex: 1 }}>
               <div style={S.fieldLbl}>COUNTRY</div>
-              <input style={S.input} placeholder="e.g. Japan"
-                value={form.country || ""} onChange={e => setForm(f => ({ ...f, country: e.target.value }))} />
+              <input style={S.input} placeholder="e.g. Japan" value={form.country}
+                onChange={e => setForm(f => ({ ...f, country: e.target.value }))} />
             </div>
           </div>
           <div style={S.field}>
             <div style={S.fieldLbl}>DATES</div>
-            <input style={S.input} placeholder="e.g. Jun 1–10, 2025"
-              value={form.dates} onChange={e => setForm(f => ({ ...f, dates: e.target.value }))} />
+            <input style={S.input} placeholder="e.g. Jun 1–10, 2025" value={form.dates}
+              onChange={e => setForm(f => ({ ...f, dates: e.target.value }))} />
           </div>
           <div style={S.field}>
-            <div style={S.fieldLbl}>DATES</div>
-            <input style={S.input} placeholder="e.g. Jun 1–10, 2025"
-              value={form.dates} onChange={e => setForm(f => ({ ...f, dates: e.target.value }))} />
-          </div>
-          <div style={S.field}>
-            <div style={S.fieldLbl}>EMOJI</div>
+            <div style={S.fieldLbl}>ICON</div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {emojis.map(e => (
-                <button key={e} onClick={() => setForm(f => ({ ...f, emoji: e }))}
-                  style={{ fontSize: 24, background: form.emoji === e ? "#1e293b" : "transparent",
-                    border: form.emoji === e ? "1px solid #4ade80" : "1px solid transparent",
-                    borderRadius: 10, padding: 6, cursor: "pointer" }}>
-                  {e}
+              {TRIP_ICON_LIST.map(({ key, Icon }) => (
+                <button key={key} onClick={() => setForm(f => ({ ...f, emoji: key }))}
+                  style={{ background: form.emoji === key ? "#1e293b" : "transparent", border: form.emoji === key ? "1px solid #4ade80" : "1px solid #1e293b", borderRadius: 10, padding: 8, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Icon size={20} color={form.emoji === key ? "#4ade80" : "#475569"} strokeWidth={1.5} />
                 </button>
               ))}
             </div>
           </div>
-          <button
-            style={{ ...S.primaryBtn, background: loading ? "#1e293b" : "#22c55e", color: "#000", marginTop: 8 }}
-            onClick={handleSave}
-            disabled={loading}
-          >
+          <button style={{ ...S.primaryBtn, background: loading ? "#1e293b" : "#22c55e", color: "#000", marginTop: 8 }}
+            onClick={handleSave} disabled={loading}>
             {loading ? "Saving..." : "Save Changes"}
           </button>
         </div>
@@ -1774,116 +1476,39 @@ function EditTripModal({ trip, onClose, onSave }) {
 // ─── STYLES ───────────────────────────────────────────────────────────────────
 
 const S = {
-  root: {
-    minHeight: "100vh",
-    background: "#060609",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "flex-start",
-    padding: "32px 16px",
-    fontFamily: "'Syne', 'DM Sans', 'Helvetica Neue', sans-serif",
-  },
-  phone: {
-    width: 430,
-    maxWidth: "100%",
-    background: "#0c0c14",
-    borderRadius: 36,
-    overflow: "hidden",
-    boxShadow: "0 40px 100px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.05)",
-    minHeight: 750,
-    height: 750,
-    position: "relative",
-    display: "flex",
-    flexDirection: "column",
-  },
-  screen: {
-    flex: 1,
-    overflowY: "auto",
-  },
-
-  // Profile
-  profileHero: {
-    padding: "48px 24px 28px",
-    textAlign: "center",
-    background: "linear-gradient(180deg, #111122 0%, #0c0c14 100%)",
-    borderBottom: "1px solid #1a1a2a",
-  },
-  profileAvatar: {
-    width: 72,
-    height: 72,
-    borderRadius: "50%",
-    background: "linear-gradient(135deg, #4ade80, #22d3ee)",
-    color: "#000",
-    fontSize: 22,
-    fontWeight: 900,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    margin: "0 auto 14px",
-    letterSpacing: "-1px",
-  },
-  profileName: {
-    fontSize: 26,
-    fontWeight: 900,
-    color: "#f8fafc",
-    letterSpacing: "-1.2px",
-    marginBottom: 4,
-  },
-  profileSub: {
-    fontSize: 12,
-    color: "#475569",
-    letterSpacing: "1px",
-    marginBottom: 20,
-  },
-  profileStats: {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 0,
-    background: "#13131e",
-    borderRadius: 16,
-    padding: "14px 0",
-    border: "1px solid #1a1a2a",
-  },
+  root: { minHeight: "100vh", background: "#060609", display: "flex", justifyContent: "center", alignItems: "flex-start", padding: "32px 16px", fontFamily: "'Syne', 'DM Sans', 'Helvetica Neue', sans-serif" },
+  phone: { width: 430, maxWidth: "100%", background: "#0c0c14", borderRadius: 36, overflow: "hidden", boxShadow: "0 40px 100px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.05)", minHeight: 750, height: 750, position: "relative", display: "flex", flexDirection: "column" },
+  screen: { flex: 1, overflowY: "auto" },
+  profileHero: { padding: "48px 24px 28px", textAlign: "center", background: "linear-gradient(180deg, #111122 0%, #0c0c14 100%)", borderBottom: "1px solid #1a1a2a" },
+  profileAvatar: { width: 72, height: 72, borderRadius: "50%", background: "linear-gradient(135deg, #4ade80, #22d3ee)", color: "#000", fontSize: 22, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px", letterSpacing: "-1px" },
+  profileName: { fontSize: 26, fontWeight: 900, color: "#f8fafc", letterSpacing: "-1.2px", marginBottom: 4 },
+  profileSub: { fontSize: 12, color: "#475569", letterSpacing: "1px", marginBottom: 20 },
+  profileStats: { display: "flex", justifyContent: "center", alignItems: "center", background: "#13131e", borderRadius: 16, padding: "14px 0", border: "1px solid #1a1a2a" },
   statItem: { flex: 1, textAlign: "center" },
   statNum: { fontSize: 22, fontWeight: 900, color: "#f1f5f9", letterSpacing: "-1px" },
   statLbl: { fontSize: 10, color: "#475569", letterSpacing: "1px", marginTop: 2 },
   statDiv: { width: 1, height: 30, background: "#1e1e2e" },
-
   sectionRow: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, marginTop: 28 },
   sectionLabel: { fontSize: 10, fontWeight: 700, color: "#334155", letterSpacing: "2.5px" },
   newBtn: { background: "#22c55e", color: "#000", border: "none", borderRadius: 20, padding: "6px 14px", fontSize: 12, fontWeight: 800, cursor: "pointer" },
-
-  tripCard: {
-    borderRadius: 22,
-    padding: "20px",
-    marginBottom: 12,
-    cursor: "pointer",
-    border: "1px solid rgba(255,255,255,0.05)",
-    position: "relative",
-  },
+  ghostBtn: { background: "transparent", border: "1px solid #1e293b", color: "#475569", borderRadius: 20, padding: "6px 14px", fontSize: 11, fontWeight: 700, cursor: "pointer" },
+  tripCard: { borderRadius: 22, padding: "20px", marginBottom: 12, cursor: "pointer", border: "1px solid rgba(255,255,255,0.05)", position: "relative" },
+  tcIconWrap: { width: 44, height: 44, borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center" },
   tcTop: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 },
-  tcEmoji: { fontSize: 30 },
+  tcEditBtn: { position: "absolute", top: 12, right: 44, background: "#ffffff10", border: "none", color: "#94a3b8", borderRadius: 8, padding: "4px 8px", fontSize: 11, fontWeight: 700, cursor: "pointer", zIndex: 10 },
+  tcDeleteBtn: { position: "absolute", top: 12, right: 12, background: "#ffffff10", border: "none", color: "#94a3b8", borderRadius: 8, padding: "4px 8px", fontSize: 11, fontWeight: 700, cursor: "pointer", zIndex: 10 },
   soloBadge: { background: "#1e293b", color: "#64748b", fontSize: 9, fontWeight: 800, letterSpacing: "1.5px", padding: "3px 8px", borderRadius: 8 },
   settledBadge: { background: "#14532d", color: "#4ade80", fontSize: 9, fontWeight: 800, letterSpacing: "1.5px", padding: "3px 8px", borderRadius: 8 },
   tcName: { fontSize: 22, fontWeight: 900, color: "#f8fafc", letterSpacing: "-0.8px", marginBottom: 4 },
   tcLocation: { fontSize: 12, color: "#94a3b8", marginBottom: 16 },
   tcBottom: { display: "flex", justifyContent: "space-between", alignItems: "center" },
-  tcMembers: { display: "flex" },
-  mDot: { width: 26, height: 26, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 800, border: "2px solid" },
   tcTotal: { fontSize: 20, fontWeight: 900, letterSpacing: "-1px" },
-
-  // Trip Shell
+  tcViewBtn: { display: "flex", alignItems: "center", gap: 3, fontSize: 12, fontWeight: 700, border: "1px solid", borderRadius: 20, padding: "4px 10px" },
   tripShell: { flex: 1, display: "flex", flexDirection: "column", height: "100%", position: "relative" },
-  tripHeader: {
-    padding: "24px 20px 20px",
-    display: "flex",
-    alignItems: "center",
-    gap: 12,
-  },
+  tripHeader: { padding: "24px 20px 20px", display: "flex", alignItems: "center", gap: 12 },
   backBtn: { background: "#ffffff12", border: "none", color: "#fff", fontSize: 18, cursor: "pointer", borderRadius: 10, width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  thIconWrap: { width: 36, height: 36, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
   thMid: { flex: 1, display: "flex", alignItems: "center", gap: 10 },
-  thEmoji: { fontSize: 26 },
   thName: { fontSize: 17, fontWeight: 900, color: "#f8fafc", letterSpacing: "-0.5px" },
   thSub: { fontSize: 11, color: "#94a3b8", marginTop: 1 },
   shareHeaderBtn: { background: "transparent", border: "none", fontSize: 12, fontWeight: 800, cursor: "pointer", letterSpacing: "0.3px", flexShrink: 0 },
@@ -1892,43 +1517,24 @@ const S = {
   tabTopRow: { display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 20, paddingBottom: 16 },
   tabTitle: { fontSize: 20, fontWeight: 900, color: "#f1f5f9", letterSpacing: "-0.8px" },
   actionBtn: { background: "transparent", border: "1px solid #334155", color: "#94a3b8", borderRadius: 20, padding: "6px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer" },
-
-  // Tab bar
-  tabBar: {
-    display: "flex",
-    background: "#0f0f1a",
-    borderTop: "1px solid #1a1a28",
-    padding: "10px 0 12px",
-    flexShrink: 0,
-  },
+  tabBar: { display: "flex", background: "#0f0f1a", borderTop: "1px solid #1a1a28", padding: "10px 0 12px", flexShrink: 0 },
   tabBtn: { flex: 1, background: "transparent", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, padding: "4px 0", position: "relative" },
-  tabBtnActive: {},
-  tabIcon: { fontSize: 18 },
   tabLabel: { fontSize: 10, fontWeight: 700, color: "#475569", letterSpacing: "0.3px" },
   tabDot: { width: 4, height: 4, borderRadius: "50%", position: "absolute", bottom: -4 },
-
-  // Itinerary
   dayBlock: { marginBottom: 20 },
   dayLabel: { fontSize: 11, fontWeight: 800, color: "#334155", letterSpacing: "2px", marginBottom: 8 },
-  iRow: {
-    display: "flex",
-    gap: 10,
-    padding: "12px",
-    borderRadius: 14,
-    border: "1px solid",
-    marginBottom: 8,
-  },
+  iRow: { display: "flex", gap: 10, padding: "12px", borderRadius: 14, border: "1px solid", marginBottom: 8 },
   iTime: { fontSize: 11, color: "#64748b", width: 44, flexShrink: 0, paddingTop: 2, fontWeight: 600 },
   iLine: { display: "flex", flexDirection: "column", alignItems: "center", width: 12, flexShrink: 0 },
   iDot: { width: 8, height: 8, borderRadius: "50%", flexShrink: 0, marginTop: 3 },
   iConnector: { flex: 1, width: 1, background: "#1e293b", marginTop: 4 },
   iBody: { flex: 1 },
   iTitle: { fontSize: 14, fontWeight: 700, color: "#e2e8f0", marginBottom: 3, display: "flex", alignItems: "center", gap: 6 },
-  iEmoji: { fontSize: 14 },
   iDetail: { fontSize: 12, color: "#64748b", marginBottom: 4 },
   iType: { fontSize: 10, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase" },
-
-  // Expenses
+  iActionBtn: { border: "none", fontSize: 11, cursor: "pointer", padding: "3px 6px", borderRadius: 6 },
+  rowEditBtn: { background: "#1e293b", border: "none", color: "#94a3b8", borderRadius: 8, padding: "6px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer", marginLeft: 4, flexShrink: 0 },
+  rowDeleteBtn: { background: "#450a0a", border: "none", color: "#f87171", borderRadius: 8, padding: "6px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer", marginLeft: 4, flexShrink: 0 },
   expSummary: { display: "flex", background: "#13131e", borderRadius: 16, marginBottom: 12, border: "1px solid #1a1a2a" },
   expSumItem: { flex: 1, padding: "14px 0", textAlign: "center" },
   expSumDiv: { width: 1, background: "#1e1e2e", margin: "10px 0" },
@@ -1947,8 +1553,6 @@ const S = {
   expRight: { display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 },
   expAmt: { fontSize: 15, fontWeight: 900, color: "#f1f5f9", letterSpacing: "-0.5px" },
   receiptBadge: { fontSize: 12 },
-
-  // Uploads
   sensitiveNote: { background: "#1a1a10", border: "1px solid #2a2a1a", borderRadius: 12, padding: "10px 14px", fontSize: 12, color: "#a3a380", marginBottom: 14 },
   photoGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 },
   photoCard: { borderRadius: 16, height: 130, display: "flex", alignItems: "flex-end", position: "relative", overflow: "hidden", cursor: "pointer", transition: "opacity 0.2s" },
@@ -1964,8 +1568,6 @@ const S = {
   uploadIcon: { fontSize: 22, marginBottom: 6 },
   uploadText: { fontSize: 14, fontWeight: 700, color: "#475569", marginBottom: 3 },
   uploadSub: { fontSize: 12, color: "#2d3748" },
-
-  // Members
   memberRow: { display: "flex", alignItems: "center", gap: 12, padding: "14px 0", borderBottom: "1px solid #13131e" },
   memberAvatar: { width: 42, height: 42, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 900, flexShrink: 0 },
   memberInfo: { flex: 1 },
@@ -1973,13 +1575,9 @@ const S = {
   youTag: { background: "#1e3a5f", color: "#60a5fa", fontSize: 9, fontWeight: 800, borderRadius: 6, padding: "2px 6px", letterSpacing: "1px" },
   memberMeta: { fontSize: 12, color: "#475569", marginTop: 2 },
   memberRight: {},
-  owesBadge: { background: "#450a0a", color: "#f87171", fontSize: 11, fontWeight: 700, borderRadius: 8, padding: "4px 8px" },
-  owedBadge: { background: "#14532d", color: "#4ade80", fontSize: 11, fontWeight: 700, borderRadius: 8, padding: "4px 8px" },
   evenBadge: { background: "#1e293b", color: "#64748b", fontSize: 11, fontWeight: 700, borderRadius: 8, padding: "4px 8px" },
-
-  // Modals
   overlay: { position: "absolute", bottom: 0, left: 0, right: 0, display: "flex", alignItems: "flex-end", zIndex: 100 },
-  sheet: { background: "#12121c", borderRadius: "24px 24px 0 0", width: "100%", maxHeight: "72%", overflowY: "auto", paddingBottom: 20, boxShadow: "0 -20px 60px rgba(0,0,0,0.8), 0 -1px 0 rgba(255,255,255,0.06)" },
+  sheet: { background: "#12121c", borderRadius: "24px 24px 0 0", width: "100%", maxHeight: "82%", overflowY: "auto", paddingBottom: 20, boxShadow: "0 -20px 60px rgba(0,0,0,0.8), 0 -1px 0 rgba(255,255,255,0.06)" },
   sheetHandle: { width: 36, height: 4, background: "#2d2d4a", borderRadius: 10, margin: "12px auto 0" },
   sheetHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 12px" },
   sheetTitle: { fontSize: 18, fontWeight: 900, color: "#f1f5f9", letterSpacing: "-0.5px" },
@@ -1988,13 +1586,6 @@ const S = {
   stepRow: { display: "flex", gap: 6, justifyContent: "center", marginBottom: 16 },
   stepDot: { width: 6, height: 6, borderRadius: "50%", background: "#1e293b" },
   stepDotActive: { background: "#4ade80" },
-
-  receiptScan: { display: "flex", alignItems: "center", gap: 12, background: "#1a2a1a", border: "1px solid #2d4a2d", borderRadius: 14, padding: "14px", marginBottom: 12, cursor: "pointer" },
-  scanTitle: { fontSize: 14, fontWeight: 700, color: "#e2e8f0" },
-  scanSub: { fontSize: 11, color: "#64748b" },
-  orDiv: { display: "flex", alignItems: "center", marginBottom: 14 },
-  orText: { fontSize: 11, color: "#334155", margin: "0 auto", letterSpacing: "0.5px" },
-
   field: { marginBottom: 16 },
   fieldLbl: { fontSize: 9, fontWeight: 800, color: "#334155", letterSpacing: "2.5px", marginBottom: 8 },
   input: { background: "#0f0f1a", border: "1px solid #1e293b", borderRadius: 12, padding: "12px 14px", color: "#f1f5f9", fontSize: 15, width: "100%", boxSizing: "border-box", outline: "none", fontFamily: "inherit" },
@@ -2005,7 +1596,6 @@ const S = {
   paidRow: { display: "flex", flexWrap: "wrap", gap: 8 },
   paidBtn: { background: "#13131e", border: "1px solid #1e293b", color: "#64748b", borderRadius: 20, padding: "7px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer" },
   paidBtnActive: { background: "#1e3a5f", border: "1px solid #3b82f6", color: "#60a5fa" },
-
   splitInfo: { textAlign: "center", padding: "16px 0 20px", borderBottom: "1px solid #1a1a28", marginBottom: 16 },
   splitAmt: { fontSize: 40, fontWeight: 900, color: "#f1f5f9", letterSpacing: "-2px" },
   splitLbl: { fontSize: 12, color: "#475569", marginTop: 4 },
@@ -2016,16 +1606,12 @@ const S = {
   splitAvatar: { width: 36, height: 36, borderRadius: "50%", background: "#1e293b", color: "#64748b", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800 },
   splitName: { fontSize: 11, color: "#94a3b8", fontWeight: 600 },
   splitCheck: { position: "absolute", top: 6, right: 6, fontSize: 9, color: "#4ade80", fontWeight: 800 },
-
   confirmCard: { background: "#13131e", borderRadius: 16, padding: "16px", marginBottom: 20, border: "1px solid #1e1e2e" },
   confirmRow: { display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid #1a1a28" },
   confirmLbl: { fontSize: 12, color: "#475569" },
   confirmVal: { fontSize: 13, fontWeight: 700, color: "#e2e8f0" },
-
   primaryBtn: { background: "#1e293b", color: "#f1f5f9", border: "none", borderRadius: 14, padding: "14px", width: "100%", fontSize: 15, fontWeight: 800, cursor: "pointer", letterSpacing: "-0.3px" },
   secondaryBtn: { background: "#13131e", color: "#64748b", border: "1px solid #1e293b", borderRadius: 14, padding: "14px", flex: 1, fontSize: 14, fontWeight: 700, cursor: "pointer" },
-
-  // Settle modal
   settleSection: { marginBottom: 20 },
   settleRow: { background: "#13131e", borderRadius: 14, padding: "14px", marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center", transition: "opacity 0.2s", border: "1px solid #1a1a2a" },
   settlePeople: { fontSize: 15, fontWeight: 700, marginBottom: 3 },
@@ -2033,8 +1619,6 @@ const S = {
   payBtn: { background: "#13131e", border: "1px solid #2d3748", color: "#94a3b8", borderRadius: 10, padding: "6px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer" },
   markBtn: { background: "#1e293b", border: "none", color: "#64748b", borderRadius: 10, padding: "6px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" },
   markBtnDone: { background: "#14532d", color: "#4ade80" },
-
-  // Share modal
   shareSubtitle: { fontSize: 13, color: "#64748b", marginBottom: 16 },
   shareOption: { display: "flex", alignItems: "center", gap: 12, background: "#13131e", border: "1px solid #1e1e2e", borderRadius: 16, padding: "14px", marginBottom: 10 },
   shareOptTitle: { fontSize: 14, fontWeight: 800, marginBottom: 2 },
@@ -2042,6 +1626,15 @@ const S = {
   copyBtn: { background: "transparent", border: "1px solid", borderRadius: 20, padding: "6px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer", flexShrink: 0 },
   shareNote: { background: "#131310", border: "1px solid #2a2a1a", borderRadius: 12, padding: "10px 14px", fontSize: 12, color: "#8a8a60", marginTop: 6 },
   settingsSection: { marginBottom: 28 },
-settingsSectionLabel: { fontSize: 10, fontWeight: 800, color: "#334155", letterSpacing: "2.5px", marginBottom: 12 },
-settingsCard: { background: "#13131e", border: "1px solid #1e1e2e", borderRadius: 16, padding: "16px" },
+  settingsSectionLabel: { fontSize: 10, fontWeight: 800, color: "#334155", letterSpacing: "2.5px", marginBottom: 12 },
+  settingsCard: { background: "#13131e", border: "1px solid #1e1e2e", borderRadius: 16, padding: "16px" },
+  promptWrap: { position: "relative", marginBottom: 12 },
+  promptInput: { background: "#0f0f1a", border: "1px solid #1e293b", borderRadius: 14, padding: "14px 48px 14px 14px", color: "#f1f5f9", fontSize: 15, width: "100%", boxSizing: "border-box", outline: "none", fontFamily: "inherit", resize: "none", lineHeight: 1.5 },
+  micBtn: { position: "absolute", right: 10, top: 10, background: "#1e293b", border: "none", borderRadius: 10, width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" },
+  micBtnActive: { background: "#2a0f0f", border: "1px solid #7f1d1d" },
+  listeningBadge: { display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#f87171", fontWeight: 700, marginBottom: 12 },
+  listeningDot: { width: 8, height: 8, borderRadius: "50%", background: "#f87171" },
+  examplesLabel: { fontSize: 9, fontWeight: 800, color: "#334155", letterSpacing: "2.5px", marginBottom: 8 },
+  exampleChip: { background: "#13131e", border: "1px solid #1e293b", borderRadius: 10, padding: "8px 12px", color: "#475569", fontSize: 12, textAlign: "left", cursor: "pointer", fontFamily: "inherit" },
+  previewCard: { borderRadius: 18, padding: "20px", marginBottom: 20, border: "1px solid rgba(255,255,255,0.05)" },
 };
