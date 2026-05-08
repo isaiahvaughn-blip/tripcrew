@@ -31,5 +31,8 @@ Return ONLY the JSON. No markdown, no explanation, no backticks.`,
   });
 
   const data = await response.json();
+  if (!response.ok) {
+    console.error('Anthropic error:', JSON.stringify(data));
+    return res.status(500).json({ error: data });
+  }
   res.status(200).json(data);
-}
