@@ -36,3 +36,4 @@ Return ONLY the JSON. No markdown, no explanation, no backticks.`,
     return res.status(500).json({ error: data });
   }
   res.status(200).json(data);
+}
