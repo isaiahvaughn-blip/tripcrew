@@ -12,7 +12,7 @@ export default async function handler(req, res) {
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-5',
       max_tokens: 1000,
       system: `You are a trip/plan parser. Extract details from natural language and return ONLY a valid JSON object with these exact fields:
 - name: string (short descriptive name, e.g. "Tokyo October" or "Dinner at Ox" or "Banff Weekend" or "Coffee with Derek")
