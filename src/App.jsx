@@ -749,7 +749,6 @@ function NewTripModal({ onClose, onSave, userId }) {
   if (!end || start === end) {
     return s.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
   }
-    const s = new Date(start + 'T12:00:00');
     const e = new Date(end + 'T12:00:00');
     const sameYear = s.getFullYear() === e.getFullYear();
     const sameMonth = sameYear && s.getMonth() === e.getMonth();
