@@ -32,7 +32,6 @@ const PHOTOS = [
   { id: 6, uploader: "Marcus", caption: "Columbia Icefield walk",    date: "Aug 5", color: "#151a25", emoji: "❄️", wide: false, sensitive: false },
 ];
 
-// Trip icon mapping — emoji key → Lucide component
 const TRIP_ICONS = {
   "✈️": Plane, "🏔️": Mountain, "🚴": Bike,   "🏖️": Umbrella,
   "🗾": Map,   "🎿": Snowflake, "🚗": Car,    "⛵": Anchor,
@@ -168,7 +167,7 @@ function ProfileScreen({ onOpen, user, onSignOut, onSettings, profile }) {
         </div>
         <div style={S.profileName}>{profile?.display_name || user.email}</div>
         <div style={S.profileSub}>
-          tripcrew member since {profile?.created_at ? new Date(profile.created_at).getFullYear() : "—"}
+          member since {profile?.created_at ? new Date(profile.created_at).getFullYear() : "—"}
         </div>
         <div style={S.profileStats}>
           <div style={S.statItem}>
@@ -198,12 +197,12 @@ function ProfileScreen({ onOpen, user, onSignOut, onSettings, profile }) {
           }} />
       )}
 
-      <div style={{ display: "flex", gap: 8, justifyContent: "center", marginTop: 12 }}>
+      <div style={{ display: "flex", gap: 8, justifyContent: "center", marginTop: 14 }}>
         <button style={S.ghostBtn} onClick={onSettings}>⚙️ Settings</button>
         <button style={S.ghostBtn} onClick={onSignOut}>Sign out</button>
       </div>
 
-      <div style={{ padding: "0 20px 40px" }}>
+      <div style={{ padding: "0 22px 40px" }}>
         <div style={S.sectionRow}>
           <div style={S.sectionLabel}>YOUR TRIPS</div>
           <button style={S.newBtn} onClick={() => setShowNewTrip(true)}>+ New</button>
@@ -232,7 +231,7 @@ function TripCard({ trip, idx, onOpen, onDelete, onEdit }) {
       <button style={S.tcDeleteBtn} onClick={(e) => { e.stopPropagation(); onDelete(trip); }}>✕</button>
       <div style={S.tcTop}>
         <div style={{ ...S.tcIconWrap, background: tag + "20", border: `1px solid ${tag}30` }}>
-          <IconComp size={22} color={tag} strokeWidth={1.5} />
+          <IconComp size={26} color={tag} strokeWidth={1.5} />
         </div>
         <div style={{ display: "flex", gap: 6 }}>
           {trip.solo && <span style={S.soloBadge}>SOLO</span>}
@@ -244,7 +243,7 @@ function TripCard({ trip, idx, onOpen, onDelete, onEdit }) {
       <div style={S.tcBottom}>
         <div style={{ ...S.tcTotal, color: tag }}>${(trip.total_spent || 0).toLocaleString()}</div>
         <div style={{ ...S.tcViewBtn, color: tag, borderColor: tag + "40" }}>
-          View <ChevronRight size={12} />
+          View <ChevronRight size={14} />
         </div>
       </div>
     </div>
@@ -271,7 +270,7 @@ function TripShell({ trip, activeTab, setActiveTab, onBack, onModal, itinRefresh
         <button style={S.backBtn} onClick={onBack}>←</button>
         <div style={S.thMid}>
           <div style={{ ...S.thIconWrap, background: (trip.tag || "#4ade80") + "20" }}>
-            <IconComp size={20} color={trip.tag || "#4ade80"} strokeWidth={1.5} />
+            <IconComp size={22} color={trip.tag || "#4ade80"} strokeWidth={1.5} />
           </div>
           <div>
             <div style={S.thName}>{trip.name}</div>
@@ -297,7 +296,7 @@ function TripShell({ trip, activeTab, setActiveTab, onBack, onModal, itinRefresh
       <div style={S.tabBar}>
         {tabs.map(({ id, label, Icon }) => (
           <button key={id} style={S.tabBtn} onClick={() => { setActiveTab(id); setModal(null); }}>
-            <Icon size={20} color={activeTab === id ? (trip.tag || "#4ade80") : "#475569"} strokeWidth={activeTab === id ? 2 : 1.5} />
+            <Icon size={24} color={activeTab === id ? (trip.tag || "#4ade80") : "#475569"} strokeWidth={activeTab === id ? 2 : 1.5} />
             <span style={{ ...S.tabLabel, ...(activeTab === id ? { color: trip.tag || "#4ade80" } : {}) }}>
               {label}
             </span>
@@ -365,7 +364,7 @@ function ItineraryTab({ trip, onModal, refreshKey }) {
                 </div>
                 <div style={S.iBody}>
                   <div style={S.iTitle}>
-                    <TypeIcon size={13} color={meta.accent} strokeWidth={2} />
+                    <TypeIcon size={14} color={meta.accent} strokeWidth={2} />
                     {item.title}
                   </div>
                   <div style={{ ...S.iDetail, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -373,8 +372,8 @@ function ItineraryTab({ trip, onModal, refreshKey }) {
                     {(item.type === "stay" || item.type === "restaurant") && (
                       <a href={`https://maps.google.com/?q=${encodeURIComponent(item.title + " " + item.detail)}`}
                         target="_blank" rel="noopener noreferrer"
-                        style={{ color: "#60a5fa", fontSize: 10, fontWeight: 700, textDecoration: "none", flexShrink: 0, marginLeft: 8, display: "flex", alignItems: "center", gap: 3 }}>
-                        <MapPin size={10} /> Maps
+                        style={{ color: "#60a5fa", fontSize: 11, fontWeight: 700, textDecoration: "none", flexShrink: 0, marginLeft: 8, display: "flex", alignItems: "center", gap: 3 }}>
+                        <MapPin size={11} /> Maps
                       </a>
                     )}
                   </div>
@@ -596,12 +595,12 @@ function MembersTab({ trip, profile }) {
         <button style={S.actionBtn} onClick={() => setShowInvite(true)}>+ Invite</button>
       </div>
       {showInvite && (
-        <div style={{ background: "#13131e", borderRadius: 14, padding: 16, marginBottom: 16, border: "1px solid #1e293b" }}>
+        <div style={{ background: "#13131e", borderRadius: 16, padding: 18, marginBottom: 16, border: "1px solid #1e293b" }}>
           <div style={S.fieldLbl}>INVITE BY EMAIL</div>
           <input style={S.input} placeholder="friend@email.com" value={newName}
             onChange={e => setNewName(e.target.value)} type="email" />
-          <div style={{ fontSize: 11, color: "#475569", marginTop: 6, marginBottom: 10 }}>
-            They'll see this trip when they sign in to tripcrew.
+          <div style={{ fontSize: 12, color: "#475569", marginTop: 8, marginBottom: 12 }}>
+            They'll see this trip when they sign in.
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <button style={S.secondaryBtn} onClick={() => setShowInvite(false)}>Cancel</button>
@@ -658,7 +657,8 @@ function MembersTab({ trip, profile }) {
   );
 }
 
-// ─── NEW TRIP MODAL — chat-first with voice ───────────────────────────────────
+// ─── NEW TRIP MODAL ───────────────────────────────────────────────────────────
+// Bug fixes: location merge, date range picker, voice permissions, keyboard aware
 
 function NewTripModal({ onClose, onSave, userId }) {
   const [stage, setStage] = useState("prompt");
@@ -676,17 +676,28 @@ function NewTripModal({ onClose, onSave, userId }) {
   ];
   const [exampleIdx] = useState(() => Math.floor(Math.random() * EXAMPLES.length));
 
-  const toggleVoice = () => {
-    if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
-      alert("Voice input isn't supported in this browser. Try Chrome on your phone.");
-      return;
-    }
+  // FIX: request mic permission explicitly before starting recognition
+  const toggleVoice = async () => {
     if (listening) {
       recognitionRef.current?.stop();
       setListening(false);
       return;
     }
+
+    // Request mic permission first
+    try {
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (err) {
+      alert("Microphone access denied. Please allow mic access in your browser settings.");
+      return;
+    }
+
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+      alert("Voice input isn't supported in this browser. Try Chrome.");
+      return;
+    }
+
     const recognition = new SR();
     recognition.continuous = false;
     recognition.interimResults = false;
@@ -696,7 +707,10 @@ function NewTripModal({ onClose, onSave, userId }) {
       setPrompt(prev => prev ? `${prev} ${transcript}` : transcript);
       setListening(false);
     };
-    recognition.onerror = () => setListening(false);
+    recognition.onerror = (e) => {
+      console.error('Speech recognition error:', e.error);
+      setListening(false);
+    };
     recognition.onend = () => setListening(false);
     recognitionRef.current = recognition;
     recognition.start();
@@ -704,10 +718,30 @@ function NewTripModal({ onClose, onSave, userId }) {
   };
 
   const [form, setForm] = useState({
-    name: "", location: "", city: "", country: "", dates: "",
+    name: "", location: "", city: "", country: "",
+    startDate: "", endDate: "",
     emoji: "✈️", bg: "linear-gradient(135deg, #0d2b1e 0%, #1a4a32 100%)", tag: "#4ade80"
   });
   const [loading, setLoading] = useState(false);
+
+  // Compute human-readable dates string from start/end
+  const formatDates = (start, end) => {
+    if (!start) return "";
+    if (!end || start === end) {
+      return new Date(start + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+    const s = new Date(start + 'T12:00:00');
+    const e = new Date(end + 'T12:00:00');
+    const sameYear = s.getFullYear() === e.getFullYear();
+    const sameMonth = sameYear && s.getMonth() === e.getMonth();
+    if (sameMonth) {
+      return `${s.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}–${e.getDate()}, ${e.getFullYear()}`;
+    }
+    if (sameYear) {
+      return `${s.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${e.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}, ${e.getFullYear()}`;
+    }
+    return `${s.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} – ${e.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+  };
 
   const parseWithClaude = async () => {
     if (!prompt.trim()) return;
@@ -715,15 +749,20 @@ function NewTripModal({ onClose, onSave, userId }) {
     setParseError("");
     try {
       const res = await fetch("/api/parse-trip", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ prompt }),
-});
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt }),
+      });
       const data = await res.json();
       const text = data.content?.[0]?.text || "";
       const clean = text.replace(/```json|```/g, "").trim();
       const parsed = JSON.parse(clean);
-      setForm(f => ({ ...f, ...parsed }));
+
+      // FIX: merge city + country into location
+      const combined = [parsed.city, parsed.country].filter(Boolean).join(', ');
+      const location = combined || parsed.location || "";
+
+      setForm(f => ({ ...f, ...parsed, location }));
       setStage("confirm");
     } catch (e) {
       console.error(e);
@@ -737,9 +776,10 @@ function NewTripModal({ onClose, onSave, userId }) {
   const handleSave = async () => {
     if (!form.name) return;
     setLoading(true);
-    const { type, ...formData } = form;
+    const { type, startDate, endDate, ...formData } = form;
+    const dates = formatDates(startDate, endDate);
     const { data, error } = await supabase.from('trips')
-      .insert([{ ...formData, total_spent: 0, settled: false, solo: false, user_id: userId }]).select();
+      .insert([{ ...formData, dates, total_spent: 0, settled: false, solo: false, user_id: userId }]).select();
     if (error) { console.error(error); setLoading(false); return; }
     onSave(data[0]);
   };
@@ -747,6 +787,7 @@ function NewTripModal({ onClose, onSave, userId }) {
   const IconComp = TRIP_ICONS[form.emoji] || Plane;
 
   return (
+    // FIX: overlay uses fixed positioning to stay above keyboard
     <div style={S.overlay}>
       <div style={S.sheet}>
         <div style={S.sheetHandle} />
@@ -766,10 +807,9 @@ function NewTripModal({ onClose, onSave, userId }) {
                 value={prompt}
                 onChange={e => setPrompt(e.target.value)}
                 rows={3}
-                autoFocus
               />
               <button style={{ ...S.micBtn, ...(listening ? S.micBtnActive : {}) }} onClick={toggleVoice}>
-                {listening ? <MicOff size={18} color="#f87171" /> : <Mic size={18} color="#475569" />}
+                {listening ? <MicOff size={20} color="#f87171" /> : <Mic size={20} color="#475569" />}
               </button>
             </div>
             {listening && (
@@ -779,7 +819,7 @@ function NewTripModal({ onClose, onSave, userId }) {
               </div>
             )}
             <div style={S.examplesLabel}>TRY SAYING</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 20 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
               {EXAMPLES.map((ex, i) => (
                 <button key={i} style={S.exampleChip} onClick={() => setPrompt(ex)}>{ex}</button>
               ))}
@@ -790,8 +830,8 @@ function NewTripModal({ onClose, onSave, userId }) {
               disabled={parsing || !prompt.trim()}
             >
               {parsing
-                ? <><Loader size={16} style={{ animation: "spin 1s linear infinite" }} /> Thinking...</>
-                : <><Sparkles size={16} /> Build it</>}
+                ? <><Loader size={18} style={{ animation: "spin 1s linear infinite" }} /> Thinking...</>
+                : <><Sparkles size={18} /> Build it</>}
             </button>
             <button style={{ ...S.secondaryBtn, marginTop: 10, width: "100%" }}
               onClick={() => setStage("confirm")}>
@@ -804,32 +844,42 @@ function NewTripModal({ onClose, onSave, userId }) {
         {stage === "confirm" && (
           <div style={S.sheetBody}>
             {parseError && (
-              <div style={{ background: "#2a0f0f", border: "1px solid #7f1d1d", borderRadius: 10, padding: "10px 12px", fontSize: 12, color: "#f87171", marginBottom: 14 }}>
+              <div style={{ background: "#2a0f0f", border: "1px solid #7f1d1d", borderRadius: 12, padding: "12px 14px", fontSize: 13, color: "#f87171", marginBottom: 16 }}>
                 {parseError}
               </div>
             )}
             <div style={{ ...S.previewCard, background: form.bg }}>
-              <div style={{ ...S.tcIconWrap, background: (form.tag || "#4ade80") + "20", border: `1px solid ${form.tag || "#4ade80"}30`, marginBottom: 10 }}>
-                <IconComp size={22} color={form.tag || "#4ade80"} strokeWidth={1.5} />
+              <div style={{ ...S.tcIconWrap, background: (form.tag || "#4ade80") + "20", border: `1px solid ${form.tag || "#4ade80"}30`, marginBottom: 12 }}>
+                <IconComp size={26} color={form.tag || "#4ade80"} strokeWidth={1.5} />
               </div>
-              <div style={{ fontSize: 20, fontWeight: 900, color: "#f8fafc", letterSpacing: "-0.8px" }}>{form.name || "Untitled"}</div>
-              <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>{form.location}{form.dates ? ` · ${form.dates}` : ""}</div>
+              <div style={{ fontSize: 22, fontWeight: 900, color: "#f8fafc", letterSpacing: "-0.8px" }}>{form.name || "Untitled"}</div>
+              <div style={{ fontSize: 13, color: "#94a3b8", marginTop: 4 }}>
+                {form.location}{formatDates(form.startDate, form.endDate) ? ` · ${formatDates(form.startDate, form.endDate)}` : ""}
+              </div>
             </div>
             <div style={S.field}>
               <div style={S.fieldLbl}>NAME</div>
               <input style={S.input} value={form.name}
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Plan name" />
             </div>
+            <div style={S.field}>
+              <div style={S.fieldLbl}>LOCATION</div>
+              <input style={S.input} value={form.location}
+                onChange={e => setForm(f => ({ ...f, location: e.target.value }))} placeholder="Where" />
+            </div>
+            {/* FIX: date range picker instead of single text field */}
             <div style={{ display: "flex", gap: 10 }}>
               <div style={{ ...S.field, flex: 1 }}>
-                <div style={S.fieldLbl}>LOCATION</div>
-                <input style={S.input} value={form.location}
-                  onChange={e => setForm(f => ({ ...f, location: e.target.value }))} placeholder="Where" />
+                <div style={S.fieldLbl}>START DATE</div>
+                <input style={{ ...S.input, colorScheme: "dark" }} type="date"
+                  value={form.startDate}
+                  onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} />
               </div>
               <div style={{ ...S.field, flex: 1 }}>
-                <div style={S.fieldLbl}>DATES</div>
-                <input style={S.input} value={form.dates}
-                  onChange={e => setForm(f => ({ ...f, dates: e.target.value }))} placeholder="When" />
+                <div style={S.fieldLbl}>END DATE</div>
+                <input style={{ ...S.input, colorScheme: "dark" }} type="date"
+                  value={form.endDate}
+                  onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))} />
               </div>
             </div>
             <div style={S.field}>
@@ -837,8 +887,8 @@ function NewTripModal({ onClose, onSave, userId }) {
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {TRIP_ICON_LIST.map(({ key, Icon }) => (
                   <button key={key} onClick={() => setForm(f => ({ ...f, emoji: key }))}
-                    style={{ background: form.emoji === key ? "#1e293b" : "transparent", border: form.emoji === key ? "1px solid #4ade80" : "1px solid #1e293b", borderRadius: 10, padding: 8, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <Icon size={20} color={form.emoji === key ? "#4ade80" : "#475569"} strokeWidth={1.5} />
+                    style={{ background: form.emoji === key ? "#1e293b" : "transparent", border: form.emoji === key ? "1px solid #4ade80" : "1px solid #1e293b", borderRadius: 12, padding: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Icon size={22} color={form.emoji === key ? "#4ade80" : "#475569"} strokeWidth={1.5} />
                   </button>
                 ))}
               </div>
@@ -930,7 +980,7 @@ function AddExpenseModal({ onClose, trip, onAdd, user, profile, existingExpense 
               <div style={S.fieldLbl}>AMOUNT</div>
               <div style={S.amountWrap}>
                 <span style={S.dollarSign}>$</span>
-                <input style={{ ...S.input, paddingLeft: 28, fontSize: 24, fontWeight: 800, letterSpacing: "-1px" }}
+                <input style={{ ...S.input, paddingLeft: 32, fontSize: 26, fontWeight: 800, letterSpacing: "-1px" }}
                   type="number" placeholder="0.00"
                   value={exp.amount} onChange={e => setExp(n => ({ ...n, amount: e.target.value }))} />
               </div>
@@ -1037,7 +1087,7 @@ function AddItinModal({ onClose, trip, onAdd }) {
                 return (
                   <button key={t} onClick={() => setForm(f => ({ ...f, type: t }))}
                     style={{ ...S.catBtn, display: "flex", alignItems: "center", gap: 5, textTransform: "capitalize", ...(form.type === t ? { background: m.bg, color: m.accent, borderColor: m.accent + "80" } : { borderColor: "#1e293b", background: "#13131e", color: "#64748b" }) }}>
-                    <TIcon size={12} strokeWidth={2} />{t}
+                    <TIcon size={13} strokeWidth={2} />{t}
                   </button>
                 );
               })}
@@ -1110,7 +1160,7 @@ function EditItinModal({ item, onClose, onSave }) {
                 return (
                   <button key={t} onClick={() => setForm(f => ({ ...f, type: t }))}
                     style={{ ...S.catBtn, display: "flex", alignItems: "center", gap: 5, textTransform: "capitalize", ...(form.type === t ? { background: m.bg, color: m.accent, borderColor: m.accent + "80" } : { borderColor: "#1e293b", background: "#13131e", color: "#64748b" }) }}>
-                    <TIcon size={12} strokeWidth={2} />{t}
+                    <TIcon size={13} strokeWidth={2} />{t}
                   </button>
                 );
               })}
@@ -1216,7 +1266,7 @@ function ShareModal({ trip, onClose }) {
           <div style={S.shareSubtitle}>Choose what to share from <strong style={{ color: "#f1f5f9" }}>{trip?.name}</strong></div>
           {options.map(opt => (
             <div key={opt.label} style={S.shareOption}>
-              <span style={{ fontSize: 22 }}>{opt.icon}</span>
+              <span style={{ fontSize: 24 }}>{opt.icon}</span>
               <div style={{ flex: 1 }}>
                 <div style={{ ...S.shareOptTitle, color: opt.color }}>{opt.label}</div>
                 <div style={S.shareOptSub}>{opt.sub}</div>
@@ -1253,9 +1303,9 @@ function AuthScreen({ onAuth }) {
     <div style={S.root}>
       <div style={S.phone}>
         <div style={{ padding: "60px 28px 0", textAlign: "center" }}>
-          <div style={{ fontSize: 40, marginBottom: 16 }}>🧭</div>
-          <div style={{ fontSize: 28, fontWeight: 900, color: "#f1f5f9", letterSpacing: "-1.2px", marginBottom: 6 }}>tripcrew</div>
-          <div style={{ fontSize: 13, color: "#475569", marginBottom: 40 }}>for trips, nights out, and everything in between</div>
+          <div style={{ fontSize: 44, marginBottom: 18 }}>🧭</div>
+          <div style={{ fontSize: 32, fontWeight: 900, color: "#f1f5f9", letterSpacing: "-1.5px", marginBottom: 8 }}>tripcrew</div>
+          <div style={{ fontSize: 14, color: "#475569", marginBottom: 44 }}>for trips, nights out, and everything in between</div>
         </div>
         <div style={{ padding: "0 28px" }}>
           <div style={S.field}>
@@ -1266,25 +1316,25 @@ function AuthScreen({ onAuth }) {
             <div style={S.fieldLbl}>PASSWORD</div>
             <input style={S.input} type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} />
           </div>
-          {error && <div style={{ color: "#f87171", fontSize: 12, marginBottom: 12 }}>{error}</div>}
-          <button style={{ ...S.primaryBtn, background: loading ? "#1e293b" : "#22c55e", color: "#000", marginBottom: 12 }}
+          {error && <div style={{ color: "#f87171", fontSize: 13, marginBottom: 14 }}>{error}</div>}
+          <button style={{ ...S.primaryBtn, background: loading ? "#1e293b" : "#22c55e", color: "#000", marginBottom: 14 }}
             onClick={handle} disabled={loading}>
             {loading ? "..." : mode === "login" ? "Sign In" : "Create Account"}
           </button>
-          <div style={{ display: "flex", alignItems: "center", margin: "16px 0" }}>
+          <div style={{ display: "flex", alignItems: "center", margin: "18px 0" }}>
             <div style={{ flex: 1, height: 1, background: "#1e293b" }} />
-            <span style={{ color: "#334155", fontSize: 12, padding: "0 12px" }}>or</span>
+            <span style={{ color: "#334155", fontSize: 13, padding: "0 14px" }}>or</span>
             <div style={{ flex: 1, height: 1, background: "#1e293b" }} />
           </div>
-          <button style={{ ...S.primaryBtn, background: "#fff", color: "#000", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 16 }}
+          <button style={{ ...S.primaryBtn, background: "#fff", color: "#000", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 18 }}
             onClick={async () => {
               const { error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } });
               if (error) console.error(error);
             }}>
-            <img src="https://www.google.com/favicon.ico" style={{ width: 16, height: 16 }} alt="Google" />
+            <img src="https://www.google.com/favicon.ico" style={{ width: 18, height: 18 }} alt="Google" />
             Continue with Google
           </button>
-          <div style={{ textAlign: "center", fontSize: 13, color: "#475569" }}>
+          <div style={{ textAlign: "center", fontSize: 14, color: "#475569" }}>
             {mode === "login" ? "No account? " : "Have an account? "}
             <span style={{ color: "#4ade80", cursor: "pointer", fontWeight: 700 }}
               onClick={() => setMode(mode === "login" ? "signup" : "login")}>
@@ -1335,9 +1385,9 @@ function SettingsScreen({ user, profile, onBack, onProfileUpdate }) {
 
   return (
     <div style={S.screen}>
-      <div style={{ padding: "48px 24px 0", display: "flex", alignItems: "center", gap: 12, marginBottom: 28 }}>
+      <div style={{ padding: "52px 24px 0", display: "flex", alignItems: "center", gap: 14, marginBottom: 32 }}>
         <button style={S.backBtn} onClick={onBack}>←</button>
-        <div style={{ fontSize: 22, fontWeight: 900, color: "#f1f5f9", letterSpacing: "-0.8px" }}>Settings</div>
+        <div style={{ fontSize: 24, fontWeight: 900, color: "#f1f5f9", letterSpacing: "-0.8px" }}>Settings</div>
       </div>
       <div style={{ padding: "0 24px 40px" }}>
         <div style={S.settingsSection}>
@@ -1345,7 +1395,7 @@ function SettingsScreen({ user, profile, onBack, onProfileUpdate }) {
           <div style={S.settingsCard}>
             <div style={S.fieldLbl}>DISPLAY NAME</div>
             <input style={S.input} value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Your name" />
-            <button style={{ ...S.primaryBtn, background: saved ? "#14532d" : saving ? "#1e293b" : "#22c55e", color: saved ? "#4ade80" : "#000", marginTop: 12 }}
+            <button style={{ ...S.primaryBtn, background: saved ? "#14532d" : saving ? "#1e293b" : "#22c55e", color: saved ? "#4ade80" : "#000", marginTop: 14 }}
               onClick={handleSaveName} disabled={saving}>
               {saved ? "✓ Saved" : saving ? "Saving..." : "Save Name"}
             </button>
@@ -1354,20 +1404,20 @@ function SettingsScreen({ user, profile, onBack, onProfileUpdate }) {
         <div style={S.settingsSection}>
           <div style={S.settingsSectionLabel}>RECENTLY DELETED</div>
           {deletedTrips.length === 0
-            ? <div style={{ fontSize: 13, color: "#334155", padding: "16px 0" }}>No recently deleted trips.</div>
+            ? <div style={{ fontSize: 14, color: "#334155", padding: "16px 0" }}>No recently deleted trips.</div>
             : deletedTrips.map(trip => (
               <div key={trip.id} style={S.settingsCard}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: "#e2e8f0" }}>{trip.name}</div>
-                    <div style={{ fontSize: 12, color: "#475569", marginTop: 3 }}>{trip.location} · deleted {new Date(trip.deleted_at).toLocaleDateString()}</div>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: "#e2e8f0" }}>{trip.name}</div>
+                    <div style={{ fontSize: 13, color: "#475569", marginTop: 3 }}>{trip.location} · deleted {new Date(trip.deleted_at).toLocaleDateString()}</div>
                   </div>
                   <div style={{ display: "flex", gap: 8 }}>
-                    <button style={{ background: "#14532d", border: "none", color: "#4ade80", borderRadius: 10, padding: "6px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                    <button style={{ background: "#14532d", border: "none", color: "#4ade80", borderRadius: 10, padding: "8px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
                       onClick={() => handleRestore(trip)} disabled={restoring === trip.id}>
                       {restoring === trip.id ? "..." : "Restore"}
                     </button>
-                    <button style={{ background: "#450a0a", border: "none", color: "#f87171", borderRadius: 10, padding: "6px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                    <button style={{ background: "#450a0a", border: "none", color: "#f87171", borderRadius: 10, padding: "8px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
                       onClick={() => handlePermanentDelete(trip)}>Delete</button>
                   </div>
                 </div>
@@ -1377,11 +1427,11 @@ function SettingsScreen({ user, profile, onBack, onProfileUpdate }) {
         </div>
         <div style={S.settingsSection}>
           <div style={S.settingsSectionLabel}>NOTIFICATIONS</div>
-          <div style={{ ...S.settingsCard, opacity: 0.4 }}><div style={{ fontSize: 13, color: "#475569" }}>Coming soon</div></div>
+          <div style={{ ...S.settingsCard, opacity: 0.4 }}><div style={{ fontSize: 14, color: "#475569" }}>Coming soon</div></div>
         </div>
         <div style={S.settingsSection}>
           <div style={S.settingsSectionLabel}>CONNECTED ACCOUNTS</div>
-          <div style={{ ...S.settingsCard, opacity: 0.4 }}><div style={{ fontSize: 13, color: "#475569" }}>Coming soon</div></div>
+          <div style={{ ...S.settingsCard, opacity: 0.4 }}><div style={{ fontSize: 14, color: "#475569" }}>Coming soon</div></div>
         </div>
       </div>
     </div>
@@ -1441,8 +1491,8 @@ function EditTripModal({ trip, onClose, onSave }) {
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {TRIP_ICON_LIST.map(({ key, Icon }) => (
                 <button key={key} onClick={() => setForm(f => ({ ...f, emoji: key }))}
-                  style={{ background: form.emoji === key ? "#1e293b" : "transparent", border: form.emoji === key ? "1px solid #4ade80" : "1px solid #1e293b", borderRadius: 10, padding: 8, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <Icon size={20} color={form.emoji === key ? "#4ade80" : "#475569"} strokeWidth={1.5} />
+                  style={{ background: form.emoji === key ? "#1e293b" : "transparent", border: form.emoji === key ? "1px solid #4ade80" : "1px solid #1e293b", borderRadius: 12, padding: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Icon size={22} color={form.emoji === key ? "#4ade80" : "#475569"} strokeWidth={1.5} />
                 </button>
               ))}
             </div>
@@ -1463,162 +1513,198 @@ const S = {
   root: { minHeight: "100vh", background: "#060609", display: "flex", justifyContent: "center", alignItems: "flex-start", padding: "32px 16px", fontFamily: "'Syne', 'DM Sans', 'Helvetica Neue', sans-serif" },
   phone: { width: 430, maxWidth: "100%", background: "#0c0c14", borderRadius: 36, overflow: "hidden", boxShadow: "0 40px 100px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.05)", minHeight: 750, height: 750, position: "relative", display: "flex", flexDirection: "column" },
   screen: { flex: 1, overflowY: "auto" },
-  profileHero: { padding: "48px 24px 28px", textAlign: "center", background: "linear-gradient(180deg, #111122 0%, #0c0c14 100%)", borderBottom: "1px solid #1a1a2a" },
-  profileAvatar: { width: 72, height: 72, borderRadius: "50%", background: "linear-gradient(135deg, #4ade80, #22d3ee)", color: "#000", fontSize: 22, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px", letterSpacing: "-1px" },
-  profileName: { fontSize: 26, fontWeight: 900, color: "#f8fafc", letterSpacing: "-1.2px", marginBottom: 4 },
-  profileSub: { fontSize: 12, color: "#475569", letterSpacing: "1px", marginBottom: 20 },
-  profileStats: { display: "flex", justifyContent: "center", alignItems: "center", background: "#13131e", borderRadius: 16, padding: "14px 0", border: "1px solid #1a1a2a" },
+
+  // Profile
+  profileHero: { padding: "52px 28px 32px", textAlign: "center", background: "linear-gradient(180deg, #111122 0%, #0c0c14 100%)", borderBottom: "1px solid #1a1a2a" },
+  profileAvatar: { width: 84, height: 84, borderRadius: "50%", background: "linear-gradient(135deg, #4ade80, #22d3ee)", color: "#000", fontSize: 26, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", letterSpacing: "-1px" },
+  profileName: { fontSize: 30, fontWeight: 900, color: "#f8fafc", letterSpacing: "-1.2px", marginBottom: 6 },
+  profileSub: { fontSize: 13, color: "#475569", letterSpacing: "1px", marginBottom: 24 },
+  profileStats: { display: "flex", justifyContent: "center", alignItems: "center", background: "#13131e", borderRadius: 18, padding: "18px 0", border: "1px solid #1a1a2a" },
   statItem: { flex: 1, textAlign: "center" },
-  statNum: { fontSize: 22, fontWeight: 900, color: "#f1f5f9", letterSpacing: "-1px" },
-  statLbl: { fontSize: 10, color: "#475569", letterSpacing: "1px", marginTop: 2 },
-  statDiv: { width: 1, height: 30, background: "#1e1e2e" },
-  sectionRow: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, marginTop: 28 },
-  sectionLabel: { fontSize: 10, fontWeight: 700, color: "#334155", letterSpacing: "2.5px" },
-  newBtn: { background: "#22c55e", color: "#000", border: "none", borderRadius: 20, padding: "6px 14px", fontSize: 12, fontWeight: 800, cursor: "pointer" },
-  ghostBtn: { background: "transparent", border: "1px solid #1e293b", color: "#475569", borderRadius: 20, padding: "6px 14px", fontSize: 11, fontWeight: 700, cursor: "pointer" },
-  tripCard: { borderRadius: 22, padding: "20px", marginBottom: 12, cursor: "pointer", border: "1px solid rgba(255,255,255,0.05)", position: "relative" },
-  tcIconWrap: { width: 44, height: 44, borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center" },
-  tcTop: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 },
-  tcEditBtn: { position: "absolute", top: 12, right: 44, background: "#ffffff10", border: "none", color: "#94a3b8", borderRadius: 8, padding: "4px 8px", fontSize: 11, fontWeight: 700, cursor: "pointer", zIndex: 10 },
-  tcDeleteBtn: { position: "absolute", top: 12, right: 12, background: "#ffffff10", border: "none", color: "#94a3b8", borderRadius: 8, padding: "4px 8px", fontSize: 11, fontWeight: 700, cursor: "pointer", zIndex: 10 },
-  soloBadge: { background: "#1e293b", color: "#64748b", fontSize: 9, fontWeight: 800, letterSpacing: "1.5px", padding: "3px 8px", borderRadius: 8 },
-  settledBadge: { background: "#14532d", color: "#4ade80", fontSize: 9, fontWeight: 800, letterSpacing: "1.5px", padding: "3px 8px", borderRadius: 8 },
-  tcName: { fontSize: 22, fontWeight: 900, color: "#f8fafc", letterSpacing: "-0.8px", marginBottom: 4 },
-  tcLocation: { fontSize: 12, color: "#94a3b8", marginBottom: 16 },
+  statNum: { fontSize: 26, fontWeight: 900, color: "#f1f5f9", letterSpacing: "-1px" },
+  statLbl: { fontSize: 11, color: "#475569", letterSpacing: "1px", marginTop: 3 },
+  statDiv: { width: 1, height: 34, background: "#1e1e2e" },
+
+  // Section
+  sectionRow: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, marginTop: 32 },
+  sectionLabel: { fontSize: 11, fontWeight: 700, color: "#334155", letterSpacing: "2.5px" },
+  newBtn: { background: "#22c55e", color: "#000", border: "none", borderRadius: 22, padding: "9px 18px", fontSize: 14, fontWeight: 800, cursor: "pointer" },
+  ghostBtn: { background: "transparent", border: "1px solid #1e293b", color: "#475569", borderRadius: 22, padding: "9px 18px", fontSize: 13, fontWeight: 700, cursor: "pointer" },
+
+  // Trip card
+  tripCard: { borderRadius: 24, padding: "22px", marginBottom: 14, cursor: "pointer", border: "1px solid rgba(255,255,255,0.05)", position: "relative" },
+  tcIconWrap: { width: 52, height: 52, borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center" },
+  tcTop: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
+  tcEditBtn: { position: "absolute", top: 14, right: 54, background: "#ffffff15", border: "none", color: "#94a3b8", borderRadius: 10, padding: "7px 13px", fontSize: 13, fontWeight: 700, cursor: "pointer", zIndex: 10 },
+  tcDeleteBtn: { position: "absolute", top: 14, right: 14, background: "#ffffff15", border: "none", color: "#94a3b8", borderRadius: 10, padding: "7px 13px", fontSize: 13, fontWeight: 700, cursor: "pointer", zIndex: 10 },
+  soloBadge: { background: "#1e293b", color: "#64748b", fontSize: 10, fontWeight: 800, letterSpacing: "1.5px", padding: "4px 10px", borderRadius: 8 },
+  settledBadge: { background: "#14532d", color: "#4ade80", fontSize: 10, fontWeight: 800, letterSpacing: "1.5px", padding: "4px 10px", borderRadius: 8 },
+  tcName: { fontSize: 26, fontWeight: 900, color: "#f8fafc", letterSpacing: "-0.8px", marginBottom: 6 },
+  tcLocation: { fontSize: 14, color: "#94a3b8", marginBottom: 18 },
   tcBottom: { display: "flex", justifyContent: "space-between", alignItems: "center" },
-  tcTotal: { fontSize: 20, fontWeight: 900, letterSpacing: "-1px" },
-  tcViewBtn: { display: "flex", alignItems: "center", gap: 3, fontSize: 12, fontWeight: 700, border: "1px solid", borderRadius: 20, padding: "4px 10px" },
+  tcTotal: { fontSize: 22, fontWeight: 900, letterSpacing: "-1px" },
+  tcViewBtn: { display: "flex", alignItems: "center", gap: 4, fontSize: 13, fontWeight: 700, border: "1px solid", borderRadius: 22, padding: "7px 14px" },
+
+  // Trip shell
   tripShell: { flex: 1, display: "flex", flexDirection: "column", height: "100%", position: "relative" },
-  tripHeader: { padding: "24px 20px 20px", display: "flex", alignItems: "center", gap: 12 },
-  backBtn: { background: "#ffffff12", border: "none", color: "#fff", fontSize: 18, cursor: "pointer", borderRadius: 10, width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
-  thIconWrap: { width: 36, height: 36, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
-  thMid: { flex: 1, display: "flex", alignItems: "center", gap: 10 },
-  thName: { fontSize: 17, fontWeight: 900, color: "#f8fafc", letterSpacing: "-0.5px" },
-  thSub: { fontSize: 11, color: "#94a3b8", marginTop: 1 },
-  shareHeaderBtn: { background: "transparent", border: "none", fontSize: 12, fontWeight: 800, cursor: "pointer", letterSpacing: "0.3px", flexShrink: 0 },
+  tripHeader: { padding: "28px 22px 22px", display: "flex", alignItems: "center", gap: 14 },
+  backBtn: { background: "#ffffff15", border: "none", color: "#fff", fontSize: 20, cursor: "pointer", borderRadius: 12, width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  thIconWrap: { width: 42, height: 42, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  thMid: { flex: 1, display: "flex", alignItems: "center", gap: 12 },
+  thName: { fontSize: 19, fontWeight: 900, color: "#f8fafc", letterSpacing: "-0.5px" },
+  thSub: { fontSize: 12, color: "#94a3b8", marginTop: 2 },
+  shareHeaderBtn: { background: "transparent", border: "none", fontSize: 13, fontWeight: 800, cursor: "pointer", letterSpacing: "0.3px", flexShrink: 0 },
+
+  // Tab
   tabContent: { flex: 1, overflow: "hidden", position: "relative", display: "flex", flexDirection: "column", minHeight: 0 },
-  tabScroll: { height: "100%", overflowY: "auto", padding: "0 18px" },
-  tabTopRow: { display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 20, paddingBottom: 16 },
-  tabTitle: { fontSize: 20, fontWeight: 900, color: "#f1f5f9", letterSpacing: "-0.8px" },
-  actionBtn: { background: "transparent", border: "1px solid #334155", color: "#94a3b8", borderRadius: 20, padding: "6px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer" },
-  tabBar: { display: "flex", background: "#0f0f1a", borderTop: "1px solid #1a1a28", padding: "10px 0 12px", flexShrink: 0 },
-  tabBtn: { flex: 1, background: "transparent", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, padding: "4px 0", position: "relative" },
-  tabLabel: { fontSize: 10, fontWeight: 700, color: "#475569", letterSpacing: "0.3px" },
+  tabScroll: { height: "100%", overflowY: "auto", padding: "0 20px" },
+  tabTopRow: { display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 24, paddingBottom: 18 },
+  tabTitle: { fontSize: 24, fontWeight: 900, color: "#f1f5f9", letterSpacing: "-0.8px" },
+  actionBtn: { background: "transparent", border: "1px solid #334155", color: "#94a3b8", borderRadius: 22, padding: "9px 18px", fontSize: 13, fontWeight: 700, cursor: "pointer" },
+  tabBar: { display: "flex", background: "#0f0f1a", borderTop: "1px solid #1a1a28", padding: "12px 0 16px", flexShrink: 0 },
+  tabBtn: { flex: 1, background: "transparent", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "4px 0", position: "relative" },
+  tabLabel: { fontSize: 11, fontWeight: 700, color: "#475569", letterSpacing: "0.3px" },
   tabDot: { width: 4, height: 4, borderRadius: "50%", position: "absolute", bottom: -4 },
-  dayBlock: { marginBottom: 20 },
-  dayLabel: { fontSize: 11, fontWeight: 800, color: "#334155", letterSpacing: "2px", marginBottom: 8 },
-  iRow: { display: "flex", gap: 10, padding: "12px", borderRadius: 14, border: "1px solid", marginBottom: 8 },
-  iTime: { fontSize: 11, color: "#64748b", width: 44, flexShrink: 0, paddingTop: 2, fontWeight: 600 },
+
+  // Itinerary
+  dayBlock: { marginBottom: 22 },
+  dayLabel: { fontSize: 12, fontWeight: 800, color: "#334155", letterSpacing: "2px", marginBottom: 10 },
+  iRow: { display: "flex", gap: 12, padding: "14px", borderRadius: 16, border: "1px solid", marginBottom: 10 },
+  iTime: { fontSize: 12, color: "#64748b", width: 48, flexShrink: 0, paddingTop: 2, fontWeight: 600 },
   iLine: { display: "flex", flexDirection: "column", alignItems: "center", width: 12, flexShrink: 0 },
-  iDot: { width: 8, height: 8, borderRadius: "50%", flexShrink: 0, marginTop: 3 },
+  iDot: { width: 9, height: 9, borderRadius: "50%", flexShrink: 0, marginTop: 3 },
   iConnector: { flex: 1, width: 1, background: "#1e293b", marginTop: 4 },
   iBody: { flex: 1 },
-  iTitle: { fontSize: 14, fontWeight: 700, color: "#e2e8f0", marginBottom: 3, display: "flex", alignItems: "center", gap: 6 },
-  iDetail: { fontSize: 12, color: "#64748b", marginBottom: 4 },
-  iType: { fontSize: 10, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase" },
-  iActionBtn: { border: "none", fontSize: 11, cursor: "pointer", padding: "3px 6px", borderRadius: 6 },
-  rowEditBtn: { background: "#1e293b", border: "none", color: "#94a3b8", borderRadius: 8, padding: "6px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer", marginLeft: 4, flexShrink: 0 },
-  rowDeleteBtn: { background: "#450a0a", border: "none", color: "#f87171", borderRadius: 8, padding: "6px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer", marginLeft: 4, flexShrink: 0 },
-  expSummary: { display: "flex", background: "#13131e", borderRadius: 16, marginBottom: 12, border: "1px solid #1a1a2a" },
-  expSumItem: { flex: 1, padding: "14px 0", textAlign: "center" },
-  expSumDiv: { width: 1, background: "#1e1e2e", margin: "10px 0" },
-  expSumVal: { fontSize: 18, fontWeight: 900, color: "#f1f5f9", letterSpacing: "-0.8px" },
-  expSumLbl: { fontSize: 10, color: "#475569", marginTop: 2, letterSpacing: "0.5px" },
-  settleCta: { display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", background: "#1a1a2e", border: "1px solid #2d2d4a", borderRadius: 14, padding: "12px 16px", color: "#a78bfa", fontSize: 13, fontWeight: 700, cursor: "pointer", marginBottom: 14, boxSizing: "border-box" },
-  settleArrow: { fontSize: 16 },
-  filterRow: { display: "flex", gap: 8, marginBottom: 14, overflowX: "auto", paddingBottom: 2 },
-  chip: { background: "#13131e", border: "1px solid #1e1e2e", color: "#475569", borderRadius: 20, padding: "6px 14px", fontSize: 12, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" },
+  iTitle: { fontSize: 15, fontWeight: 700, color: "#e2e8f0", marginBottom: 4, display: "flex", alignItems: "center", gap: 6 },
+  iDetail: { fontSize: 13, color: "#64748b", marginBottom: 4 },
+  iType: { fontSize: 11, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase" },
+  iActionBtn: { border: "none", fontSize: 12, cursor: "pointer", padding: "5px 9px", borderRadius: 8 },
+  rowEditBtn: { background: "#1e293b", border: "none", color: "#94a3b8", borderRadius: 10, padding: "8px 12px", fontSize: 13, fontWeight: 700, cursor: "pointer", marginLeft: 4, flexShrink: 0 },
+  rowDeleteBtn: { background: "#450a0a", border: "none", color: "#f87171", borderRadius: 10, padding: "8px 12px", fontSize: 13, fontWeight: 700, cursor: "pointer", marginLeft: 4, flexShrink: 0 },
+
+  // Expenses
+  expSummary: { display: "flex", background: "#13131e", borderRadius: 18, marginBottom: 14, border: "1px solid #1a1a2a" },
+  expSumItem: { flex: 1, padding: "18px 0", textAlign: "center" },
+  expSumDiv: { width: 1, background: "#1e1e2e", margin: "12px 0" },
+  expSumVal: { fontSize: 22, fontWeight: 900, color: "#f1f5f9", letterSpacing: "-0.8px" },
+  expSumLbl: { fontSize: 11, color: "#475569", marginTop: 3, letterSpacing: "0.5px" },
+  settleCta: { display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", background: "#1a1a2e", border: "1px solid #2d2d4a", borderRadius: 16, padding: "14px 18px", color: "#a78bfa", fontSize: 14, fontWeight: 700, cursor: "pointer", marginBottom: 16, boxSizing: "border-box" },
+  settleArrow: { fontSize: 18 },
+  filterRow: { display: "flex", gap: 8, marginBottom: 16, overflowX: "auto", paddingBottom: 2 },
+  chip: { background: "#13131e", border: "1px solid #1e1e2e", color: "#475569", borderRadius: 22, padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" },
   chipActive: {},
-  expRow: { display: "flex", alignItems: "center", gap: 12, padding: "13px 0", borderBottom: "1px solid #13131e" },
-  expIcon: { width: 36, height: 36, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, flexShrink: 0 },
+  expRow: { display: "flex", alignItems: "center", gap: 14, padding: "16px 0", borderBottom: "1px solid #13131e" },
+  expIcon: { width: 44, height: 44, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800, flexShrink: 0 },
   expBody: { flex: 1 },
-  expTitle: { fontSize: 14, fontWeight: 700, color: "#e2e8f0", marginBottom: 3 },
-  expMeta: { fontSize: 12, color: "#475569" },
+  expTitle: { fontSize: 16, fontWeight: 700, color: "#e2e8f0", marginBottom: 4 },
+  expMeta: { fontSize: 13, color: "#475569" },
   expRight: { display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 },
-  expAmt: { fontSize: 15, fontWeight: 900, color: "#f1f5f9", letterSpacing: "-0.5px" },
-  receiptBadge: { fontSize: 12 },
-  sensitiveNote: { background: "#1a1a10", border: "1px solid #2a2a1a", borderRadius: 12, padding: "10px 14px", fontSize: 12, color: "#a3a380", marginBottom: 14 },
-  photoGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 },
-  photoCard: { borderRadius: 16, height: 130, display: "flex", alignItems: "flex-end", position: "relative", overflow: "hidden", cursor: "pointer", transition: "opacity 0.2s" },
-  photoWide: { gridColumn: "span 2", height: 160 },
-  photoEmoji: { position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -65%)", fontSize: 36 },
-  sensitiveLock: { position: "absolute", top: 8, right: 8, fontSize: 14 },
-  photoOverlay: { background: "linear-gradient(transparent, rgba(0,0,0,0.8))", width: "100%", padding: "20px 10px 10px" },
-  photoCaption: { fontSize: 12, fontWeight: 700, color: "#f1f5f9" },
-  photoMeta: { fontSize: 10, color: "#94a3b8", marginTop: 1, marginBottom: 5 },
-  sensitiveBtn: { background: "#1e293b", border: "none", color: "#64748b", borderRadius: 10, padding: "3px 8px", fontSize: 10, fontWeight: 700, cursor: "pointer" },
+  expAmt: { fontSize: 17, fontWeight: 900, color: "#f1f5f9", letterSpacing: "-0.5px" },
+  receiptBadge: { fontSize: 13 },
+
+  // Uploads
+  sensitiveNote: { background: "#1a1a10", border: "1px solid #2a2a1a", borderRadius: 14, padding: "12px 16px", fontSize: 13, color: "#a3a380", marginBottom: 16 },
+  photoGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 },
+  photoCard: { borderRadius: 18, height: 140, display: "flex", alignItems: "flex-end", position: "relative", overflow: "hidden", cursor: "pointer", transition: "opacity 0.2s" },
+  photoWide: { gridColumn: "span 2", height: 170 },
+  photoEmoji: { position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -65%)", fontSize: 40 },
+  sensitiveLock: { position: "absolute", top: 10, right: 10, fontSize: 16 },
+  photoOverlay: { background: "linear-gradient(transparent, rgba(0,0,0,0.8))", width: "100%", padding: "22px 12px 12px" },
+  photoCaption: { fontSize: 13, fontWeight: 700, color: "#f1f5f9" },
+  photoMeta: { fontSize: 11, color: "#94a3b8", marginTop: 2, marginBottom: 6 },
+  sensitiveBtn: { background: "#1e293b", border: "none", color: "#64748b", borderRadius: 10, padding: "5px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer" },
   sensitiveBtnOn: { background: "#451a03", color: "#fb923c" },
-  uploadDrop: { border: "1.5px dashed #1e293b", borderRadius: 16, padding: "22px", textAlign: "center", cursor: "pointer" },
-  uploadIcon: { fontSize: 22, marginBottom: 6 },
-  uploadText: { fontSize: 14, fontWeight: 700, color: "#475569", marginBottom: 3 },
-  uploadSub: { fontSize: 12, color: "#2d3748" },
-  memberRow: { display: "flex", alignItems: "center", gap: 12, padding: "14px 0", borderBottom: "1px solid #13131e" },
-  memberAvatar: { width: 42, height: 42, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 900, flexShrink: 0 },
+  uploadDrop: { border: "1.5px dashed #1e293b", borderRadius: 18, padding: "28px", textAlign: "center", cursor: "pointer" },
+  uploadIcon: { fontSize: 28, marginBottom: 8 },
+  uploadText: { fontSize: 15, fontWeight: 700, color: "#475569", marginBottom: 4 },
+  uploadSub: { fontSize: 13, color: "#2d3748" },
+
+  // Members
+  memberRow: { display: "flex", alignItems: "center", gap: 14, padding: "16px 0", borderBottom: "1px solid #13131e" },
+  memberAvatar: { width: 48, height: 48, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, fontWeight: 900, flexShrink: 0 },
   memberInfo: { flex: 1 },
-  memberName: { fontSize: 14, fontWeight: 700, color: "#e2e8f0", display: "flex", alignItems: "center", gap: 6 },
-  youTag: { background: "#1e3a5f", color: "#60a5fa", fontSize: 9, fontWeight: 800, borderRadius: 6, padding: "2px 6px", letterSpacing: "1px" },
-  memberMeta: { fontSize: 12, color: "#475569", marginTop: 2 },
+  memberName: { fontSize: 16, fontWeight: 700, color: "#e2e8f0", display: "flex", alignItems: "center", gap: 6 },
+  youTag: { background: "#1e3a5f", color: "#60a5fa", fontSize: 10, fontWeight: 800, borderRadius: 6, padding: "2px 8px", letterSpacing: "1px" },
+  memberMeta: { fontSize: 13, color: "#475569", marginTop: 3 },
   memberRight: {},
-  evenBadge: { background: "#1e293b", color: "#64748b", fontSize: 11, fontWeight: 700, borderRadius: 8, padding: "4px 8px" },
+  evenBadge: { background: "#1e293b", color: "#64748b", fontSize: 12, fontWeight: 700, borderRadius: 8, padding: "5px 10px" },
+
+  // Modals
   overlay: { position: "absolute", bottom: 0, left: 0, right: 0, display: "flex", alignItems: "flex-end", zIndex: 100 },
-  sheet: { background: "#12121c", borderRadius: "24px 24px 0 0", width: "100%", maxHeight: "82%", overflowY: "auto", paddingBottom: 20, boxShadow: "0 -20px 60px rgba(0,0,0,0.8), 0 -1px 0 rgba(255,255,255,0.06)" },
-  sheetHandle: { width: 36, height: 4, background: "#2d2d4a", borderRadius: 10, margin: "12px auto 0" },
-  sheetHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px 12px" },
-  sheetTitle: { fontSize: 18, fontWeight: 900, color: "#f1f5f9", letterSpacing: "-0.5px" },
-  closeBtn: { background: "#1e293b", border: "none", color: "#94a3b8", width: 28, height: 28, borderRadius: "50%", cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center", justifyContent: "center" },
-  sheetBody: { padding: "4px 20px 20px" },
-  stepRow: { display: "flex", gap: 6, justifyContent: "center", marginBottom: 16 },
-  stepDot: { width: 6, height: 6, borderRadius: "50%", background: "#1e293b" },
+  sheet: { background: "#12121c", borderRadius: "24px 24px 0 0", width: "100%", maxHeight: "88%", overflowY: "auto", paddingBottom: 24, boxShadow: "0 -20px 60px rgba(0,0,0,0.8), 0 -1px 0 rgba(255,255,255,0.06)" },
+  sheetHandle: { width: 40, height: 5, background: "#2d2d4a", borderRadius: 10, margin: "14px auto 0" },
+  sheetHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "18px 22px 14px" },
+  sheetTitle: { fontSize: 20, fontWeight: 900, color: "#f1f5f9", letterSpacing: "-0.5px" },
+  closeBtn: { background: "#1e293b", border: "none", color: "#94a3b8", width: 34, height: 34, borderRadius: "50%", cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center" },
+  sheetBody: { padding: "4px 22px 22px" },
+  stepRow: { display: "flex", gap: 6, justifyContent: "center", marginBottom: 18 },
+  stepDot: { width: 7, height: 7, borderRadius: "50%", background: "#1e293b" },
   stepDotActive: { background: "#4ade80" },
-  field: { marginBottom: 16 },
-  fieldLbl: { fontSize: 9, fontWeight: 800, color: "#334155", letterSpacing: "2.5px", marginBottom: 8 },
-  input: { background: "#0f0f1a", border: "1px solid #1e293b", borderRadius: 12, padding: "12px 14px", color: "#f1f5f9", fontSize: 15, width: "100%", boxSizing: "border-box", outline: "none", fontFamily: "inherit" },
+
+  // Forms
+  field: { marginBottom: 18 },
+  fieldLbl: { fontSize: 10, fontWeight: 800, color: "#334155", letterSpacing: "2.5px", marginBottom: 10 },
+  input: { background: "#0f0f1a", border: "1px solid #1e293b", borderRadius: 14, padding: "14px 16px", color: "#f1f5f9", fontSize: 16, width: "100%", boxSizing: "border-box", outline: "none", fontFamily: "inherit" },
   amountWrap: { position: "relative" },
-  dollarSign: { position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#475569", fontSize: 15, fontWeight: 700 },
+  dollarSign: { position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", color: "#475569", fontSize: 16, fontWeight: 700 },
   catRow: { display: "flex", flexWrap: "wrap", gap: 8 },
-  catBtn: { background: "#13131e", border: "1px solid #1e293b", color: "#64748b", borderRadius: 20, padding: "7px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer" },
+  catBtn: { background: "#13131e", border: "1px solid #1e293b", color: "#64748b", borderRadius: 22, padding: "9px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer" },
   paidRow: { display: "flex", flexWrap: "wrap", gap: 8 },
-  paidBtn: { background: "#13131e", border: "1px solid #1e293b", color: "#64748b", borderRadius: 20, padding: "7px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer" },
+  paidBtn: { background: "#13131e", border: "1px solid #1e293b", color: "#64748b", borderRadius: 22, padding: "9px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer" },
   paidBtnActive: { background: "#1e3a5f", border: "1px solid #3b82f6", color: "#60a5fa" },
-  splitInfo: { textAlign: "center", padding: "16px 0 20px", borderBottom: "1px solid #1a1a28", marginBottom: 16 },
-  splitAmt: { fontSize: 40, fontWeight: 900, color: "#f1f5f9", letterSpacing: "-2px" },
-  splitLbl: { fontSize: 12, color: "#475569", marginTop: 4 },
-  perPerson: { fontSize: 14, color: "#4ade80", fontWeight: 700, marginTop: 6 },
-  splitGrid: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 20 },
-  splitMember: { background: "#13131e", border: "1px solid #1e293b", borderRadius: 14, padding: "12px 8px", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, position: "relative" },
+
+  // Split
+  splitInfo: { textAlign: "center", padding: "18px 0 22px", borderBottom: "1px solid #1a1a28", marginBottom: 18 },
+  splitAmt: { fontSize: 44, fontWeight: 900, color: "#f1f5f9", letterSpacing: "-2px" },
+  splitLbl: { fontSize: 13, color: "#475569", marginTop: 4 },
+  perPerson: { fontSize: 15, color: "#4ade80", fontWeight: 700, marginTop: 6 },
+  splitGrid: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 22 },
+  splitMember: { background: "#13131e", border: "1px solid #1e293b", borderRadius: 14, padding: "14px 8px", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, position: "relative" },
   splitMemberOn: { border: "1px solid #22c55e", background: "#0f1f0f" },
-  splitAvatar: { width: 36, height: 36, borderRadius: "50%", background: "#1e293b", color: "#64748b", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800 },
-  splitName: { fontSize: 11, color: "#94a3b8", fontWeight: 600 },
-  splitCheck: { position: "absolute", top: 6, right: 6, fontSize: 9, color: "#4ade80", fontWeight: 800 },
-  confirmCard: { background: "#13131e", borderRadius: 16, padding: "16px", marginBottom: 20, border: "1px solid #1e1e2e" },
-  confirmRow: { display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid #1a1a28" },
-  confirmLbl: { fontSize: 12, color: "#475569" },
-  confirmVal: { fontSize: 13, fontWeight: 700, color: "#e2e8f0" },
-  primaryBtn: { background: "#1e293b", color: "#f1f5f9", border: "none", borderRadius: 14, padding: "14px", width: "100%", fontSize: 15, fontWeight: 800, cursor: "pointer", letterSpacing: "-0.3px" },
-  secondaryBtn: { background: "#13131e", color: "#64748b", border: "1px solid #1e293b", borderRadius: 14, padding: "14px", flex: 1, fontSize: 14, fontWeight: 700, cursor: "pointer" },
-  settleSection: { marginBottom: 20 },
-  settleRow: { background: "#13131e", borderRadius: 14, padding: "14px", marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center", transition: "opacity 0.2s", border: "1px solid #1a1a2a" },
-  settlePeople: { fontSize: 15, fontWeight: 700, marginBottom: 3 },
-  settleAmt: { fontSize: 12, color: "#475569" },
-  payBtn: { background: "#13131e", border: "1px solid #2d3748", color: "#94a3b8", borderRadius: 10, padding: "6px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer" },
-  markBtn: { background: "#1e293b", border: "none", color: "#64748b", borderRadius: 10, padding: "6px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" },
+  splitAvatar: { width: 40, height: 40, borderRadius: "50%", background: "#1e293b", color: "#64748b", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 800 },
+  splitName: { fontSize: 12, color: "#94a3b8", fontWeight: 600 },
+  splitCheck: { position: "absolute", top: 6, right: 6, fontSize: 10, color: "#4ade80", fontWeight: 800 },
+
+  // Confirm
+  confirmCard: { background: "#13131e", borderRadius: 18, padding: "18px", marginBottom: 22, border: "1px solid #1e1e2e" },
+  confirmRow: { display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid #1a1a28" },
+  confirmLbl: { fontSize: 13, color: "#475569" },
+  confirmVal: { fontSize: 14, fontWeight: 700, color: "#e2e8f0" },
+
+  // Buttons
+  primaryBtn: { background: "#1e293b", color: "#f1f5f9", border: "none", borderRadius: 16, padding: "16px", width: "100%", fontSize: 16, fontWeight: 800, cursor: "pointer", letterSpacing: "-0.3px" },
+  secondaryBtn: { background: "#13131e", color: "#64748b", border: "1px solid #1e293b", borderRadius: 16, padding: "16px", flex: 1, fontSize: 15, fontWeight: 700, cursor: "pointer" },
+
+  // Settle
+  settleSection: { marginBottom: 22 },
+  settleRow: { background: "#13131e", borderRadius: 16, padding: "16px", marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "center", transition: "opacity 0.2s", border: "1px solid #1a1a2a" },
+  settlePeople: { fontSize: 16, fontWeight: 700, marginBottom: 4 },
+  settleAmt: { fontSize: 13, color: "#475569" },
+  payBtn: { background: "#13131e", border: "1px solid #2d3748", color: "#94a3b8", borderRadius: 10, padding: "8px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer" },
+  markBtn: { background: "#1e293b", border: "none", color: "#64748b", borderRadius: 10, padding: "8px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer" },
   markBtnDone: { background: "#14532d", color: "#4ade80" },
-  shareSubtitle: { fontSize: 13, color: "#64748b", marginBottom: 16 },
-  shareOption: { display: "flex", alignItems: "center", gap: 12, background: "#13131e", border: "1px solid #1e1e2e", borderRadius: 16, padding: "14px", marginBottom: 10 },
-  shareOptTitle: { fontSize: 14, fontWeight: 800, marginBottom: 2 },
-  shareOptSub: { fontSize: 12, color: "#475569" },
-  copyBtn: { background: "transparent", border: "1px solid", borderRadius: 20, padding: "6px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer", flexShrink: 0 },
-  shareNote: { background: "#131310", border: "1px solid #2a2a1a", borderRadius: 12, padding: "10px 14px", fontSize: 12, color: "#8a8a60", marginTop: 6 },
-  settingsSection: { marginBottom: 28 },
-  settingsSectionLabel: { fontSize: 10, fontWeight: 800, color: "#334155", letterSpacing: "2.5px", marginBottom: 12 },
-  settingsCard: { background: "#13131e", border: "1px solid #1e1e2e", borderRadius: 16, padding: "16px" },
-  promptWrap: { position: "relative", marginBottom: 12 },
-  promptInput: { background: "#0f0f1a", border: "1px solid #1e293b", borderRadius: 14, padding: "14px 48px 14px 14px", color: "#f1f5f9", fontSize: 15, width: "100%", boxSizing: "border-box", outline: "none", fontFamily: "inherit", resize: "none", lineHeight: 1.5 },
-  micBtn: { position: "absolute", right: 10, top: 10, background: "#1e293b", border: "none", borderRadius: 10, width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" },
+
+  // Share
+  shareSubtitle: { fontSize: 14, color: "#64748b", marginBottom: 18 },
+  shareOption: { display: "flex", alignItems: "center", gap: 14, background: "#13131e", border: "1px solid #1e1e2e", borderRadius: 18, padding: "16px", marginBottom: 12 },
+  shareOptTitle: { fontSize: 15, fontWeight: 800, marginBottom: 3 },
+  shareOptSub: { fontSize: 13, color: "#475569" },
+  copyBtn: { background: "transparent", border: "1px solid", borderRadius: 22, padding: "8px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer", flexShrink: 0 },
+  shareNote: { background: "#131310", border: "1px solid #2a2a1a", borderRadius: 14, padding: "12px 16px", fontSize: 13, color: "#8a8a60", marginTop: 8 },
+
+  // Settings
+  settingsSection: { marginBottom: 30 },
+  settingsSectionLabel: { fontSize: 11, fontWeight: 800, color: "#334155", letterSpacing: "2.5px", marginBottom: 14 },
+  settingsCard: { background: "#13131e", border: "1px solid #1e1e2e", borderRadius: 18, padding: "18px" },
+
+  // New trip prompt
+  promptWrap: { position: "relative", marginBottom: 14 },
+  promptInput: { background: "#0f0f1a", border: "1px solid #1e293b", borderRadius: 16, padding: "16px 52px 16px 16px", color: "#f1f5f9", fontSize: 16, width: "100%", boxSizing: "border-box", outline: "none", fontFamily: "inherit", resize: "none", lineHeight: 1.6 },
+  micBtn: { position: "absolute", right: 12, top: 12, background: "#1e293b", border: "none", borderRadius: 10, width: 38, height: 38, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" },
   micBtnActive: { background: "#2a0f0f", border: "1px solid #7f1d1d" },
-  listeningBadge: { display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#f87171", fontWeight: 700, marginBottom: 12 },
-  listeningDot: { width: 8, height: 8, borderRadius: "50%", background: "#f87171" },
-  examplesLabel: { fontSize: 9, fontWeight: 800, color: "#334155", letterSpacing: "2.5px", marginBottom: 8 },
-  exampleChip: { background: "#13131e", border: "1px solid #1e293b", borderRadius: 10, padding: "8px 12px", color: "#475569", fontSize: 12, textAlign: "left", cursor: "pointer", fontFamily: "inherit" },
-  previewCard: { borderRadius: 18, padding: "20px", marginBottom: 20, border: "1px solid rgba(255,255,255,0.05)" },
+  listeningBadge: { display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#f87171", fontWeight: 700, marginBottom: 14 },
+  listeningDot: { width: 9, height: 9, borderRadius: "50%", background: "#f87171" },
+  examplesLabel: { fontSize: 10, fontWeight: 800, color: "#334155", letterSpacing: "2.5px", marginBottom: 10 },
+  exampleChip: { background: "#13131e", border: "1px solid #1e293b", borderRadius: 12, padding: "11px 14px", color: "#475569", fontSize: 13, textAlign: "left", cursor: "pointer", fontFamily: "inherit" },
+  previewCard: { borderRadius: 20, padding: "22px", marginBottom: 22, border: "1px solid rgba(255,255,255,0.05)" },
 };
