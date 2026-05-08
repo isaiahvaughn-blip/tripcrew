@@ -3,7 +3,8 @@ import { useState, useEffect, useRef } from "react";
 import {
   Plane, Mountain, Bike, Umbrella, Map, Snowflake, Car, Anchor, Tent, Theater,
   UtensilsCrossed, Hotel, Zap, Train, Calendar, DollarSign, Image, Users,
-  MapPin, ChevronRight, Mic, MicOff, Sparkles, Loader
+  MapPin, ChevronRight, Mic, MicOff, Sparkles, Loader,
+  Coffee, Wine, Music, ShoppingBag, Dumbbell, PartyPopper, House, Sunset, Sailboat, Camera
 } from "lucide-react";
 
 // ─── DATA ────────────────────────────────────────────────────────────────────
@@ -33,16 +34,33 @@ const PHOTOS = [
 ];
 
 const TRIP_ICONS = {
-  "✈️": Plane, "🏔️": Mountain, "🚴": Bike,   "🏖️": Umbrella,
-  "🗾": Map,   "🎿": Snowflake, "🚗": Car,    "⛵": Anchor,
-  "🏕️": Tent, "🎭": Theater,
+  "✈️": Plane, "🏔️": Mountain, "🚴": Bike, "🏖️": Umbrella,
+  "🗾": Map, "🎿": Snowflake, "🚗": Car, "⛵": Anchor,
+  "🏕️": Tent, "🎭": Theater, "☕": Coffee, "🍷": Wine,
+  "🎵": Music, "🛍️": ShoppingBag, "💪": Dumbbell, "🎉": PartyPopper,
+  "🏠": House, "🌅": Sunset, "📸": Camera, "🍽️": UtensilsCrossed,
 };
 const TRIP_ICON_LIST = [
-  { key: "✈️", Icon: Plane },   { key: "🏔️", Icon: Mountain },
-  { key: "🚴", Icon: Bike },    { key: "🏖️", Icon: Umbrella },
-  { key: "🗾", Icon: Map },     { key: "🎿", Icon: Snowflake },
-  { key: "🚗", Icon: Car },     { key: "⛵", Icon: Anchor },
-  { key: "🏕️", Icon: Tent },   { key: "🎭", Icon: Theater },
+  { key: "✈️", Icon: Plane,          label: "Flight" },
+  { key: "🏔️", Icon: Mountain,       label: "Adventure" },
+  { key: "🚴", Icon: Bike,           label: "Cycling" },
+  { key: "🏖️", Icon: Umbrella,       label: "Beach" },
+  { key: "🗾", Icon: Map,            label: "Explore" },
+  { key: "🎿", Icon: Snowflake,      label: "Snow" },
+  { key: "🚗", Icon: Car,            label: "Road trip" },
+  { key: "⛵", Icon: Anchor,         label: "Sailing" },
+  { key: "🏕️", Icon: Tent,          label: "Camping" },
+  { key: "🎭", Icon: Theater,        label: "Culture" },
+  { key: "☕", Icon: Coffee,         label: "Coffee" },
+  { key: "🍷", Icon: Wine,           label: "Drinks" },
+  { key: "🎵", Icon: Music,          label: "Concert" },
+  { key: "🛍️", Icon: ShoppingBag,   label: "Shopping" },
+  { key: "💪", Icon: Dumbbell,       label: "Active" },
+  { key: "🎉", Icon: PartyPopper,    label: "Celebrate" },
+  { key: "🏠", Icon: House,          label: "Staycation" },
+  { key: "🌅", Icon: Sunset,         label: "Getaway" },
+  { key: "📸", Icon: Camera,         label: "Photo trip" },
+  { key: "🍽️", Icon: UtensilsCrossed, label: "Dinner" },
 ];
 const ITIN_TYPE_ICONS = {
   flight: Plane, stay: Hotel, activity: Zap,
@@ -176,7 +194,7 @@ function ProfileScreen({ onOpen, user, onSignOut, onSettings, profile }) {
           </div>
           <div style={S.statDiv} />
           <div style={S.statItem}>
-            <div style={S.statNum}>{new Set(trips.map(t => t.city).filter(Boolean)).size}</div>
+            <div style={S.statNum}>{new Set(trips.map(t => t.city || t.location?.split(',')[0]).filter(Boolean)).size}</div>
             <div style={S.statLbl}>cities</div>
           </div>
           <div style={S.statDiv} />
@@ -726,10 +744,11 @@ function NewTripModal({ onClose, onSave, userId }) {
 
   // Compute human-readable dates string from start/end
   const formatDates = (start, end) => {
-    if (!start) return "";
-    if (!end || start === end) {
-      return new Date(start + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    }
+  if (!start) return "";
+  const s = new Date(start + 'T12:00:00');
+  if (!end || start === end) {
+    return s.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  }
     const s = new Date(start + 'T12:00:00');
     const e = new Date(end + 'T12:00:00');
     const sameYear = s.getFullYear() === e.getFullYear();
@@ -876,22 +895,35 @@ function NewTripModal({ onClose, onSave, userId }) {
                   onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} />
               </div>
               <div style={{ ...S.field, flex: 1 }}>
-                <div style={S.fieldLbl}>END DATE</div>
-                <input style={{ ...S.input, colorScheme: "dark" }} type="date"
-                  value={form.endDate}
-                  onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))} />
-              </div>
+  <div style={{ ...S.fieldLbl, display: "flex", justifyContent: "space-between" }}>
+    <span>END DATE</span>
+    <span style={{ color: "#334155", fontWeight: 600 }}>optional</span>
+  </div>
+  <input style={{ ...S.input, colorScheme: "dark" }} type="date"
+    value={form.endDate}
+    min={form.startDate}
+    onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))} />
+</div>
             </div>
             <div style={S.field}>
               <div style={S.fieldLbl}>ICON</div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                {TRIP_ICON_LIST.map(({ key, Icon }) => (
-                  <button key={key} onClick={() => setForm(f => ({ ...f, emoji: key }))}
-                    style={{ background: form.emoji === key ? "#1e293b" : "transparent", border: form.emoji === key ? "1px solid #4ade80" : "1px solid #1e293b", borderRadius: 12, padding: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <Icon size={22} color={form.emoji === key ? "#4ade80" : "#475569"} strokeWidth={1.5} />
-                  </button>
-                ))}
-              </div>
+  {TRIP_ICON_LIST.map(({ key, Icon, label }) => (
+    <button key={key} onClick={() => setForm(f => ({ ...f, emoji: key }))}
+      style={{
+        background: form.emoji === key ? "#1e293b" : "transparent",
+        border: form.emoji === key ? "1px solid #4ade80" : "1px solid #1e293b",
+        borderRadius: 12, padding: "8px 12px", cursor: "pointer",
+        display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+        minWidth: 56
+      }}>
+      <Icon size={20} color={form.emoji === key ? "#4ade80" : "#475569"} strokeWidth={1.5} />
+      <span style={{ fontSize: 9, color: form.emoji === key ? "#4ade80" : "#475569", fontWeight: 700, letterSpacing: "0.5px" }}>
+        {label}
+      </span>
+    </button>
+  ))}
+</div>
             </div>
             <div style={{ display: "flex", gap: 10 }}>
               <button style={S.secondaryBtn} onClick={() => setStage("prompt")}>← Redo</button>
@@ -1489,13 +1521,22 @@ function EditTripModal({ trip, onClose, onSave }) {
           <div style={S.field}>
             <div style={S.fieldLbl}>ICON</div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {TRIP_ICON_LIST.map(({ key, Icon }) => (
-                <button key={key} onClick={() => setForm(f => ({ ...f, emoji: key }))}
-                  style={{ background: form.emoji === key ? "#1e293b" : "transparent", border: form.emoji === key ? "1px solid #4ade80" : "1px solid #1e293b", borderRadius: 12, padding: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <Icon size={22} color={form.emoji === key ? "#4ade80" : "#475569"} strokeWidth={1.5} />
-                </button>
-              ))}
-            </div>
+  {TRIP_ICON_LIST.map(({ key, Icon, label }) => (
+    <button key={key} onClick={() => setForm(f => ({ ...f, emoji: key }))}
+      style={{
+        background: form.emoji === key ? "#1e293b" : "transparent",
+        border: form.emoji === key ? "1px solid #4ade80" : "1px solid #1e293b",
+        borderRadius: 12, padding: "8px 12px", cursor: "pointer",
+        display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+        minWidth: 56
+      }}>
+      <Icon size={20} color={form.emoji === key ? "#4ade80" : "#475569"} strokeWidth={1.5} />
+      <span style={{ fontSize: 9, color: form.emoji === key ? "#4ade80" : "#475569", fontWeight: 700, letterSpacing: "0.5px" }}>
+        {label}
+      </span>
+    </button>
+  ))}
+</div>
           </div>
           <button style={{ ...S.primaryBtn, background: loading ? "#1e293b" : "#22c55e", color: "#000", marginTop: 8 }}
             onClick={handleSave} disabled={loading}>
