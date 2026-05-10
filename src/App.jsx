@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import {
   Plane, Mountain, Bike, Umbrella, Map, Snowflake, Car, Anchor, Tent, Theater,
   UtensilsCrossed, Hotel, Zap, Train, Calendar, DollarSign, Image, Users,
-  MapPin, ChevronRight, Mic, MicOff, Sparkles, Loader,
+  MapPin, ChevronRight, Mic, MicOff, Sparkles, Loader, BarChart2,
   Coffee, Wine, Music, ShoppingBag, Dumbbell, PartyPopper, House, Sunset, Sailboat, Camera
 } from "lucide-react";
 
@@ -632,6 +632,7 @@ const SE = {
 function TripCard({ trip, idx, onOpen, onDelete, onEdit }) {
   const bg = CARD_GRADIENTS[idx % CARD_GRADIENTS.length];
   const IconComp = TRIP_ICONS[trip.emoji] || Plane;
+  const showTime = trip.time && !trip.dates?.includes('–');
 
   return (
     <div style={{ ...S.tripCard, background: bg }} onClick={() => onOpen(trip)}>
@@ -642,14 +643,17 @@ function TripCard({ trip, idx, onOpen, onDelete, onEdit }) {
           <IconComp size={26} color={P.terracotta} strokeWidth={1.5} />
         </div>
         <div style={{ display: "flex", gap: 6 }}>
-          {trip.solo && <span style={S.soloBadge}>SOLO</span>}
           {trip.settled && <span style={S.settledBadge}>SETTLED</span>}
         </div>
       </div>
       <div style={S.tcName}>{trip.name}</div>
-      <div style={S.tcLocation}>{trip.location} · {trip.dates}</div>
+      <div style={S.tcLocation}>
+        {trip.location} · {trip.dates}{showTime ? ` · ${trip.time}` : ""}
+      </div>
       <div style={S.tcBottom}>
-        <div style={{ ...S.tcTotal, color: P.terracotta }}>${(trip.total_spent || 0).toLocaleString()}</div>
+        {trip.total_spent > 0
+          ? <div style={{ ...S.tcTotal, color: P.terracotta }}>${trip.total_spent.toLocaleString()}</div>
+          : <div />}
         <div style={{ ...S.tcViewBtn, color: P.terracotta, borderColor: P.terracotta + "40" }}>
           View <ChevronRight size={14} />
         </div>
@@ -670,6 +674,7 @@ function TripShell({ trip, activeTab, setActiveTab, onBack, onModal, itinRefresh
     { id: "expenses",  label: "Expenses",  Icon: DollarSign },
     { id: "uploads",   label: "Uploads",   Icon: Image },
     { id: "members",   label: "Members",   Icon: Users },
+    { id: "summary",   label: "Summary",   Icon: BarChart2 },
   ];
 
   return (
@@ -695,6 +700,7 @@ function TripShell({ trip, activeTab, setActiveTab, onBack, onModal, itinRefresh
         {activeTab === "expenses"  && <ExpensesTab  trip={trip} onModal={onModal} expRefresh={itinRefresh} profile={profile} user={user} onSettlementsChange={setSettlements} />}
         {activeTab === "uploads"   && <UploadsTab trip={trip} user={user} profile={profile} />}
         {activeTab === "members"   && <MembersTab trip={trip} profile={profile} />}
+        {activeTab === "summary"   && <SummaryTab trip={trip} settlements={settlements} myName={myName} />}
         {modal === "addExpense"    && <AddExpenseModal trip={trip} user={user} profile={profile} onClose={() => setModal(null)} onAdd={onItinRefresh} />}
         {modal === "addItinerary"  && <AddItinModal trip={trip} onClose={() => setModal(null)} onAdd={() => { setModal(null); onItinRefresh(); setTimeout(onItinRefresh, 100); }} />}
         {modal === "settle"        && <SettleModal settlements={settlements} myName={myName} onClose={() => setModal(null)} />}
@@ -1157,7 +1163,135 @@ function MembersTab({ trip, profile }) {
   );
 }
 
-// ─── NEW TRIP MODAL v2 ────────────────────────────────────────────────────────
+// ─── SUMMARY TAB ─────────────────────────────────────────────────────────────
+
+function SummaryTab({ trip, settlements, myName }) {
+  const [members, setMembers] = useState([]);
+  const [expenses, setExpenses] = useState([]);
+  const [itinCount, setItinCount] = useState(0);
+  const [photoCount, setPhotoCount] = useState(0);
+
+  useEffect(() => {
+    supabase.from('members').select('*').eq('trip_id', trip.id).then(({ data }) => setMembers(data || []));
+    supabase.from('expenses').select('*').eq('trip_id', trip.id).then(({ data }) => setExpenses(data || []));
+    supabase.from('itinerary').select('id').eq('trip_id', trip.id).then(({ data }) => setItinCount(data?.length || 0));
+    supabase.from('photos').select('id').eq('trip_id', trip.id).then(({ data }) => setPhotoCount(data?.length || 0));
+  }, [trip.id]);
+
+  const total = expenses.reduce((a, e) => a + (e.amount || 0), 0);
+  const myOwed = settlements.filter(s => s.from === myName).reduce((a, s) => a + s.amount, 0);
+  const categoryTotals = expenses.reduce((acc, e) => {
+    acc[e.category] = (acc[e.category] || 0) + e.amount;
+    return acc;
+  }, {});
+
+  return (
+    <div style={S.tabScroll}>
+      <div style={S.tabTopRow}>
+        <div style={S.tabTitle}>Summary</div>
+      </div>
+
+      {/* Stats row */}
+      <div style={SS.statsGrid}>
+        <div style={SS.statCard}>
+          <div style={SS.statVal}>${total.toLocaleString()}</div>
+          <div style={SS.statLbl}>total spent</div>
+        </div>
+        <div style={SS.statCard}>
+          <div style={SS.statVal}>{members.length}</div>
+          <div style={SS.statLbl}>travelers</div>
+        </div>
+        <div style={SS.statCard}>
+          <div style={{ ...SS.statVal, color: myOwed > 0 ? P.danger : P.success }}>
+            {myOwed > 0 ? `-$${myOwed}` : "Even"}
+          </div>
+          <div style={SS.statLbl}>your balance</div>
+        </div>
+        <div style={SS.statCard}>
+          <div style={SS.statVal}>{itinCount}</div>
+          <div style={SS.statLbl}>stops</div>
+        </div>
+      </div>
+
+      {/* Trip details */}
+      <div style={SS.section}>
+        <div style={SS.sectionLabel}>TRIP DETAILS</div>
+        <div style={SS.detailCard}>
+          <div style={SS.detailRow}>
+            <span style={SS.detailLbl}>Destination</span>
+            <span style={SS.detailVal}>{trip.location || "—"}</span>
+          </div>
+          <div style={SS.detailRow}>
+            <span style={SS.detailLbl}>Dates</span>
+            <span style={SS.detailVal}>{trip.dates || "—"}</span>
+          </div>
+          <div style={SS.detailRow}>
+            <span style={SS.detailLbl}>Travelers</span>
+            <span style={SS.detailVal}>{members.map(m => m.name).join(", ") || "—"}</span>
+          </div>
+          <div style={{ ...SS.detailRow, borderBottom: "none" }}>
+            <span style={SS.detailLbl}>Memories</span>
+            <span style={SS.detailVal}>{photoCount} photo{photoCount !== 1 ? "s" : ""}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Spend by category */}
+      {Object.keys(categoryTotals).length > 0 && (
+        <div style={SS.section}>
+          <div style={SS.sectionLabel}>SPEND BREAKDOWN</div>
+          <div style={SS.detailCard}>
+            {Object.entries(categoryTotals).map(([cat, amt], i, arr) => {
+              const pct = total > 0 ? Math.round((amt / total) * 100) : 0;
+              const meta = { Stay: P.success, Food: P.terracotta, Activity: P.lightBlue, Transport: "#a090d0" };
+              return (
+                <div key={cat} style={{ ...SS.detailRow, ...(i === arr.length - 1 ? { borderBottom: "none" } : {}) }}>
+                  <span style={SS.detailLbl}>{cat}</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{ width: 60, height: 4, borderRadius: 4, background: P.surface3, overflow: "hidden" }}>
+                      <div style={{ width: `${pct}%`, height: "100%", background: meta[cat] || P.terracotta, borderRadius: 4 }} />
+                    </div>
+                    <span style={{ ...SS.detailVal, minWidth: 40, textAlign: "right" }}>${amt.toLocaleString()}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Settlement status */}
+      {settlements.length > 0 && (
+        <div style={SS.section}>
+          <div style={SS.sectionLabel}>BALANCES</div>
+          <div style={SS.detailCard}>
+            {settlements.map((s, i) => (
+              <div key={i} style={{ ...SS.detailRow, ...(i === settlements.length - 1 ? { borderBottom: "none" } : {}) }}>
+                <span style={SS.detailLbl}>{s.from} → {s.to}</span>
+                <span style={{ ...SS.detailVal, color: s.from === myName ? P.danger : P.textSecondary }}>${s.amount}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div style={{ height: 20 }} />
+    </div>
+  );
+}
+
+const SS = {
+  statsGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 22 },
+  statCard: { background: P.surface1, border: `1px solid ${P.surface3}`, borderRadius: 16, padding: "18px 16px", textAlign: "center" },
+  statVal: { fontSize: 24, fontWeight: 900, color: P.textPrimary, letterSpacing: "-0.8px", marginBottom: 4 },
+  statLbl: { fontSize: 11, color: P.textMuted, letterSpacing: "0.5px" },
+  section: { marginBottom: 20 },
+  sectionLabel: { fontSize: 10, fontWeight: 800, color: P.textMuted, letterSpacing: "2.5px", marginBottom: 10 },
+  detailCard: { background: P.surface1, border: `1px solid ${P.surface3}`, borderRadius: 16, overflow: "hidden" },
+  detailRow: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "13px 16px", borderBottom: `1px solid ${P.surface3}` },
+  detailLbl: { fontSize: 13, color: P.textMuted },
+  detailVal: { fontSize: 13, fontWeight: 700, color: P.textPrimary, maxWidth: 180, textAlign: "right" },
+};
 
 // Vibe definitions — short-form vibes adapt location input to specific place
 const VIBES = [
@@ -1231,13 +1365,13 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
           const selected = answers.vibe?.key === v.key;
           return (
             <button key={v.key}
-              style={{ ...SN.vibeChip, ...(selected ? SN.vibeChipOn : {}) }}
+              style={{ ...SN.vibeTile, ...(selected ? SN.vibeTileOn : {}) }}
               onClick={() => {
                 setAnswers(a => ({ ...a, vibe: v, emoji: v.emoji }));
                 setTimeout(() => setStep(2), 180);
               }}>
-              <Icon size={18} color={selected ? P.terracotta : P.textMuted} strokeWidth={1.5} />
-              <span style={{ ...SN.vibeLabel, color: selected ? P.terracotta : P.textMuted }}>{v.label}</span>
+              <Icon size={22} color={selected ? P.terracotta : P.textSecondary} strokeWidth={1.5} />
+              <span style={{ ...SN.vibeLabel, color: selected ? P.terracotta : P.textSecondary }}>{v.label}</span>
             </button>
           );
         })}
@@ -1271,6 +1405,13 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
 
   // Step 3 — Who's coming?
   const [emailInput, setEmailInput] = useState("");
+  const addEmail = () => {
+    if (emailInput.trim()) {
+      setAnswers(a => ({ ...a, who: [...a.who, emailInput.trim()] }));
+      setEmailInput("");
+    }
+  };
+
   const StepWho = () => (
     <div style={SN.stepWrap}>
       <Receipt />
@@ -1295,20 +1436,11 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
               placeholder="friend@email.com"
               value={emailInput}
               type="email"
+              autoComplete="off"
               onChange={e => setEmailInput(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === 'Enter' && emailInput.trim()) {
-                  setAnswers(a => ({ ...a, who: [...a.who, emailInput.trim()] }));
-                  setEmailInput("");
-                }
-              }}
+              onKeyDown={e => { if (e.key === 'Enter') addEmail(); }}
             />
-            <button style={SN.addEmailBtn} onClick={() => {
-              if (emailInput.trim()) {
-                setAnswers(a => ({ ...a, who: [...a.who, emailInput.trim()] }));
-                setEmailInput("");
-              }
-            }}>Add</button>
+            <button style={SN.addEmailBtn} onClick={addEmail}>Add</button>
           </div>
           {answers.who.length > 0 && (
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
@@ -1366,7 +1498,7 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
         style={{ ...SN.nextBtn, opacity: answers.startDate ? 1 : 0.4 }}
         disabled={!answers.startDate}
         onClick={handleGenerateName}>
-        {generating ? "Naming your plan..." : "Next →"}
+        {generating ? "Working on it..." : "Next →"}
       </button>
     </div>
   );
@@ -1436,7 +1568,7 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
         <button
           style={{ ...SN.nextBtn, background: saving ? P.surface2 : `linear-gradient(135deg, ${P.orange}, ${P.terracotta})` }}
           onClick={handleSave} disabled={saving}>
-          {saving ? "Creating..." : "Create plan ✓"}
+          {saving ? "Working on it..." : "Let's go ✓"}
         </button>
       </div>
     );
@@ -1456,6 +1588,7 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
         city: !answers.vibe?.shortForm ? location : "",
         emoji: answers.emoji || "✈️",
         dates,
+        time: answers.time || null,
         total_spent: 0,
         settled: false,
         solo: answers.solo || answers.who.length === 0,
@@ -1579,15 +1712,16 @@ const SN = {
     fontSize: 13, color: P.slateBlue, marginBottom: 18,
     fontFamily: "'DM Sans', sans-serif",
   },
-  vibeGrid: { display: "flex", flexWrap: "wrap", gap: 10, marginTop: 16 },
-  vibeChip: {
-    display: "flex", alignItems: "center", gap: 8,
-    background: P.surface2, border: `1px solid ${P.surface3}`,
-    borderRadius: 22, padding: "10px 16px", cursor: "pointer",
+  vibeGrid: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginTop: 16 },
+  vibeTile: {
+    display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+    gap: 8, background: P.surface2, border: `1px solid ${P.surface3}`,
+    borderRadius: 16, padding: "16px 8px", cursor: "pointer",
+    minHeight: 80,
   },
-  vibeChipOn: {
+  vibeTileOn: {
     background: P.terracotta + "18",
-    border: `1px solid ${P.terracotta}60`,
+    border: `1px solid ${P.terracotta}70`,
   },
   vibeLabel: { fontSize: 14, fontWeight: 700, fontFamily: "'DM Sans', sans-serif" },
   nextBtn: {
