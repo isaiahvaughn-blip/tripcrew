@@ -7,31 +7,50 @@ import {
   Coffee, Wine, Music, ShoppingBag, Dumbbell, PartyPopper, House, Sunset, Sailboat, Camera
 } from "lucide-react";
 
+// ─── PALETTE ──────────────────────────────────────────────────────────────────
+// Sunburn-inspired warm dark theme
+const P = {
+  // Bases
+  outerBg:     "#0d1e28",   // deep navy outer
+  phoneBg:     "#112233",   // slightly lighter navy phone shell
+  surface1:    "#162c3a",   // cards, modals
+  surface2:    "#1c3448",   // elevated surfaces
+  surface3:    "#243d52",   // borders, dividers
+
+  // Accents
+  terracotta:  "#e4a576",   // primary accent (replaces green)
+  orange:      "#f07340",   // CTA buttons, key actions
+  slateBlue:   "#698ea2",   // secondary / muted elements
+  lightBlue:   "#b8d4e0",   // highlights, badges, positive states
+
+  // Text
+  textPrimary:   "#f0ebe4", // warm white
+  textSecondary: "#9ab0bd", // muted
+  textMuted:     "#4e6b7a", // very muted
+
+  // Semantic
+  danger:   "#e07070",
+  dangerBg: "#2a1515",
+  success:  "#6bbf8a",
+  successBg:"#142a1e",
+};
+
 // ─── DATA ────────────────────────────────────────────────────────────────────
 
 const ITINERARY_COLORS = {
-  flight:     { bg: "#0f2744", accent: "#60a5fa", border: "#1e3a5f" },
-  stay:       { bg: "#1a2c0f", accent: "#86efac", border: "#2d4a1e" },
-  activity:   { bg: "#2a1505", accent: "#fb923c", border: "#4a2a0f" },
-  restaurant: { bg: "#250f1a", accent: "#f472b6", border: "#4a1e35" },
-  transport:  { bg: "#1a1505", accent: "#fbbf24", border: "#3a2a0f" },
+  flight:     { bg: "#162840", accent: "#b8d4e0", border: "#1e3a52" },
+  stay:       { bg: "#1e2a1a", accent: "#6bbf8a", border: "#2a3d24" },
+  activity:   { bg: "#2a1c10", accent: "#e4a576", border: "#3d2a18" },
+  restaurant: { bg: "#2a1820", accent: "#e4a0b0", border: "#3d2030" },
+  transport:  { bg: "#1e1e2a", accent: "#a090d0", border: "#2a2a3d" },
 };
 
 const CATEGORY_META = {
-  Stay:      { color: "#86efac", bg: "#14532d" },
-  Food:      { color: "#34d399", bg: "#065f46" },
-  Activity:  { color: "#fb923c", bg: "#7c2d12" },
-  Transport: { color: "#fbbf24", bg: "#713f12" },
+  Stay:      { color: "#6bbf8a", bg: "#142a1e" },
+  Food:      { color: "#e4a576", bg: "#2a1c10" },
+  Activity:  { color: "#b8d4e0", bg: "#162840" },
+  Transport: { color: "#a090d0", bg: "#1e1e2a" },
 };
-
-const PHOTOS = [
-  { id: 1, uploader: "Sofia",  caption: "First morning at the lake", date: "Aug 3", color: "#1a3a2a", emoji: "🏔️", wide: true,  sensitive: false },
-  { id: 2, uploader: "Marcus", caption: "The SkyTram crew",          date: "Aug 8", color: "#1e1535", emoji: "🚡", wide: false, sensitive: false },
-  { id: 3, uploader: "Isaiah", caption: "Icefields stop",            date: "Aug 5", color: "#1a2535", emoji: "🧊", wide: false, sensitive: false },
-  { id: 4, uploader: "Priya",  caption: "Dinner vibes",              date: "Aug 7", color: "#251520", emoji: "🍷", wide: false, sensitive: true  },
-  { id: 5, uploader: "Derek",  caption: "Sunrise on Whistlers",      date: "Aug 6", color: "#1e2a1a", emoji: "🌅", wide: true,  sensitive: false },
-  { id: 6, uploader: "Marcus", caption: "Columbia Icefield walk",    date: "Aug 5", color: "#151a25", emoji: "❄️", wide: false, sensitive: false },
-];
 
 const TRIP_ICONS = {
   "✈️": Plane, "🏔️": Mountain, "🚴": Bike, "🏖️": Umbrella,
@@ -40,43 +59,55 @@ const TRIP_ICONS = {
   "🎵": Music, "🛍️": ShoppingBag, "💪": Dumbbell, "🎉": PartyPopper,
   "🏠": House, "🌅": Sunset, "📸": Camera, "🍽️": UtensilsCrossed,
 };
+
 const TRIP_ICON_LIST = [
-  { key: "✈️", Icon: Plane,          label: "Flight" },
-  { key: "🏔️", Icon: Mountain,       label: "Adventure" },
-  { key: "🚴", Icon: Bike,           label: "Cycling" },
-  { key: "🏖️", Icon: Umbrella,       label: "Beach" },
-  { key: "🗾", Icon: Map,            label: "Explore" },
-  { key: "🎿", Icon: Snowflake,      label: "Snow" },
-  { key: "🚗", Icon: Car,            label: "Road trip" },
-  { key: "⛵", Icon: Anchor,         label: "Sailing" },
-  { key: "🏕️", Icon: Tent,          label: "Camping" },
-  { key: "🎭", Icon: Theater,        label: "Culture" },
-  { key: "☕", Icon: Coffee,         label: "Coffee" },
-  { key: "🍷", Icon: Wine,           label: "Drinks" },
-  { key: "🎵", Icon: Music,          label: "Concert" },
-  { key: "🛍️", Icon: ShoppingBag,   label: "Shopping" },
-  { key: "💪", Icon: Dumbbell,       label: "Active" },
-  { key: "🎉", Icon: PartyPopper,    label: "Celebrate" },
-  { key: "🏠", Icon: House,          label: "Staycation" },
-  { key: "🌅", Icon: Sunset,         label: "Getaway" },
-  { key: "📸", Icon: Camera,         label: "Photo trip" },
+  { key: "✈️", Icon: Plane,           label: "Flight" },
+  { key: "🏔️", Icon: Mountain,        label: "Adventure" },
+  { key: "🚴", Icon: Bike,            label: "Cycling" },
+  { key: "🏖️", Icon: Umbrella,        label: "Beach" },
+  { key: "🗾", Icon: Map,             label: "Explore" },
+  { key: "🎿", Icon: Snowflake,       label: "Snow" },
+  { key: "🚗", Icon: Car,             label: "Road trip" },
+  { key: "⛵", Icon: Anchor,          label: "Sailing" },
+  { key: "🏕️", Icon: Tent,           label: "Camping" },
+  { key: "🎭", Icon: Theater,         label: "Culture" },
+  { key: "☕", Icon: Coffee,          label: "Coffee" },
+  { key: "🍷", Icon: Wine,            label: "Drinks" },
+  { key: "🎵", Icon: Music,           label: "Concert" },
+  { key: "🛍️", Icon: ShoppingBag,    label: "Shopping" },
+  { key: "💪", Icon: Dumbbell,        label: "Active" },
+  { key: "🎉", Icon: PartyPopper,     label: "Celebrate" },
+  { key: "🏠", Icon: House,           label: "Staycation" },
+  { key: "🌅", Icon: Sunset,          label: "Getaway" },
+  { key: "📸", Icon: Camera,          label: "Photo trip" },
   { key: "🍽️", Icon: UtensilsCrossed, label: "Dinner" },
 ];
+
 const ITIN_TYPE_ICONS = {
   flight: Plane, stay: Hotel, activity: Zap,
   restaurant: UtensilsCrossed, transport: Train,
 };
 
+// Subtle card gradient variations to differentiate trips without per-trip colors
+const CARD_GRADIENTS = [
+  "linear-gradient(135deg, #162c3a 0%, #1e3a4a 100%)",
+  "linear-gradient(135deg, #1a2a32 0%, #243848 100%)",
+  "linear-gradient(135deg, #182030 0%, #22303e 100%)",
+  "linear-gradient(135deg, #1c2e3c 0%, #263c4c 100%)",
+  "linear-gradient(135deg, #14283a 0%, #1e3448 100%)",
+];
+
 // ─── ROOT ─────────────────────────────────────────────────────────────────────
 
 export default function App() {
   const [user, setUser] = useState(null);
-  const [view, setView] = useState("profile");
+  const [view, setView] = useState("welcome");
   const [activeTrip, setActiveTrip] = useState(null);
   const [activeTab, setActiveTab] = useState("itinerary");
   const [modal, setModal] = useState(null);
   const [itinRefresh, setItinRefresh] = useState(0);
   const [profile, setProfile] = useState(null);
+  const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -84,15 +115,19 @@ export default function App() {
       if (session?.user) {
         supabase.from('profiles').select('*').eq('id', session.user.id).single()
           .then(({ data }) => setProfile(data));
+        setView("profile");
       }
+      setAuthChecked(true);
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       if (session?.user) {
         supabase.from('profiles').select('*').eq('id', session.user.id).single()
           .then(({ data }) => setProfile(data));
+        setView("profile");
       } else {
         setProfile(null);
+        setView("welcome");
       }
     });
     return () => subscription.unsubscribe();
@@ -113,7 +148,12 @@ export default function App() {
     linkPendingInvites();
   }, [user]);
 
-  if (!user) return <AuthScreen onAuth={setUser} />;
+  if (!authChecked) return null;
+
+  if (!user) {
+    if (view === "welcome") return <WelcomeScreen onGetStarted={() => setView("auth")} />;
+    return <AuthScreen onAuth={setUser} onBack={() => setView("welcome")} />;
+  }
 
   const openTrip = (trip) => {
     setActiveTrip(trip);
@@ -146,6 +186,284 @@ export default function App() {
     </div>
   );
 }
+
+// ─── WELCOME SCREEN ───────────────────────────────────────────────────────────
+
+function WelcomeScreen({ onGetStarted }) {
+  return (
+    <div style={S.root}>
+      <div style={S.phone}>
+        <div style={SW.container}>
+          {/* Top decorative band */}
+          <div style={SW.topBand} />
+
+          {/* Brand */}
+          <div style={SW.brandWrap}>
+            <div style={SW.wordmark}>vouze</div>
+            <div style={SW.tagline}>Where every plan becomes a memory</div>
+            <div style={SW.subTagline}>Your home for trips, nights out, and everything in between</div>
+          </div>
+
+          {/* Decorative card stack preview */}
+          <div style={SW.cardStack}>
+            <div style={{ ...SW.previewCard, ...SW.previewCard3 }}>
+              <span style={SW.previewEmoji}>🎵</span>
+              <span style={SW.previewLabel}>Concert with the crew</span>
+            </div>
+            <div style={{ ...SW.previewCard, ...SW.previewCard2 }}>
+              <span style={SW.previewEmoji}>☕</span>
+              <span style={SW.previewLabel}>Coffee Tuesday</span>
+            </div>
+            <div style={{ ...SW.previewCard, ...SW.previewCard1 }}>
+              <span style={SW.previewEmoji}>✈️</span>
+              <span style={SW.previewLabel}>Banff long weekend</span>
+            </div>
+          </div>
+
+          {/* CTA */}
+          <div style={SW.ctaWrap}>
+            <button style={SW.ctaBtn} onClick={onGetStarted}>
+              Let's plan something
+            </button>
+            <div style={SW.ctaNote}>free · no credit card needed</div>
+          </div>
+
+          {/* Bottom band */}
+          <div style={SW.bottomBand} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const SW = {
+  container: {
+    height: "100%",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "space-between",
+    background: `linear-gradient(170deg, ${P.outerBg} 0%, #0f2030 50%, #162535 100%)`,
+    position: "relative",
+    overflow: "hidden",
+    padding: "0 0 40px",
+  },
+  topBand: {
+    width: "100%",
+    height: 6,
+    background: `linear-gradient(90deg, ${P.terracotta}, ${P.orange}, ${P.terracotta})`,
+    flexShrink: 0,
+  },
+  bottomBand: {
+    width: "100%",
+    height: 4,
+    background: `linear-gradient(90deg, ${P.slateBlue}, ${P.lightBlue}, ${P.slateBlue})`,
+    position: "absolute",
+    bottom: 0,
+  },
+  brandWrap: {
+    textAlign: "center",
+    padding: "48px 32px 0",
+  },
+  wordmark: {
+    fontFamily: "'Syne', 'DM Sans', sans-serif",
+    fontSize: 58,
+    fontWeight: 900,
+    letterSpacing: "-3px",
+    color: P.textPrimary,
+    marginBottom: 20,
+    lineHeight: 1,
+  },
+  tagline: {
+    fontFamily: "'Syne', 'DM Sans', sans-serif",
+    fontSize: 20,
+    fontWeight: 700,
+    color: P.terracotta,
+    letterSpacing: "-0.5px",
+    marginBottom: 12,
+    lineHeight: 1.3,
+  },
+  subTagline: {
+    fontFamily: "'DM Sans', sans-serif",
+    fontSize: 14,
+    color: P.slateBlue,
+    lineHeight: 1.5,
+    maxWidth: 280,
+    margin: "0 auto",
+  },
+  cardStack: {
+    position: "relative",
+    width: 280,
+    height: 160,
+    margin: "32px auto",
+  },
+  previewCard: {
+    position: "absolute",
+    left: "50%",
+    borderRadius: 18,
+    padding: "18px 22px",
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
+    border: `1px solid ${P.surface3}`,
+    width: 240,
+    boxSizing: "border-box",
+  },
+  previewCard1: {
+    background: P.surface2,
+    transform: "translateX(-50%) rotate(0deg)",
+    top: 30,
+    zIndex: 3,
+    boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+  },
+  previewCard2: {
+    background: P.surface1,
+    transform: "translateX(-50%) rotate(-4deg)",
+    top: 16,
+    zIndex: 2,
+    opacity: 0.85,
+  },
+  previewCard3: {
+    background: P.phoneBg,
+    transform: "translateX(-50%) rotate(4deg)",
+    top: 8,
+    zIndex: 1,
+    opacity: 0.6,
+  },
+  previewEmoji: {
+    fontSize: 24,
+  },
+  previewLabel: {
+    fontFamily: "'Syne', sans-serif",
+    fontSize: 15,
+    fontWeight: 700,
+    color: P.textPrimary,
+    letterSpacing: "-0.3px",
+  },
+  ctaWrap: {
+    width: "100%",
+    padding: "0 28px",
+    marginTop: 8,
+  },
+  ctaBtn: {
+    width: "100%",
+    background: `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`,
+    color: "#fff",
+    border: "none",
+    borderRadius: 18,
+    padding: "18px",
+    fontSize: 17,
+    fontWeight: 800,
+    cursor: "pointer",
+    fontFamily: "'Syne', sans-serif",
+    letterSpacing: "-0.3px",
+    boxShadow: `0 8px 24px rgba(240, 115, 64, 0.35)`,
+    marginBottom: 12,
+  },
+  ctaNote: {
+    textAlign: "center",
+    fontSize: 12,
+    color: P.textMuted,
+    fontFamily: "'DM Sans', sans-serif",
+    letterSpacing: "0.5px",
+  },
+};
+
+// ─── AUTH SCREEN ──────────────────────────────────────────────────────────────
+
+function AuthScreen({ onAuth, onBack }) {
+  const [mode, setMode] = useState("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handle = async () => {
+    setLoading(true); setError("");
+    const { data, error } = mode === "login"
+      ? await supabase.auth.signInWithPassword({ email, password })
+      : await supabase.auth.signUp({ email, password });
+    if (error) { setError(error.message); setLoading(false); return; }
+    onAuth(data.user);
+  };
+
+  return (
+    <div style={S.root}>
+      <div style={S.phone}>
+        <div style={{ padding: "52px 28px 0" }}>
+          <button style={SA.backBtn} onClick={onBack}>← Back</button>
+          <div style={SA.wordmark}>vouze</div>
+          <div style={SA.subtitle}>{mode === "login" ? "Welcome back" : "Create your account"}</div>
+        </div>
+        <div style={{ padding: "32px 28px 0" }}>
+          <div style={S.field}>
+            <div style={S.fieldLbl}>EMAIL</div>
+            <input style={S.input} type="email" placeholder="you@email.com" value={email}
+              onChange={e => setEmail(e.target.value)} />
+          </div>
+          <div style={S.field}>
+            <div style={S.fieldLbl}>PASSWORD</div>
+            <input style={S.input} type="password" placeholder="••••••••" value={password}
+              onChange={e => setPassword(e.target.value)} />
+          </div>
+          {error && <div style={{ color: P.danger, fontSize: 13, marginBottom: 14 }}>{error}</div>}
+          <button
+            style={{ ...S.primaryBtn, background: loading ? P.surface2 : `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`, marginBottom: 14 }}
+            onClick={handle} disabled={loading}>
+            {loading ? "..." : mode === "login" ? "Sign In" : "Create Account"}
+          </button>
+          <div style={{ display: "flex", alignItems: "center", margin: "18px 0" }}>
+            <div style={{ flex: 1, height: 1, background: P.surface3 }} />
+            <span style={{ color: P.textMuted, fontSize: 13, padding: "0 14px" }}>or</span>
+            <div style={{ flex: 1, height: 1, background: P.surface3 }} />
+          </div>
+          <button style={{ ...S.primaryBtn, background: "#fff", color: "#000", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 18 }}
+            onClick={async () => {
+              const { error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } });
+              if (error) console.error(error);
+            }}>
+            <img src="https://www.google.com/favicon.ico" style={{ width: 18, height: 18 }} alt="Google" />
+            Continue with Google
+          </button>
+          <div style={{ textAlign: "center", fontSize: 14, color: P.slateBlue }}>
+            {mode === "login" ? "No account? " : "Have an account? "}
+            <span style={{ color: P.terracotta, cursor: "pointer", fontWeight: 700 }}
+              onClick={() => setMode(mode === "login" ? "signup" : "login")}>
+              {mode === "login" ? "Sign up" : "Sign in"}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const SA = {
+  backBtn: {
+    background: "transparent",
+    border: "none",
+    color: P.slateBlue,
+    fontSize: 14,
+    fontWeight: 700,
+    cursor: "pointer",
+    padding: 0,
+    marginBottom: 32,
+    fontFamily: "'DM Sans', sans-serif",
+  },
+  wordmark: {
+    fontFamily: "'Syne', sans-serif",
+    fontSize: 38,
+    fontWeight: 900,
+    letterSpacing: "-2px",
+    color: P.textPrimary,
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: P.slateBlue,
+    fontFamily: "'DM Sans', sans-serif",
+  },
+};
 
 // ─── PROFILE ──────────────────────────────────────────────────────────────────
 
@@ -229,6 +547,11 @@ function ProfileScreen({ onOpen, user, onSignOut, onSettings, profile }) {
           <NewTripModal onClose={() => setShowNewTrip(false)} userId={user.id}
             onSave={(trip) => { setTrips(prev => [trip, ...prev]); setShowNewTrip(false); }} />
         )}
+
+        {trips.length === 0 && !showNewTrip && (
+          <EmptyTripsState onNew={() => setShowNewTrip(true)} />
+        )}
+
         {trips.map((t, i) => (
           <TripCard key={t.id} trip={t} idx={i} onOpen={onOpen}
             onDelete={handleDeleteTrip} onEdit={setEditingTrip} />
@@ -238,9 +561,71 @@ function ProfileScreen({ onOpen, user, onSignOut, onSettings, profile }) {
   );
 }
 
+// ─── EMPTY STATE ──────────────────────────────────────────────────────────────
+
+function EmptyTripsState({ onNew }) {
+  return (
+    <div style={SE.wrap}>
+      <div style={SE.iconRow}>
+        <span style={SE.icon}>✈️</span>
+        <span style={SE.icon}>☕</span>
+        <span style={SE.icon}>🎉</span>
+      </div>
+      <div style={SE.headline}>Nothing planned yet</div>
+      <div style={SE.sub}>Your next trip, dinner, or night out starts here.</div>
+      <button style={SE.btn} onClick={onNew}>Plan something →</button>
+    </div>
+  );
+}
+
+const SE = {
+  wrap: {
+    background: P.surface1,
+    border: `1px dashed ${P.surface3}`,
+    borderRadius: 24,
+    padding: "40px 28px",
+    textAlign: "center",
+    marginTop: 8,
+  },
+  iconRow: {
+    display: "flex",
+    justifyContent: "center",
+    gap: 12,
+    fontSize: 28,
+    marginBottom: 18,
+  },
+  icon: {},
+  headline: {
+    fontFamily: "'Syne', sans-serif",
+    fontSize: 20,
+    fontWeight: 800,
+    color: P.textPrimary,
+    letterSpacing: "-0.5px",
+    marginBottom: 8,
+  },
+  sub: {
+    fontSize: 14,
+    color: P.slateBlue,
+    fontFamily: "'DM Sans', sans-serif",
+    lineHeight: 1.5,
+    marginBottom: 24,
+  },
+  btn: {
+    background: `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`,
+    color: "#fff",
+    border: "none",
+    borderRadius: 14,
+    padding: "13px 24px",
+    fontSize: 15,
+    fontWeight: 800,
+    cursor: "pointer",
+    fontFamily: "'Syne', sans-serif",
+    letterSpacing: "-0.2px",
+  },
+};
+
 function TripCard({ trip, idx, onOpen, onDelete, onEdit }) {
-  const tag = trip.tag || "#4ade80";
-  const bg = trip.bg || "linear-gradient(135deg, #0d2b1e 0%, #1a4a32 100%)";
+  const bg = CARD_GRADIENTS[idx % CARD_GRADIENTS.length];
   const IconComp = TRIP_ICONS[trip.emoji] || Plane;
 
   return (
@@ -248,8 +633,8 @@ function TripCard({ trip, idx, onOpen, onDelete, onEdit }) {
       <button style={S.tcEditBtn} onClick={(e) => { e.stopPropagation(); onEdit(trip); }}>✎</button>
       <button style={S.tcDeleteBtn} onClick={(e) => { e.stopPropagation(); onDelete(trip); }}>✕</button>
       <div style={S.tcTop}>
-        <div style={{ ...S.tcIconWrap, background: tag + "20", border: `1px solid ${tag}30` }}>
-          <IconComp size={26} color={tag} strokeWidth={1.5} />
+        <div style={{ ...S.tcIconWrap, background: P.terracotta + "20", border: `1px solid ${P.terracotta}30` }}>
+          <IconComp size={26} color={P.terracotta} strokeWidth={1.5} />
         </div>
         <div style={{ display: "flex", gap: 6 }}>
           {trip.solo && <span style={S.soloBadge}>SOLO</span>}
@@ -259,8 +644,8 @@ function TripCard({ trip, idx, onOpen, onDelete, onEdit }) {
       <div style={S.tcName}>{trip.name}</div>
       <div style={S.tcLocation}>{trip.location} · {trip.dates}</div>
       <div style={S.tcBottom}>
-        <div style={{ ...S.tcTotal, color: tag }}>${(trip.total_spent || 0).toLocaleString()}</div>
-        <div style={{ ...S.tcViewBtn, color: tag, borderColor: tag + "40" }}>
+        <div style={{ ...S.tcTotal, color: P.terracotta }}>${(trip.total_spent || 0).toLocaleString()}</div>
+        <div style={{ ...S.tcViewBtn, color: P.terracotta, borderColor: P.terracotta + "40" }}>
           View <ChevronRight size={14} />
         </div>
       </div>
@@ -284,18 +669,18 @@ function TripShell({ trip, activeTab, setActiveTab, onBack, onModal, itinRefresh
 
   return (
     <div style={S.tripShell}>
-      <div style={{ ...S.tripHeader, background: trip.bg }}>
+      <div style={{ ...S.tripHeader, background: `linear-gradient(135deg, ${P.surface1} 0%, ${P.surface2} 100%)` }}>
         <button style={S.backBtn} onClick={onBack}>←</button>
         <div style={S.thMid}>
-          <div style={{ ...S.thIconWrap, background: (trip.tag || "#4ade80") + "20" }}>
-            <IconComp size={22} color={trip.tag || "#4ade80"} strokeWidth={1.5} />
+          <div style={{ ...S.thIconWrap, background: P.terracotta + "20" }}>
+            <IconComp size={22} color={P.terracotta} strokeWidth={1.5} />
           </div>
           <div>
             <div style={S.thName}>{trip.name}</div>
             <div style={S.thSub}>{trip.location} · {trip.dates}</div>
           </div>
         </div>
-        <button style={{ ...S.shareHeaderBtn, color: trip.tag }} onClick={() => onModal("share")}>
+        <button style={{ ...S.shareHeaderBtn, color: P.terracotta }} onClick={() => onModal("share")}>
           ↗ Share
         </button>
       </div>
@@ -303,7 +688,7 @@ function TripShell({ trip, activeTab, setActiveTab, onBack, onModal, itinRefresh
       <div style={{ ...S.tabContent, position: "relative" }}>
         {activeTab === "itinerary" && <ItineraryTab trip={trip} onModal={onModal} refreshKey={itinRefresh} />}
         {activeTab === "expenses"  && <ExpensesTab  trip={trip} onModal={onModal} expRefresh={itinRefresh} profile={profile} user={user} onSettlementsChange={setSettlements} />}
-        {activeTab === "uploads"   && <UploadsTab />}
+        {activeTab === "uploads"   && <UploadsTab trip={trip} user={user} profile={profile} />}
         {activeTab === "members"   && <MembersTab trip={trip} profile={profile} />}
         {modal === "addExpense"    && <AddExpenseModal trip={trip} user={user} profile={profile} onClose={() => setModal(null)} onAdd={onItinRefresh} />}
         {modal === "addItinerary"  && <AddItinModal trip={trip} onClose={() => setModal(null)} onAdd={() => { setModal(null); onItinRefresh(); setTimeout(onItinRefresh, 100); }} />}
@@ -314,11 +699,11 @@ function TripShell({ trip, activeTab, setActiveTab, onBack, onModal, itinRefresh
       <div style={S.tabBar}>
         {tabs.map(({ id, label, Icon }) => (
           <button key={id} style={S.tabBtn} onClick={() => { setActiveTab(id); setModal(null); }}>
-            <Icon size={24} color={activeTab === id ? (trip.tag || "#4ade80") : "#475569"} strokeWidth={activeTab === id ? 2 : 1.5} />
-            <span style={{ ...S.tabLabel, ...(activeTab === id ? { color: trip.tag || "#4ade80" } : {}) }}>
+            <Icon size={24} color={activeTab === id ? P.terracotta : P.textMuted} strokeWidth={activeTab === id ? 2 : 1.5} />
+            <span style={{ ...S.tabLabel, ...(activeTab === id ? { color: P.terracotta } : {}) }}>
               {label}
             </span>
-            {activeTab === id && <div style={{ ...S.tabDot, background: trip.tag }} />}
+            {activeTab === id && <div style={{ ...S.tabDot, background: P.terracotta }} />}
           </button>
         ))}
       </div>
@@ -358,7 +743,7 @@ function ItineraryTab({ trip, onModal, refreshKey }) {
     <div style={S.tabScroll}>
       <div style={S.tabTopRow}>
         <div style={S.tabTitle}>Itinerary</div>
-        <button style={{ ...S.actionBtn, borderColor: trip.tag + "60", color: trip.tag }}
+        <button style={{ ...S.actionBtn, borderColor: P.terracotta + "60", color: P.terracotta }}
           onClick={() => onModal("addItinerary")}>+ Add</button>
       </div>
       {days.map(day => (
@@ -371,9 +756,9 @@ function ItineraryTab({ trip, onModal, refreshKey }) {
               <div key={item.id} style={{ ...S.iRow, background: meta.bg, borderColor: meta.border }}>
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
                   <div style={S.iTime}>{item.time}</div>
-                  <button style={{ ...S.iActionBtn, background: "#1e3a5f", color: "#60a5fa" }}
+                  <button style={{ ...S.iActionBtn, background: P.surface2, color: P.lightBlue }}
                     onClick={() => setEditingItem(item)}>✎</button>
-                  <button style={{ ...S.iActionBtn, background: "#450a0a", color: "#f87171" }}
+                  <button style={{ ...S.iActionBtn, background: P.dangerBg, color: P.danger }}
                     onClick={() => handleDeleteItem(item)}>✕</button>
                 </div>
                 <div style={S.iLine}>
@@ -390,7 +775,7 @@ function ItineraryTab({ trip, onModal, refreshKey }) {
                     {(item.type === "stay" || item.type === "restaurant") && (
                       <a href={`https://maps.google.com/?q=${encodeURIComponent(item.title + " " + item.detail)}`}
                         target="_blank" rel="noopener noreferrer"
-                        style={{ color: "#60a5fa", fontSize: 11, fontWeight: 700, textDecoration: "none", flexShrink: 0, marginLeft: 8, display: "flex", alignItems: "center", gap: 3 }}>
+                        style={{ color: P.lightBlue, fontSize: 11, fontWeight: 700, textDecoration: "none", flexShrink: 0, marginLeft: 8, display: "flex", alignItems: "center", gap: 3 }}>
                         <MapPin size={11} /> Maps
                       </a>
                     )}
@@ -488,7 +873,7 @@ function ExpensesTab({ trip, onModal, expRefresh, profile, user, onSettlementsCh
     <div style={S.tabScroll}>
       <div style={S.tabTopRow}>
         <div style={S.tabTitle}>Expenses</div>
-        <button style={{ ...S.actionBtn, borderColor: trip.tag + "60", color: trip.tag }}
+        <button style={{ ...S.actionBtn, borderColor: P.terracotta + "60", color: P.terracotta }}
           onClick={() => onModal("addExpense")}>+ Add</button>
       </div>
       <div style={S.expSummary}>
@@ -503,7 +888,7 @@ function ExpensesTab({ trip, onModal, expRefresh, profile, user, onSettlementsCh
         </div>
         <div style={S.expSumDiv} />
         <div style={S.expSumItem}>
-          <div style={{ ...S.expSumVal, color: "#f87171" }}>${myOwed}</div>
+          <div style={{ ...S.expSumVal, color: P.danger }}>${myOwed}</div>
           <div style={S.expSumLbl}>you owe</div>
         </div>
       </div>
@@ -516,7 +901,7 @@ function ExpensesTab({ trip, onModal, expRefresh, profile, user, onSettlementsCh
       <div style={S.filterRow}>
         {cats.map(c => (
           <button key={c} onClick={() => setFilter(c)}
-            style={{ ...S.chip, ...(filter === c ? { ...S.chipActive, borderColor: trip.tag, color: trip.tag, background: trip.tag + "15" } : {}) }}>
+            style={{ ...S.chip, ...(filter === c ? { ...S.chipActive, borderColor: P.terracotta, color: P.terracotta, background: P.terracotta + "15" } : {}) }}>
             {c}
           </button>
         ))}
@@ -527,11 +912,11 @@ function ExpensesTab({ trip, onModal, expRefresh, profile, user, onSettlementsCh
         const perPerson = splitWith.length ? (exp.amount / splitWith.length).toFixed(0) : 0;
         return (
           <div key={exp.id} style={S.expRow}>
-            <div style={{ ...S.expIcon, background: meta.bg, color: meta.color }}>{exp.category[0]}</div>
+            <div style={{ ...S.expIcon, background: meta?.bg || P.surface1, color: meta?.color || P.terracotta }}>{exp.category?.[0]}</div>
             <div style={S.expBody}>
               <div style={S.expTitle}>{exp.title}</div>
               <div style={S.expMeta}>
-                {exp.date} · <span style={{ color: "#e2e8f0" }}>{exp.paid_by || exp.paidBy}</span> paid · ${perPerson}/person
+                {exp.date} · <span style={{ color: P.textPrimary }}>{exp.paid_by || exp.paidBy}</span> paid · ${perPerson}/person
               </div>
             </div>
             <div style={S.expRight}>
@@ -556,37 +941,127 @@ function ExpensesTab({ trip, onModal, expRefresh, profile, user, onSettlementsCh
 
 // ─── UPLOADS TAB ──────────────────────────────────────────────────────────────
 
-function UploadsTab() {
-  const [photos, setPhotos] = useState(PHOTOS);
-  const toggleSensitive = (id) => setPhotos(p => p.map(ph => ph.id === id ? { ...ph, sensitive: !ph.sensitive } : ph));
+function UploadsTab({ trip, user, profile }) {
+  const [photos, setPhotos] = useState([]);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    fetchPhotos();
+    const subscription = supabase.channel(`photos:${trip.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'photos' }, () => fetchPhotos())
+      .subscribe();
+    return () => subscription.unsubscribe();
+  }, [trip.id]);
+
+  const fetchPhotos = async () => {
+    const { data, error } = await supabase.from('photos').select('*')
+      .eq('trip_id', trip.id).order('created_at', { ascending: false });
+    if (error) console.error(error);
+    else setPhotos(data || []);
+  };
+
+  const handleUpload = async (file) => {
+    if (!file) return;
+    setUploading(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const path = `${trip.id}/${Date.now()}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from('trip-photos').upload(path, file);
+      if (uploadError) throw uploadError;
+      const { data: { publicUrl } } = supabase.storage
+        .from('trip-photos').getPublicUrl(path);
+      const uploader = profile?.display_name || user?.email?.split('@')[0] || 'Me';
+      const { error: dbError } = await supabase.from('photos').insert([{
+        trip_id: trip.id, user_id: user?.id, storage_path: path,
+        url: publicUrl, caption: file.name.split('.')[0], uploader, sensitive: false
+      }]);
+      if (dbError) throw dbError;
+      await fetchPhotos();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const toggleSensitive = async (photo) => {
+    const { error } = await supabase.from('photos')
+      .update({ sensitive: !photo.sensitive }).eq('id', photo.id);
+    if (!error) setPhotos(p => p.map(ph => ph.id === photo.id ? { ...ph, sensitive: !ph.sensitive } : ph));
+  };
+
+  const handleDelete = async (photo) => {
+    if (!window.confirm('Remove this photo?')) return;
+    await supabase.storage.from('trip-photos').remove([photo.storage_path]);
+    await supabase.from('photos').delete().eq('id', photo.id);
+    setPhotos(p => p.filter(ph => ph.id !== photo.id));
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file) handleUpload(file);
+  };
+
   return (
     <div style={S.tabScroll}>
       <div style={S.tabTopRow}>
         <div style={S.tabTitle}>Memories</div>
-        <button style={S.actionBtn}>+ Upload</button>
+        <button style={{ ...S.actionBtn, borderColor: P.terracotta + "60", color: P.terracotta }}
+          onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+          {uploading ? "Uploading..." : "+ Upload"}
+        </button>
       </div>
-      <div style={S.sensitiveNote}>🔒 Mark photos as sensitive to exclude them from Wrapped and shared exports.</div>
-      <div style={S.photoGrid}>
-        {photos.map(ph => (
-          <div key={ph.id} style={{ ...S.photoCard, ...(ph.wide ? S.photoWide : {}), background: ph.color, opacity: ph.sensitive ? 0.5 : 1 }}>
-            <div style={S.photoEmoji}>{ph.emoji}</div>
-            {ph.sensitive && <div style={S.sensitiveLock}>🔒</div>}
-            <div style={S.photoOverlay}>
-              <div style={S.photoCaption}>{ph.caption}</div>
-              <div style={S.photoMeta}>{ph.uploader} · {ph.date}</div>
-              <button style={{ ...S.sensitiveBtn, ...(ph.sensitive ? S.sensitiveBtnOn : {}) }}
-                onClick={() => toggleSensitive(ph.id)}>
-                {ph.sensitive ? "Sensitive" : "Mark sensitive"}
-              </button>
+      <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }}
+        onChange={e => handleUpload(e.target.files[0])} />
+      <div style={S.sensitiveNote}>🔒 Mark photos as sensitive to exclude them from shared exports.</div>
+
+      {photos.length === 0 && !uploading && (
+        <div style={{ ...S.uploadDrop, marginBottom: 16 }}
+          onDrop={handleDrop} onDragOver={e => e.preventDefault()}
+          onClick={() => fileInputRef.current?.click()}>
+          <div style={S.uploadIcon}>📎</div>
+          <div style={S.uploadText}>Drop your first photo here</div>
+          <div style={S.uploadSub}>Tap to browse or drag and drop</div>
+        </div>
+      )}
+
+      {photos.length > 0 && (
+        <div style={S.photoGrid}>
+          {photos.map((ph, idx) => (
+            <div key={ph.id}
+              style={{ ...S.photoCard, ...(idx === 0 ? S.photoWide : {}), opacity: ph.sensitive ? 0.55 : 1 }}>
+              <img src={ph.url} alt={ph.caption}
+                style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 18 }} />
+              {ph.sensitive && <div style={S.sensitiveLock}>🔒</div>}
+              <div style={S.photoOverlay}>
+                <div style={S.photoCaption}>{ph.caption}</div>
+                <div style={S.photoMeta}>{ph.uploader}</div>
+                <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+                  <button style={{ ...S.sensitiveBtn, ...(ph.sensitive ? S.sensitiveBtnOn : {}) }}
+                    onClick={() => toggleSensitive(ph)}>
+                    {ph.sensitive ? "Sensitive" : "Mark sensitive"}
+                  </button>
+                  <button style={{ ...S.sensitiveBtn, background: P.dangerBg, color: P.danger }}
+                    onClick={() => handleDelete(ph)}>Remove</button>
+                </div>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
-      <div style={S.uploadDrop}>
-        <div style={S.uploadIcon}>📎</div>
-        <div style={S.uploadText}>Drop anything here</div>
-        <div style={S.uploadSub}>Photos, videos, receipts, links, PDFs</div>
-      </div>
+          ))}
+        </div>
+      )}
+
+      {photos.length > 0 && (
+        <div style={{ ...S.uploadDrop, marginTop: 12 }}
+          onDrop={handleDrop} onDragOver={e => e.preventDefault()}
+          onClick={() => fileInputRef.current?.click()}>
+          <div style={S.uploadIcon}>📎</div>
+          <div style={S.uploadText}>Add more</div>
+          <div style={S.uploadSub}>Photos, receipts, anything</div>
+        </div>
+      )}
       <div style={{ height: 20 }} />
     </div>
   );
@@ -595,7 +1070,6 @@ function UploadsTab() {
 // ─── MEMBERS TAB ──────────────────────────────────────────────────────────────
 
 function MembersTab({ trip, profile }) {
-  const colors = ["#4ade80", "#60a5fa", "#f472b6", "#fb923c", "#a78bfa"];
   const [members, setMembers] = useState([]);
   const [showInvite, setShowInvite] = useState(false);
   const [newName, setNewName] = useState("");
@@ -606,23 +1080,26 @@ function MembersTab({ trip, profile }) {
       .then(({ data, error }) => { if (error) console.error(error); else setMembers(data); });
   }, [trip.id]);
 
+  const avatarColors = [P.terracotta, P.lightBlue, P.orange, P.slateBlue, P.success];
+
   return (
     <div style={S.tabScroll}>
       <div style={S.tabTopRow}>
         <div style={S.tabTitle}>Members</div>
-        <button style={S.actionBtn} onClick={() => setShowInvite(true)}>+ Invite</button>
+        <button style={{ ...S.actionBtn, borderColor: P.terracotta + "60", color: P.terracotta }}
+          onClick={() => setShowInvite(true)}>+ Invite</button>
       </div>
       {showInvite && (
-        <div style={{ background: "#13131e", borderRadius: 16, padding: 18, marginBottom: 16, border: "1px solid #1e293b" }}>
+        <div style={{ background: P.surface1, borderRadius: 16, padding: 18, marginBottom: 16, border: `1px solid ${P.surface3}` }}>
           <div style={S.fieldLbl}>INVITE BY EMAIL</div>
           <input style={S.input} placeholder="friend@email.com" value={newName}
             onChange={e => setNewName(e.target.value)} type="email" />
-          <div style={{ fontSize: 12, color: "#475569", marginTop: 8, marginBottom: 12 }}>
+          <div style={{ fontSize: 12, color: P.textMuted, marginTop: 8, marginBottom: 12 }}>
             They'll see this trip when they sign in.
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <button style={S.secondaryBtn} onClick={() => setShowInvite(false)}>Cancel</button>
-            <button style={{ ...S.primaryBtn, background: "#22c55e", color: "#000" }} onClick={async () => {
+            <button style={{ ...S.primaryBtn, background: `linear-gradient(135deg, ${P.orange}, ${P.terracotta})` }} onClick={async () => {
               if (!newName) return;
               const email = newName.trim().toLowerCase();
               const { data: existingUser } = await supabase.rpc('get_user_id_by_email', { email_input: email });
@@ -646,7 +1123,7 @@ function MembersTab({ trip, profile }) {
       )}
       {members.map((m, i) => (
         <div key={m.id} style={S.memberRow}>
-          <div style={{ ...S.memberAvatar, background: colors[i % colors.length] + "25", color: colors[i % colors.length] }}>
+          <div style={{ ...S.memberAvatar, background: avatarColors[i % avatarColors.length] + "25", color: avatarColors[i % avatarColors.length] }}>
             {m.name[0]}
           </div>
           <div style={S.memberInfo}>
@@ -676,7 +1153,6 @@ function MembersTab({ trip, profile }) {
 }
 
 // ─── NEW TRIP MODAL ───────────────────────────────────────────────────────────
-// Bug fixes: location merge, date range picker, voice permissions, keyboard aware
 
 function NewTripModal({ onClose, onSave, userId }) {
   const [stage, setStage] = useState("prompt");
@@ -694,28 +1170,23 @@ function NewTripModal({ onClose, onSave, userId }) {
   ];
   const [exampleIdx] = useState(() => Math.floor(Math.random() * EXAMPLES.length));
 
-  // FIX: request mic permission explicitly before starting recognition
   const toggleVoice = async () => {
     if (listening) {
       recognitionRef.current?.stop();
       setListening(false);
       return;
     }
-
-    // Request mic permission first
     try {
       await navigator.mediaDevices.getUserMedia({ audio: true });
     } catch (err) {
       alert("Microphone access denied. Please allow mic access in your browser settings.");
       return;
     }
-
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) {
       alert("Voice input isn't supported in this browser. Try Chrome.");
       return;
     }
-
     const recognition = new SR();
     recognition.continuous = false;
     recognition.interimResults = false;
@@ -725,10 +1196,7 @@ function NewTripModal({ onClose, onSave, userId }) {
       setPrompt(prev => prev ? `${prev} ${transcript}` : transcript);
       setListening(false);
     };
-    recognition.onerror = (e) => {
-      console.error('Speech recognition error:', e.error);
-      setListening(false);
-    };
+    recognition.onerror = (e) => { console.error('Speech recognition error:', e.error); setListening(false); };
     recognition.onend = () => setListening(false);
     recognitionRef.current = recognition;
     recognition.start();
@@ -737,18 +1205,16 @@ function NewTripModal({ onClose, onSave, userId }) {
 
   const [form, setForm] = useState({
     name: "", location: "", city: "", country: "",
-    startDate: "", endDate: "",
-    emoji: "✈️", bg: "linear-gradient(135deg, #0d2b1e 0%, #1a4a32 100%)", tag: "#4ade80"
+    startDate: "", endDate: "", emoji: "✈️",
   });
   const [loading, setLoading] = useState(false);
 
-  // Compute human-readable dates string from start/end
   const formatDates = (start, end) => {
-  if (!start) return "";
-  const s = new Date(start + 'T12:00:00');
-  if (!end || start === end) {
-    return s.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-  }
+    if (!start) return "";
+    const s = new Date(start + 'T12:00:00');
+    if (!end || start === end) {
+      return s.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    }
     const e = new Date(end + 'T12:00:00');
     const sameYear = s.getFullYear() === e.getFullYear();
     const sameMonth = sameYear && s.getMonth() === e.getMonth();
@@ -775,11 +1241,8 @@ function NewTripModal({ onClose, onSave, userId }) {
       const text = data.content?.[0]?.text || "";
       const clean = text.replace(/```json|```/g, "").trim();
       const parsed = JSON.parse(clean);
-
-      // FIX: merge city + country into location
       const combined = [parsed.city, parsed.country].filter(Boolean).join(', ');
       const location = combined || parsed.location || "";
-
       setForm(f => ({ ...f, ...parsed, location }));
       setStage("confirm");
     } catch (e) {
@@ -799,13 +1262,14 @@ function NewTripModal({ onClose, onSave, userId }) {
     const { data, error } = await supabase.from('trips')
       .insert([{ ...formData, dates, total_spent: 0, settled: false, solo: false, user_id: userId }]).select();
     if (error) { console.error(error); setLoading(false); return; }
+    // Add creator as trip member
+    await supabase.from('trip_members').insert([{ trip_id: data[0].id, user_id: userId, role: 'owner', status: 'accepted' }]);
     onSave(data[0]);
   };
 
   const IconComp = TRIP_ICONS[form.emoji] || Plane;
 
   return (
-    // FIX: overlay uses fixed positioning to stay above keyboard
     <div style={S.overlay}>
       <div style={S.sheet}>
         <div style={S.sheetHandle} />
@@ -819,15 +1283,10 @@ function NewTripModal({ onClose, onSave, userId }) {
         {stage === "prompt" && (
           <div style={S.sheetBody}>
             <div style={S.promptWrap}>
-              <textarea
-                style={S.promptInput}
-                placeholder={EXAMPLES[exampleIdx]}
-                value={prompt}
-                onChange={e => setPrompt(e.target.value)}
-                rows={3}
-              />
+              <textarea style={S.promptInput} placeholder={EXAMPLES[exampleIdx]}
+                value={prompt} onChange={e => setPrompt(e.target.value)} rows={3} />
               <button style={{ ...S.micBtn, ...(listening ? S.micBtnActive : {}) }} onClick={toggleVoice}>
-                {listening ? <MicOff size={20} color="#f87171" /> : <Mic size={20} color="#475569" />}
+                {listening ? <MicOff size={20} color={P.danger} /> : <Mic size={20} color={P.textMuted} />}
               </button>
             </div>
             {listening && (
@@ -843,18 +1302,14 @@ function NewTripModal({ onClose, onSave, userId }) {
               ))}
             </div>
             <button
-              style={{ ...S.primaryBtn, background: parsing ? "#1e293b" : "#22c55e", color: parsing ? "#64748b" : "#000", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
-              onClick={parseWithClaude}
-              disabled={parsing || !prompt.trim()}
-            >
+              style={{ ...S.primaryBtn, background: parsing ? P.surface2 : `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+              onClick={parseWithClaude} disabled={parsing || !prompt.trim()}>
               {parsing
                 ? <><Loader size={18} style={{ animation: "spin 1s linear infinite" }} /> Thinking...</>
                 : <><Sparkles size={18} /> Build it</>}
             </button>
             <button style={{ ...S.secondaryBtn, marginTop: 10, width: "100%" }}
-              onClick={() => setStage("confirm")}>
-              Fill in manually →
-            </button>
+              onClick={() => setStage("confirm")}>Fill in manually →</button>
             <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
           </div>
         )}
@@ -862,16 +1317,16 @@ function NewTripModal({ onClose, onSave, userId }) {
         {stage === "confirm" && (
           <div style={S.sheetBody}>
             {parseError && (
-              <div style={{ background: "#2a0f0f", border: "1px solid #7f1d1d", borderRadius: 12, padding: "12px 14px", fontSize: 13, color: "#f87171", marginBottom: 16 }}>
+              <div style={{ background: P.dangerBg, border: `1px solid ${P.danger}40`, borderRadius: 12, padding: "12px 14px", fontSize: 13, color: P.danger, marginBottom: 16 }}>
                 {parseError}
               </div>
             )}
-            <div style={{ ...S.previewCard, background: form.bg }}>
-              <div style={{ ...S.tcIconWrap, background: (form.tag || "#4ade80") + "20", border: `1px solid ${form.tag || "#4ade80"}30`, marginBottom: 12 }}>
-                <IconComp size={26} color={form.tag || "#4ade80"} strokeWidth={1.5} />
+            <div style={{ ...S.previewCard, background: `linear-gradient(135deg, ${P.surface1} 0%, ${P.surface2} 100%)` }}>
+              <div style={{ ...S.tcIconWrap, background: P.terracotta + "20", border: `1px solid ${P.terracotta}30`, marginBottom: 12 }}>
+                <IconComp size={26} color={P.terracotta} strokeWidth={1.5} />
               </div>
-              <div style={{ fontSize: 22, fontWeight: 900, color: "#f8fafc", letterSpacing: "-0.8px" }}>{form.name || "Untitled"}</div>
-              <div style={{ fontSize: 13, color: "#94a3b8", marginTop: 4 }}>
+              <div style={{ fontSize: 22, fontWeight: 900, color: P.textPrimary, letterSpacing: "-0.8px" }}>{form.name || "Untitled"}</div>
+              <div style={{ fontSize: 13, color: P.textSecondary, marginTop: 4 }}>
                 {form.location}{formatDates(form.startDate, form.endDate) ? ` · ${formatDates(form.startDate, form.endDate)}` : ""}
               </div>
             </div>
@@ -885,48 +1340,44 @@ function NewTripModal({ onClose, onSave, userId }) {
               <input style={S.input} value={form.location}
                 onChange={e => setForm(f => ({ ...f, location: e.target.value }))} placeholder="Where" />
             </div>
-            {/* FIX: date range picker instead of single text field */}
             <div style={{ display: "flex", gap: 10 }}>
               <div style={{ ...S.field, flex: 1 }}>
                 <div style={S.fieldLbl}>START DATE</div>
                 <input style={{ ...S.input, colorScheme: "dark" }} type="date"
-                  value={form.startDate}
-                  onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} />
+                  value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} />
               </div>
               <div style={{ ...S.field, flex: 1 }}>
-  <div style={{ ...S.fieldLbl, display: "flex", justifyContent: "space-between" }}>
-    <span>END DATE</span>
-    <span style={{ color: "#334155", fontWeight: 600 }}>optional</span>
-  </div>
-  <input style={{ ...S.input, colorScheme: "dark" }} type="date"
-    value={form.endDate}
-    min={form.startDate}
-    onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))} />
-</div>
+                <div style={{ ...S.fieldLbl, display: "flex", justifyContent: "space-between" }}>
+                  <span>END DATE</span>
+                  <span style={{ color: P.textMuted, fontWeight: 600 }}>optional</span>
+                </div>
+                <input style={{ ...S.input, colorScheme: "dark" }} type="date"
+                  value={form.endDate} min={form.startDate}
+                  onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))} />
+              </div>
             </div>
             <div style={S.field}>
               <div style={S.fieldLbl}>ICON</div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-  {TRIP_ICON_LIST.map(({ key, Icon, label }) => (
-    <button key={key} onClick={() => setForm(f => ({ ...f, emoji: key }))}
-      style={{
-        background: form.emoji === key ? "#1e293b" : "transparent",
-        border: form.emoji === key ? "1px solid #4ade80" : "1px solid #1e293b",
-        borderRadius: 12, padding: "8px 12px", cursor: "pointer",
-        display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
-        minWidth: 56
-      }}>
-      <Icon size={20} color={form.emoji === key ? "#4ade80" : "#475569"} strokeWidth={1.5} />
-      <span style={{ fontSize: 9, color: form.emoji === key ? "#4ade80" : "#475569", fontWeight: 700, letterSpacing: "0.5px" }}>
-        {label}
-      </span>
-    </button>
-  ))}
-</div>
+                {TRIP_ICON_LIST.map(({ key, Icon, label }) => (
+                  <button key={key} onClick={() => setForm(f => ({ ...f, emoji: key }))}
+                    style={{
+                      background: form.emoji === key ? P.surface2 : "transparent",
+                      border: form.emoji === key ? `1px solid ${P.terracotta}` : `1px solid ${P.surface3}`,
+                      borderRadius: 12, padding: "8px 12px", cursor: "pointer",
+                      display: "flex", flexDirection: "column", alignItems: "center", gap: 4, minWidth: 56
+                    }}>
+                    <Icon size={20} color={form.emoji === key ? P.terracotta : P.textMuted} strokeWidth={1.5} />
+                    <span style={{ fontSize: 9, color: form.emoji === key ? P.terracotta : P.textMuted, fontWeight: 700, letterSpacing: "0.5px" }}>
+                      {label}
+                    </span>
+                  </button>
+                ))}
+              </div>
             </div>
             <div style={{ display: "flex", gap: 10 }}>
               <button style={S.secondaryBtn} onClick={() => setStage("prompt")}>← Redo</button>
-              <button style={{ ...S.primaryBtn, background: loading ? "#1e293b" : "#22c55e", color: "#000" }}
+              <button style={{ ...S.primaryBtn, background: loading ? P.surface2 : `linear-gradient(135deg, ${P.orange}, ${P.terracotta})` }}
                 onClick={handleSave} disabled={loading}>
                 {loading ? "Saving..." : "Create ✓"}
               </button>
@@ -1021,7 +1472,7 @@ function AddExpenseModal({ onClose, trip, onAdd, user, profile, existingExpense 
               <div style={S.catRow}>
                 {["Food","Stay","Activity","Transport"].map(c => (
                   <button key={c} onClick={() => setExp(n => ({ ...n, category: c }))}
-                    style={{ ...S.catBtn, ...(exp.category === c ? { background: CATEGORY_META[c].bg, color: CATEGORY_META[c].color, borderColor: CATEGORY_META[c].color } : { borderColor: "#1e293b", background: "#13131e", color: "#64748b" }) }}>
+                    style={{ ...S.catBtn, ...(exp.category === c ? { background: CATEGORY_META[c]?.bg, color: CATEGORY_META[c]?.color, borderColor: CATEGORY_META[c]?.color } : { borderColor: P.surface3, background: P.surface1, color: P.textMuted }) }}>
                     {c}
                   </button>
                 ))}
@@ -1036,7 +1487,8 @@ function AddExpenseModal({ onClose, trip, onAdd, user, profile, existingExpense 
                 ))}
               </div>
             </div>
-            <button style={S.primaryBtn} onClick={() => members.length <= 1 ? setStep(3) : setStep(2)}>
+            <button style={{ ...S.primaryBtn, background: `linear-gradient(135deg, ${P.orange}, ${P.terracotta})` }}
+              onClick={() => members.length <= 1 ? setStep(3) : setStep(2)}>
               {members.length <= 1 ? "Review" : "Next → Split"}
             </button>
           </div>
@@ -1052,7 +1504,7 @@ function AddExpenseModal({ onClose, trip, onAdd, user, profile, existingExpense 
               {members.map(m => (
                 <button key={m} onClick={() => toggleMember(m)}
                   style={{ ...S.splitMember, ...(exp.splitWith.includes(m) ? S.splitMemberOn : {}) }}>
-                  <div style={{ ...S.splitAvatar, ...(exp.splitWith.includes(m) ? { background: "#14532d", color: "#4ade80" } : {}) }}>{m[0]}</div>
+                  <div style={{ ...S.splitAvatar, ...(exp.splitWith.includes(m) ? { background: P.successBg, color: P.success } : {}) }}>{m[0]}</div>
                   <div style={S.splitName}>{m}</div>
                   {exp.splitWith.includes(m) && <div style={S.splitCheck}>✓</div>}
                 </button>
@@ -1060,7 +1512,8 @@ function AddExpenseModal({ onClose, trip, onAdd, user, profile, existingExpense 
             </div>
             <div style={{ display: "flex", gap: 10 }}>
               <button style={S.secondaryBtn} onClick={() => setStep(1)}>← Back</button>
-              <button style={S.primaryBtn} onClick={() => setStep(3)}>Review</button>
+              <button style={{ ...S.primaryBtn, background: `linear-gradient(135deg, ${P.orange}, ${P.terracotta})` }}
+                onClick={() => setStep(3)}>Review</button>
             </div>
           </div>
         )}
@@ -1075,7 +1528,8 @@ function AddExpenseModal({ onClose, trip, onAdd, user, profile, existingExpense 
             </div>
             <div style={{ display: "flex", gap: 10 }}>
               <button style={S.secondaryBtn} onClick={() => setStep(2)}>← Edit</button>
-              <button style={{ ...S.primaryBtn, background: "#22c55e", color: "#000" }} onClick={handleSubmit}>
+              <button style={{ ...S.primaryBtn, background: `linear-gradient(135deg, ${P.orange}, ${P.terracotta})` }}
+                onClick={handleSubmit}>
                 {existingExpense ? "✓ Save Changes" : "✓ Add Expense"}
               </button>
             </div>
@@ -1117,7 +1571,7 @@ function AddItinModal({ onClose, trip, onAdd }) {
                 const TIcon = ITIN_TYPE_ICONS[t];
                 return (
                   <button key={t} onClick={() => setForm(f => ({ ...f, type: t }))}
-                    style={{ ...S.catBtn, display: "flex", alignItems: "center", gap: 5, textTransform: "capitalize", ...(form.type === t ? { background: m.bg, color: m.accent, borderColor: m.accent + "80" } : { borderColor: "#1e293b", background: "#13131e", color: "#64748b" }) }}>
+                    style={{ ...S.catBtn, display: "flex", alignItems: "center", gap: 5, textTransform: "capitalize", ...(form.type === t ? { background: m.bg, color: m.accent, borderColor: m.accent + "80" } : { borderColor: P.surface3, background: P.surface1, color: P.textMuted }) }}>
                     <TIcon size={13} strokeWidth={2} />{t}
                   </button>
                 );
@@ -1146,7 +1600,8 @@ function AddItinModal({ onClose, trip, onAdd }) {
                 value={form.time} onChange={e => setForm(f => ({ ...f, time: e.target.value }))} />
             </div>
           </div>
-          <button style={{ ...S.primaryBtn, background: meta.accent, color: "#000", marginTop: 8 }} onClick={handleAdd}>
+          <button style={{ ...S.primaryBtn, background: meta.accent === P.terracotta ? `linear-gradient(135deg, ${P.orange}, ${P.terracotta})` : meta.accent, color: "#fff", marginTop: 8 }}
+            onClick={handleAdd}>
             Add to Itinerary
           </button>
         </div>
@@ -1162,7 +1617,6 @@ function EditItinModal({ item, onClose, onSave }) {
     time: item.time || "", icon: item.icon || "🎯",
   });
   const types = ["flight", "stay", "activity", "restaurant", "transport"];
-  const meta = ITINERARY_COLORS[form.type];
   const [loading, setLoading] = useState(false);
 
   const handleSave = async () => {
@@ -1190,7 +1644,7 @@ function EditItinModal({ item, onClose, onSave }) {
                 const TIcon = ITIN_TYPE_ICONS[t];
                 return (
                   <button key={t} onClick={() => setForm(f => ({ ...f, type: t }))}
-                    style={{ ...S.catBtn, display: "flex", alignItems: "center", gap: 5, textTransform: "capitalize", ...(form.type === t ? { background: m.bg, color: m.accent, borderColor: m.accent + "80" } : { borderColor: "#1e293b", background: "#13131e", color: "#64748b" }) }}>
+                    style={{ ...S.catBtn, display: "flex", alignItems: "center", gap: 5, textTransform: "capitalize", ...(form.type === t ? { background: m.bg, color: m.accent, borderColor: m.accent + "80" } : { borderColor: P.surface3, background: P.surface1, color: P.textMuted }) }}>
                     <TIcon size={13} strokeWidth={2} />{t}
                   </button>
                 );
@@ -1217,7 +1671,7 @@ function EditItinModal({ item, onClose, onSave }) {
                 value={form.time} onChange={e => setForm(f => ({ ...f, time: e.target.value }))} />
             </div>
           </div>
-          <button style={{ ...S.primaryBtn, background: loading ? "#1e293b" : meta.accent, color: "#000", marginTop: 8 }}
+          <button style={{ ...S.primaryBtn, background: loading ? P.surface2 : `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`, color: "#fff", marginTop: 8 }}
             onClick={handleSave} disabled={loading}>
             {loading ? "Saving..." : "Save Changes"}
           </button>
@@ -1246,7 +1700,7 @@ function SettleModal({ settlements, myName, onClose }) {
             {mine.map((s, i) => (
               <div key={i} style={{ ...S.settleRow, opacity: marked.includes(`m${i}`) ? 0.4 : 1 }}>
                 <div>
-                  <div style={S.settlePeople}><span style={{ color: "#f87171" }}>You</span> → <span style={{ color: "#4ade80" }}>{s.to}</span></div>
+                  <div style={S.settlePeople}><span style={{ color: P.danger }}>You</span> → <span style={{ color: P.terracotta }}>{s.to}</span></div>
                   <div style={S.settleAmt}>${s.amount}</div>
                 </div>
                 <div style={{ display: "flex", gap: 8 }}>
@@ -1264,7 +1718,7 @@ function SettleModal({ settlements, myName, onClose }) {
             {others.map((s, i) => (
               <div key={i} style={{ ...S.settleRow, opacity: marked.includes(`o${i}`) ? 0.4 : 1 }}>
                 <div>
-                  <div style={S.settlePeople}><span style={{ color: "#fb923c" }}>{s.from}</span> → <span style={{ color: "#4ade80" }}>{s.to}</span></div>
+                  <div style={S.settlePeople}><span style={{ color: P.orange }}>{s.from}</span> → <span style={{ color: P.terracotta }}>{s.to}</span></div>
                   <div style={S.settleAmt}>${s.amount}</div>
                 </div>
                 <button onClick={() => toggle(`o${i}`)} style={{ ...S.markBtn, ...(marked.includes(`o${i}`) ? S.markBtnDone : {}) }}>
@@ -1281,9 +1735,9 @@ function SettleModal({ settlements, myName, onClose }) {
 
 function ShareModal({ trip, onClose }) {
   const options = [
-    { icon: "🗓", label: "Full Itinerary", sub: "All stops, times & confirmations", color: "#60a5fa" },
-    { icon: "📍", label: "Places & Recs", sub: "Restaurants, activities & stays only", color: "#4ade80" },
-    { icon: "📋", label: "Trip Summary", sub: "Overview with spend & members", color: "#fb923c" },
+    { icon: "🗓", label: "Full Itinerary", sub: "All stops, times & confirmations", color: P.lightBlue },
+    { icon: "📍", label: "Places & Recs", sub: "Restaurants, activities & stays only", color: P.terracotta },
+    { icon: "📋", label: "Trip Summary", sub: "Overview with spend & members", color: P.orange },
   ];
   return (
     <div style={S.overlay}>
@@ -1294,7 +1748,7 @@ function ShareModal({ trip, onClose }) {
           <button style={S.closeBtn} onClick={onClose}>✕</button>
         </div>
         <div style={S.sheetBody}>
-          <div style={S.shareSubtitle}>Choose what to share from <strong style={{ color: "#f1f5f9" }}>{trip?.name}</strong></div>
+          <div style={S.shareSubtitle}>Choose what to share from <strong style={{ color: P.textPrimary }}>{trip?.name}</strong></div>
           {options.map(opt => (
             <div key={opt.label} style={S.shareOption}>
               <span style={{ fontSize: 24 }}>{opt.icon}</span>
@@ -1306,72 +1760,6 @@ function ShareModal({ trip, onClose }) {
             </div>
           ))}
           <div style={S.shareNote}>🔒 Sensitive photos and private notes are always excluded from shared exports.</div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── AUTH SCREEN ──────────────────────────────────────────────────────────────
-
-function AuthScreen({ onAuth }) {
-  const [mode, setMode] = useState("login");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  const handle = async () => {
-    setLoading(true); setError("");
-    const { data, error } = mode === "login"
-      ? await supabase.auth.signInWithPassword({ email, password })
-      : await supabase.auth.signUp({ email, password });
-    if (error) { setError(error.message); setLoading(false); return; }
-    onAuth(data.user);
-  };
-
-  return (
-    <div style={S.root}>
-      <div style={S.phone}>
-        <div style={{ padding: "60px 28px 0", textAlign: "center" }}>
-          <div style={{ fontSize: 44, marginBottom: 18 }}>🧭</div>
-          <div style={{ fontSize: 32, fontWeight: 900, color: "#f1f5f9", letterSpacing: "-1.5px", marginBottom: 8 }}>tripcrew</div>
-          <div style={{ fontSize: 14, color: "#475569", marginBottom: 44 }}>for trips, nights out, and everything in between</div>
-        </div>
-        <div style={{ padding: "0 28px" }}>
-          <div style={S.field}>
-            <div style={S.fieldLbl}>EMAIL</div>
-            <input style={S.input} type="email" placeholder="you@email.com" value={email} onChange={e => setEmail(e.target.value)} />
-          </div>
-          <div style={S.field}>
-            <div style={S.fieldLbl}>PASSWORD</div>
-            <input style={S.input} type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} />
-          </div>
-          {error && <div style={{ color: "#f87171", fontSize: 13, marginBottom: 14 }}>{error}</div>}
-          <button style={{ ...S.primaryBtn, background: loading ? "#1e293b" : "#22c55e", color: "#000", marginBottom: 14 }}
-            onClick={handle} disabled={loading}>
-            {loading ? "..." : mode === "login" ? "Sign In" : "Create Account"}
-          </button>
-          <div style={{ display: "flex", alignItems: "center", margin: "18px 0" }}>
-            <div style={{ flex: 1, height: 1, background: "#1e293b" }} />
-            <span style={{ color: "#334155", fontSize: 13, padding: "0 14px" }}>or</span>
-            <div style={{ flex: 1, height: 1, background: "#1e293b" }} />
-          </div>
-          <button style={{ ...S.primaryBtn, background: "#fff", color: "#000", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 18 }}
-            onClick={async () => {
-              const { error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } });
-              if (error) console.error(error);
-            }}>
-            <img src="https://www.google.com/favicon.ico" style={{ width: 18, height: 18 }} alt="Google" />
-            Continue with Google
-          </button>
-          <div style={{ textAlign: "center", fontSize: 14, color: "#475569" }}>
-            {mode === "login" ? "No account? " : "Have an account? "}
-            <span style={{ color: "#4ade80", cursor: "pointer", fontWeight: 700 }}
-              onClick={() => setMode(mode === "login" ? "signup" : "login")}>
-              {mode === "login" ? "Sign up" : "Sign in"}
-            </span>
-          </div>
         </div>
       </div>
     </div>
@@ -1418,7 +1806,7 @@ function SettingsScreen({ user, profile, onBack, onProfileUpdate }) {
     <div style={S.screen}>
       <div style={{ padding: "52px 24px 0", display: "flex", alignItems: "center", gap: 14, marginBottom: 32 }}>
         <button style={S.backBtn} onClick={onBack}>←</button>
-        <div style={{ fontSize: 24, fontWeight: 900, color: "#f1f5f9", letterSpacing: "-0.8px" }}>Settings</div>
+        <div style={{ fontSize: 24, fontWeight: 900, color: P.textPrimary, letterSpacing: "-0.8px" }}>Settings</div>
       </div>
       <div style={{ padding: "0 24px 40px" }}>
         <div style={S.settingsSection}>
@@ -1426,7 +1814,7 @@ function SettingsScreen({ user, profile, onBack, onProfileUpdate }) {
           <div style={S.settingsCard}>
             <div style={S.fieldLbl}>DISPLAY NAME</div>
             <input style={S.input} value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Your name" />
-            <button style={{ ...S.primaryBtn, background: saved ? "#14532d" : saving ? "#1e293b" : "#22c55e", color: saved ? "#4ade80" : "#000", marginTop: 14 }}
+            <button style={{ ...S.primaryBtn, background: saved ? P.successBg : saving ? P.surface2 : `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`, color: saved ? P.success : "#fff", marginTop: 14 }}
               onClick={handleSaveName} disabled={saving}>
               {saved ? "✓ Saved" : saving ? "Saving..." : "Save Name"}
             </button>
@@ -1435,20 +1823,20 @@ function SettingsScreen({ user, profile, onBack, onProfileUpdate }) {
         <div style={S.settingsSection}>
           <div style={S.settingsSectionLabel}>RECENTLY DELETED</div>
           {deletedTrips.length === 0
-            ? <div style={{ fontSize: 14, color: "#334155", padding: "16px 0" }}>No recently deleted trips.</div>
+            ? <div style={{ fontSize: 14, color: P.textMuted, padding: "16px 0" }}>No recently deleted trips.</div>
             : deletedTrips.map(trip => (
               <div key={trip.id} style={S.settingsCard}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div>
-                    <div style={{ fontSize: 16, fontWeight: 700, color: "#e2e8f0" }}>{trip.name}</div>
-                    <div style={{ fontSize: 13, color: "#475569", marginTop: 3 }}>{trip.location} · deleted {new Date(trip.deleted_at).toLocaleDateString()}</div>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: P.textPrimary }}>{trip.name}</div>
+                    <div style={{ fontSize: 13, color: P.textMuted, marginTop: 3 }}>{trip.location} · deleted {new Date(trip.deleted_at).toLocaleDateString()}</div>
                   </div>
                   <div style={{ display: "flex", gap: 8 }}>
-                    <button style={{ background: "#14532d", border: "none", color: "#4ade80", borderRadius: 10, padding: "8px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
+                    <button style={{ background: P.successBg, border: "none", color: P.success, borderRadius: 10, padding: "8px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
                       onClick={() => handleRestore(trip)} disabled={restoring === trip.id}>
                       {restoring === trip.id ? "..." : "Restore"}
                     </button>
-                    <button style={{ background: "#450a0a", border: "none", color: "#f87171", borderRadius: 10, padding: "8px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
+                    <button style={{ background: P.dangerBg, border: "none", color: P.danger, borderRadius: 10, padding: "8px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
                       onClick={() => handlePermanentDelete(trip)}>Delete</button>
                   </div>
                 </div>
@@ -1458,11 +1846,11 @@ function SettingsScreen({ user, profile, onBack, onProfileUpdate }) {
         </div>
         <div style={S.settingsSection}>
           <div style={S.settingsSectionLabel}>NOTIFICATIONS</div>
-          <div style={{ ...S.settingsCard, opacity: 0.4 }}><div style={{ fontSize: 14, color: "#475569" }}>Coming soon</div></div>
+          <div style={{ ...S.settingsCard, opacity: 0.4 }}><div style={{ fontSize: 14, color: P.textMuted }}>Coming soon</div></div>
         </div>
         <div style={S.settingsSection}>
           <div style={S.settingsSectionLabel}>CONNECTED ACCOUNTS</div>
-          <div style={{ ...S.settingsCard, opacity: 0.4 }}><div style={{ fontSize: 14, color: "#475569" }}>Coming soon</div></div>
+          <div style={{ ...S.settingsCard, opacity: 0.4 }}><div style={{ fontSize: 14, color: P.textMuted }}>Coming soon</div></div>
         </div>
       </div>
     </div>
@@ -1520,24 +1908,23 @@ function EditTripModal({ trip, onClose, onSave }) {
           <div style={S.field}>
             <div style={S.fieldLbl}>ICON</div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-  {TRIP_ICON_LIST.map(({ key, Icon, label }) => (
-    <button key={key} onClick={() => setForm(f => ({ ...f, emoji: key }))}
-      style={{
-        background: form.emoji === key ? "#1e293b" : "transparent",
-        border: form.emoji === key ? "1px solid #4ade80" : "1px solid #1e293b",
-        borderRadius: 12, padding: "8px 12px", cursor: "pointer",
-        display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
-        minWidth: 56
-      }}>
-      <Icon size={20} color={form.emoji === key ? "#4ade80" : "#475569"} strokeWidth={1.5} />
-      <span style={{ fontSize: 9, color: form.emoji === key ? "#4ade80" : "#475569", fontWeight: 700, letterSpacing: "0.5px" }}>
-        {label}
-      </span>
-    </button>
-  ))}
-</div>
+              {TRIP_ICON_LIST.map(({ key, Icon, label }) => (
+                <button key={key} onClick={() => setForm(f => ({ ...f, emoji: key }))}
+                  style={{
+                    background: form.emoji === key ? P.surface2 : "transparent",
+                    border: form.emoji === key ? `1px solid ${P.terracotta}` : `1px solid ${P.surface3}`,
+                    borderRadius: 12, padding: "8px 12px", cursor: "pointer",
+                    display: "flex", flexDirection: "column", alignItems: "center", gap: 4, minWidth: 56
+                  }}>
+                  <Icon size={20} color={form.emoji === key ? P.terracotta : P.textMuted} strokeWidth={1.5} />
+                  <span style={{ fontSize: 9, color: form.emoji === key ? P.terracotta : P.textMuted, fontWeight: 700, letterSpacing: "0.5px" }}>
+                    {label}
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
-          <button style={{ ...S.primaryBtn, background: loading ? "#1e293b" : "#22c55e", color: "#000", marginTop: 8 }}
+          <button style={{ ...S.primaryBtn, background: loading ? P.surface2 : `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`, marginTop: 8 }}
             onClick={handleSave} disabled={loading}>
             {loading ? "Saving..." : "Save Changes"}
           </button>
@@ -1550,37 +1937,83 @@ function EditTripModal({ trip, onClose, onSave }) {
 // ─── STYLES ───────────────────────────────────────────────────────────────────
 
 const S = {
-  root: { minHeight: "100vh", background: "#060609", display: "flex", justifyContent: "center", alignItems: "flex-start", padding: "32px 16px", fontFamily: "'Syne', 'DM Sans', 'Helvetica Neue', sans-serif" },
-  phone: { width: 430, maxWidth: "100%", background: "#0c0c14", borderRadius: 36, overflow: "hidden", boxShadow: "0 40px 100px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.05)", minHeight: 750, height: 750, position: "relative", display: "flex", flexDirection: "column" },
+  root: {
+    minHeight: "100vh",
+    background: P.outerBg,
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "flex-start",
+    padding: "32px 16px",
+    fontFamily: "'Syne', 'DM Sans', 'Helvetica Neue', sans-serif",
+  },
+  phone: {
+    width: 430,
+    maxWidth: "100%",
+    background: P.phoneBg,
+    borderRadius: 36,
+    overflow: "hidden",
+    boxShadow: `0 40px 100px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.05)`,
+    minHeight: 750,
+    height: 750,
+    position: "relative",
+    display: "flex",
+    flexDirection: "column",
+  },
   screen: { flex: 1, overflowY: "auto" },
 
   // Profile
-  profileHero: { padding: "52px 28px 32px", textAlign: "center", background: "linear-gradient(180deg, #111122 0%, #0c0c14 100%)", borderBottom: "1px solid #1a1a2a" },
-  profileAvatar: { width: 84, height: 84, borderRadius: "50%", background: "linear-gradient(135deg, #4ade80, #22d3ee)", color: "#000", fontSize: 26, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", letterSpacing: "-1px" },
-  profileName: { fontSize: 30, fontWeight: 900, color: "#f8fafc", letterSpacing: "-1.2px", marginBottom: 6 },
-  profileSub: { fontSize: 13, color: "#475569", letterSpacing: "1px", marginBottom: 24 },
-  profileStats: { display: "flex", justifyContent: "center", alignItems: "center", background: "#13131e", borderRadius: 18, padding: "18px 0", border: "1px solid #1a1a2a" },
+  profileHero: {
+    padding: "52px 28px 32px",
+    textAlign: "center",
+    background: `linear-gradient(180deg, ${P.surface1} 0%, ${P.phoneBg} 100%)`,
+    borderBottom: `1px solid ${P.surface3}`,
+  },
+  profileAvatar: {
+    width: 84, height: 84, borderRadius: "50%",
+    background: `linear-gradient(135deg, ${P.terracotta}, ${P.orange})`,
+    color: "#fff",
+    fontSize: 26, fontWeight: 900,
+    display: "flex", alignItems: "center", justifyContent: "center",
+    margin: "0 auto 16px", letterSpacing: "-1px",
+  },
+  profileName: { fontSize: 30, fontWeight: 900, color: P.textPrimary, letterSpacing: "-1.2px", marginBottom: 6 },
+  profileSub: { fontSize: 13, color: P.textMuted, letterSpacing: "1px", marginBottom: 24 },
+  profileStats: {
+    display: "flex", justifyContent: "center", alignItems: "center",
+    background: P.surface1, borderRadius: 18, padding: "18px 0", border: `1px solid ${P.surface3}`,
+  },
   statItem: { flex: 1, textAlign: "center" },
-  statNum: { fontSize: 26, fontWeight: 900, color: "#f1f5f9", letterSpacing: "-1px" },
-  statLbl: { fontSize: 11, color: "#475569", letterSpacing: "1px", marginTop: 3 },
-  statDiv: { width: 1, height: 34, background: "#1e1e2e" },
+  statNum: { fontSize: 26, fontWeight: 900, color: P.textPrimary, letterSpacing: "-1px" },
+  statLbl: { fontSize: 11, color: P.textMuted, letterSpacing: "1px", marginTop: 3 },
+  statDiv: { width: 1, height: 34, background: P.surface3 },
 
   // Section
   sectionRow: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, marginTop: 32 },
-  sectionLabel: { fontSize: 11, fontWeight: 700, color: "#334155", letterSpacing: "2.5px" },
-  newBtn: { background: "#22c55e", color: "#000", border: "none", borderRadius: 22, padding: "9px 18px", fontSize: 14, fontWeight: 800, cursor: "pointer" },
-  ghostBtn: { background: "transparent", border: "1px solid #1e293b", color: "#475569", borderRadius: 22, padding: "9px 18px", fontSize: 13, fontWeight: 700, cursor: "pointer" },
+  sectionLabel: { fontSize: 11, fontWeight: 700, color: P.textMuted, letterSpacing: "2.5px" },
+  newBtn: {
+    background: `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`,
+    color: "#fff", border: "none", borderRadius: 22,
+    padding: "9px 18px", fontSize: 14, fontWeight: 800, cursor: "pointer",
+  },
+  ghostBtn: {
+    background: "transparent", border: `1px solid ${P.surface3}`,
+    color: P.slateBlue, borderRadius: 22,
+    padding: "9px 18px", fontSize: 13, fontWeight: 700, cursor: "pointer",
+  },
 
   // Trip card
-  tripCard: { borderRadius: 24, padding: "22px", marginBottom: 14, cursor: "pointer", border: "1px solid rgba(255,255,255,0.05)", position: "relative" },
+  tripCard: {
+    borderRadius: 24, padding: "22px", marginBottom: 14, cursor: "pointer",
+    border: `1px solid rgba(255,255,255,0.06)`, position: "relative",
+  },
   tcIconWrap: { width: 52, height: 52, borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center" },
   tcTop: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
-  tcEditBtn: { position: "absolute", top: 14, right: 54, background: "#ffffff15", border: "none", color: "#94a3b8", borderRadius: 10, padding: "7px 13px", fontSize: 13, fontWeight: 700, cursor: "pointer", zIndex: 10 },
-  tcDeleteBtn: { position: "absolute", top: 14, right: 14, background: "#ffffff15", border: "none", color: "#94a3b8", borderRadius: 10, padding: "7px 13px", fontSize: 13, fontWeight: 700, cursor: "pointer", zIndex: 10 },
-  soloBadge: { background: "#1e293b", color: "#64748b", fontSize: 10, fontWeight: 800, letterSpacing: "1.5px", padding: "4px 10px", borderRadius: 8 },
-  settledBadge: { background: "#14532d", color: "#4ade80", fontSize: 10, fontWeight: 800, letterSpacing: "1.5px", padding: "4px 10px", borderRadius: 8 },
-  tcName: { fontSize: 26, fontWeight: 900, color: "#f8fafc", letterSpacing: "-0.8px", marginBottom: 6 },
-  tcLocation: { fontSize: 14, color: "#94a3b8", marginBottom: 18 },
+  tcEditBtn: { position: "absolute", top: 14, right: 54, background: "rgba(255,255,255,0.08)", border: "none", color: P.textSecondary, borderRadius: 10, padding: "7px 13px", fontSize: 13, fontWeight: 700, cursor: "pointer", zIndex: 10 },
+  tcDeleteBtn: { position: "absolute", top: 14, right: 14, background: "rgba(255,255,255,0.08)", border: "none", color: P.textSecondary, borderRadius: 10, padding: "7px 13px", fontSize: 13, fontWeight: 700, cursor: "pointer", zIndex: 10 },
+  soloBadge: { background: P.surface2, color: P.textMuted, fontSize: 10, fontWeight: 800, letterSpacing: "1.5px", padding: "4px 10px", borderRadius: 8 },
+  settledBadge: { background: P.successBg, color: P.success, fontSize: 10, fontWeight: 800, letterSpacing: "1.5px", padding: "4px 10px", borderRadius: 8 },
+  tcName: { fontSize: 26, fontWeight: 900, color: P.textPrimary, letterSpacing: "-0.8px", marginBottom: 6 },
+  tcLocation: { fontSize: 14, color: P.textSecondary, marginBottom: 18 },
   tcBottom: { display: "flex", justifyContent: "space-between", alignItems: "center" },
   tcTotal: { fontSize: 22, fontWeight: 900, letterSpacing: "-1px" },
   tcViewBtn: { display: "flex", alignItems: "center", gap: 4, fontSize: 13, fontWeight: 700, border: "1px solid", borderRadius: 22, padding: "7px 14px" },
@@ -1588,163 +2021,162 @@ const S = {
   // Trip shell
   tripShell: { flex: 1, display: "flex", flexDirection: "column", height: "100%", position: "relative" },
   tripHeader: { padding: "28px 22px 22px", display: "flex", alignItems: "center", gap: 14 },
-  backBtn: { background: "#ffffff15", border: "none", color: "#fff", fontSize: 20, cursor: "pointer", borderRadius: 12, width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  backBtn: { background: "rgba(255,255,255,0.08)", border: "none", color: P.textPrimary, fontSize: 20, cursor: "pointer", borderRadius: 12, width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
   thIconWrap: { width: 42, height: 42, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
   thMid: { flex: 1, display: "flex", alignItems: "center", gap: 12 },
-  thName: { fontSize: 19, fontWeight: 900, color: "#f8fafc", letterSpacing: "-0.5px" },
-  thSub: { fontSize: 12, color: "#94a3b8", marginTop: 2 },
+  thName: { fontSize: 19, fontWeight: 900, color: P.textPrimary, letterSpacing: "-0.5px" },
+  thSub: { fontSize: 12, color: P.textSecondary, marginTop: 2 },
   shareHeaderBtn: { background: "transparent", border: "none", fontSize: 13, fontWeight: 800, cursor: "pointer", letterSpacing: "0.3px", flexShrink: 0 },
 
   // Tab
   tabContent: { flex: 1, overflow: "hidden", position: "relative", display: "flex", flexDirection: "column", minHeight: 0 },
   tabScroll: { height: "100%", overflowY: "auto", padding: "0 20px" },
   tabTopRow: { display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 24, paddingBottom: 18 },
-  tabTitle: { fontSize: 24, fontWeight: 900, color: "#f1f5f9", letterSpacing: "-0.8px" },
-  actionBtn: { background: "transparent", border: "1px solid #334155", color: "#94a3b8", borderRadius: 22, padding: "9px 18px", fontSize: 13, fontWeight: 700, cursor: "pointer" },
-  tabBar: { display: "flex", background: "#0f0f1a", borderTop: "1px solid #1a1a28", padding: "12px 0 16px", flexShrink: 0 },
+  tabTitle: { fontSize: 24, fontWeight: 900, color: P.textPrimary, letterSpacing: "-0.8px" },
+  actionBtn: { background: "transparent", border: `1px solid ${P.surface3}`, color: P.textSecondary, borderRadius: 22, padding: "9px 18px", fontSize: 13, fontWeight: 700, cursor: "pointer" },
+  tabBar: { display: "flex", background: P.surface1, borderTop: `1px solid ${P.surface3}`, padding: "12px 0 16px", flexShrink: 0 },
   tabBtn: { flex: 1, background: "transparent", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "4px 0", position: "relative" },
-  tabLabel: { fontSize: 11, fontWeight: 700, color: "#475569", letterSpacing: "0.3px" },
+  tabLabel: { fontSize: 11, fontWeight: 700, color: P.textMuted, letterSpacing: "0.3px" },
   tabDot: { width: 4, height: 4, borderRadius: "50%", position: "absolute", bottom: -4 },
 
   // Itinerary
   dayBlock: { marginBottom: 22 },
-  dayLabel: { fontSize: 12, fontWeight: 800, color: "#334155", letterSpacing: "2px", marginBottom: 10 },
+  dayLabel: { fontSize: 12, fontWeight: 800, color: P.textMuted, letterSpacing: "2px", marginBottom: 10 },
   iRow: { display: "flex", gap: 12, padding: "14px", borderRadius: 16, border: "1px solid", marginBottom: 10 },
-  iTime: { fontSize: 12, color: "#64748b", width: 48, flexShrink: 0, paddingTop: 2, fontWeight: 600 },
+  iTime: { fontSize: 12, color: P.textMuted, width: 48, flexShrink: 0, paddingTop: 2, fontWeight: 600 },
   iLine: { display: "flex", flexDirection: "column", alignItems: "center", width: 12, flexShrink: 0 },
   iDot: { width: 9, height: 9, borderRadius: "50%", flexShrink: 0, marginTop: 3 },
-  iConnector: { flex: 1, width: 1, background: "#1e293b", marginTop: 4 },
+  iConnector: { flex: 1, width: 1, background: P.surface3, marginTop: 4 },
   iBody: { flex: 1 },
-  iTitle: { fontSize: 15, fontWeight: 700, color: "#e2e8f0", marginBottom: 4, display: "flex", alignItems: "center", gap: 6 },
-  iDetail: { fontSize: 13, color: "#64748b", marginBottom: 4 },
+  iTitle: { fontSize: 15, fontWeight: 700, color: P.textPrimary, marginBottom: 4, display: "flex", alignItems: "center", gap: 6 },
+  iDetail: { fontSize: 13, color: P.textMuted, marginBottom: 4 },
   iType: { fontSize: 11, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase" },
   iActionBtn: { border: "none", fontSize: 12, cursor: "pointer", padding: "5px 9px", borderRadius: 8 },
-  rowEditBtn: { background: "#1e293b", border: "none", color: "#94a3b8", borderRadius: 10, padding: "8px 12px", fontSize: 13, fontWeight: 700, cursor: "pointer", marginLeft: 4, flexShrink: 0 },
-  rowDeleteBtn: { background: "#450a0a", border: "none", color: "#f87171", borderRadius: 10, padding: "8px 12px", fontSize: 13, fontWeight: 700, cursor: "pointer", marginLeft: 4, flexShrink: 0 },
+  rowEditBtn: { background: P.surface2, border: "none", color: P.textSecondary, borderRadius: 10, padding: "8px 12px", fontSize: 13, fontWeight: 700, cursor: "pointer", marginLeft: 4, flexShrink: 0 },
+  rowDeleteBtn: { background: P.dangerBg, border: "none", color: P.danger, borderRadius: 10, padding: "8px 12px", fontSize: 13, fontWeight: 700, cursor: "pointer", marginLeft: 4, flexShrink: 0 },
 
   // Expenses
-  expSummary: { display: "flex", background: "#13131e", borderRadius: 18, marginBottom: 14, border: "1px solid #1a1a2a" },
+  expSummary: { display: "flex", background: P.surface1, borderRadius: 18, marginBottom: 14, border: `1px solid ${P.surface3}` },
   expSumItem: { flex: 1, padding: "18px 0", textAlign: "center" },
-  expSumDiv: { width: 1, background: "#1e1e2e", margin: "12px 0" },
-  expSumVal: { fontSize: 22, fontWeight: 900, color: "#f1f5f9", letterSpacing: "-0.8px" },
-  expSumLbl: { fontSize: 11, color: "#475569", marginTop: 3, letterSpacing: "0.5px" },
-  settleCta: { display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", background: "#1a1a2e", border: "1px solid #2d2d4a", borderRadius: 16, padding: "14px 18px", color: "#a78bfa", fontSize: 14, fontWeight: 700, cursor: "pointer", marginBottom: 16, boxSizing: "border-box" },
+  expSumDiv: { width: 1, background: P.surface3, margin: "12px 0" },
+  expSumVal: { fontSize: 22, fontWeight: 900, color: P.textPrimary, letterSpacing: "-0.8px" },
+  expSumLbl: { fontSize: 11, color: P.textMuted, marginTop: 3, letterSpacing: "0.5px" },
+  settleCta: { display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", background: P.surface1, border: `1px solid ${P.surface3}`, borderRadius: 16, padding: "14px 18px", color: P.lightBlue, fontSize: 14, fontWeight: 700, cursor: "pointer", marginBottom: 16, boxSizing: "border-box" },
   settleArrow: { fontSize: 18 },
   filterRow: { display: "flex", gap: 8, marginBottom: 16, overflowX: "auto", paddingBottom: 2 },
-  chip: { background: "#13131e", border: "1px solid #1e1e2e", color: "#475569", borderRadius: 22, padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" },
+  chip: { background: P.surface1, border: `1px solid ${P.surface3}`, color: P.textMuted, borderRadius: 22, padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" },
   chipActive: {},
-  expRow: { display: "flex", alignItems: "center", gap: 14, padding: "16px 0", borderBottom: "1px solid #13131e" },
+  expRow: { display: "flex", alignItems: "center", gap: 14, padding: "16px 0", borderBottom: `1px solid ${P.surface1}` },
   expIcon: { width: 44, height: 44, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800, flexShrink: 0 },
   expBody: { flex: 1 },
-  expTitle: { fontSize: 16, fontWeight: 700, color: "#e2e8f0", marginBottom: 4 },
-  expMeta: { fontSize: 13, color: "#475569" },
+  expTitle: { fontSize: 16, fontWeight: 700, color: P.textPrimary, marginBottom: 4 },
+  expMeta: { fontSize: 13, color: P.textMuted },
   expRight: { display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 },
-  expAmt: { fontSize: 17, fontWeight: 900, color: "#f1f5f9", letterSpacing: "-0.5px" },
+  expAmt: { fontSize: 17, fontWeight: 900, color: P.textPrimary, letterSpacing: "-0.5px" },
   receiptBadge: { fontSize: 13 },
 
   // Uploads
-  sensitiveNote: { background: "#1a1a10", border: "1px solid #2a2a1a", borderRadius: 14, padding: "12px 16px", fontSize: 13, color: "#a3a380", marginBottom: 16 },
+  sensitiveNote: { background: P.surface1, border: `1px solid ${P.surface3}`, borderRadius: 14, padding: "12px 16px", fontSize: 13, color: P.slateBlue, marginBottom: 16 },
   photoGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 },
   photoCard: { borderRadius: 18, height: 140, display: "flex", alignItems: "flex-end", position: "relative", overflow: "hidden", cursor: "pointer", transition: "opacity 0.2s" },
   photoWide: { gridColumn: "span 2", height: 170 },
-  photoEmoji: { position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -65%)", fontSize: 40 },
   sensitiveLock: { position: "absolute", top: 10, right: 10, fontSize: 16 },
-  photoOverlay: { background: "linear-gradient(transparent, rgba(0,0,0,0.8))", width: "100%", padding: "22px 12px 12px" },
-  photoCaption: { fontSize: 13, fontWeight: 700, color: "#f1f5f9" },
-  photoMeta: { fontSize: 11, color: "#94a3b8", marginTop: 2, marginBottom: 6 },
-  sensitiveBtn: { background: "#1e293b", border: "none", color: "#64748b", borderRadius: 10, padding: "5px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer" },
-  sensitiveBtnOn: { background: "#451a03", color: "#fb923c" },
-  uploadDrop: { border: "1.5px dashed #1e293b", borderRadius: 18, padding: "28px", textAlign: "center", cursor: "pointer" },
+  photoOverlay: { background: "linear-gradient(transparent, rgba(0,0,0,0.85))", width: "100%", padding: "22px 12px 12px", position: "absolute", bottom: 0 },
+  photoCaption: { fontSize: 13, fontWeight: 700, color: P.textPrimary },
+  photoMeta: { fontSize: 11, color: P.textSecondary, marginTop: 2, marginBottom: 6 },
+  sensitiveBtn: { background: P.surface2, border: "none", color: P.textMuted, borderRadius: 10, padding: "5px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer" },
+  sensitiveBtnOn: { background: "#2a1810", color: P.terracotta },
+  uploadDrop: { border: `1.5px dashed ${P.surface3}`, borderRadius: 18, padding: "28px", textAlign: "center", cursor: "pointer" },
   uploadIcon: { fontSize: 28, marginBottom: 8 },
-  uploadText: { fontSize: 15, fontWeight: 700, color: "#475569", marginBottom: 4 },
-  uploadSub: { fontSize: 13, color: "#2d3748" },
+  uploadText: { fontSize: 15, fontWeight: 700, color: P.textMuted, marginBottom: 4 },
+  uploadSub: { fontSize: 13, color: P.textMuted },
 
   // Members
-  memberRow: { display: "flex", alignItems: "center", gap: 14, padding: "16px 0", borderBottom: "1px solid #13131e" },
+  memberRow: { display: "flex", alignItems: "center", gap: 14, padding: "16px 0", borderBottom: `1px solid ${P.surface1}` },
   memberAvatar: { width: 48, height: 48, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, fontWeight: 900, flexShrink: 0 },
   memberInfo: { flex: 1 },
-  memberName: { fontSize: 16, fontWeight: 700, color: "#e2e8f0", display: "flex", alignItems: "center", gap: 6 },
-  youTag: { background: "#1e3a5f", color: "#60a5fa", fontSize: 10, fontWeight: 800, borderRadius: 6, padding: "2px 8px", letterSpacing: "1px" },
-  memberMeta: { fontSize: 13, color: "#475569", marginTop: 3 },
+  memberName: { fontSize: 16, fontWeight: 700, color: P.textPrimary, display: "flex", alignItems: "center", gap: 6 },
+  youTag: { background: P.surface2, color: P.lightBlue, fontSize: 10, fontWeight: 800, borderRadius: 6, padding: "2px 8px", letterSpacing: "1px" },
+  memberMeta: { fontSize: 13, color: P.textMuted, marginTop: 3 },
   memberRight: {},
-  evenBadge: { background: "#1e293b", color: "#64748b", fontSize: 12, fontWeight: 700, borderRadius: 8, padding: "5px 10px" },
+  evenBadge: { background: P.surface2, color: P.textMuted, fontSize: 12, fontWeight: 700, borderRadius: 8, padding: "5px 10px" },
 
   // Modals
   overlay: { position: "absolute", bottom: 0, left: 0, right: 0, display: "flex", alignItems: "flex-end", zIndex: 100 },
-  sheet: { background: "#12121c", borderRadius: "24px 24px 0 0", width: "100%", maxHeight: "88%", overflowY: "auto", paddingBottom: 24, boxShadow: "0 -20px 60px rgba(0,0,0,0.8), 0 -1px 0 rgba(255,255,255,0.06)" },
-  sheetHandle: { width: 40, height: 5, background: "#2d2d4a", borderRadius: 10, margin: "14px auto 0" },
+  sheet: { background: P.surface1, borderRadius: "24px 24px 0 0", width: "100%", maxHeight: "88%", overflowY: "auto", paddingBottom: 24, boxShadow: `0 -20px 60px rgba(0,0,0,0.8), 0 -1px 0 rgba(255,255,255,0.06)` },
+  sheetHandle: { width: 40, height: 5, background: P.surface3, borderRadius: 10, margin: "14px auto 0" },
   sheetHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "18px 22px 14px" },
-  sheetTitle: { fontSize: 20, fontWeight: 900, color: "#f1f5f9", letterSpacing: "-0.5px" },
-  closeBtn: { background: "#1e293b", border: "none", color: "#94a3b8", width: 34, height: 34, borderRadius: "50%", cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center" },
+  sheetTitle: { fontSize: 20, fontWeight: 900, color: P.textPrimary, letterSpacing: "-0.5px" },
+  closeBtn: { background: P.surface2, border: "none", color: P.textSecondary, width: 34, height: 34, borderRadius: "50%", cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center" },
   sheetBody: { padding: "4px 22px 22px" },
   stepRow: { display: "flex", gap: 6, justifyContent: "center", marginBottom: 18 },
-  stepDot: { width: 7, height: 7, borderRadius: "50%", background: "#1e293b" },
-  stepDotActive: { background: "#4ade80" },
+  stepDot: { width: 7, height: 7, borderRadius: "50%", background: P.surface3 },
+  stepDotActive: { background: P.terracotta },
 
   // Forms
   field: { marginBottom: 18 },
-  fieldLbl: { fontSize: 10, fontWeight: 800, color: "#334155", letterSpacing: "2.5px", marginBottom: 10 },
-  input: { background: "#0f0f1a", border: "1px solid #1e293b", borderRadius: 14, padding: "14px 16px", color: "#f1f5f9", fontSize: 16, width: "100%", boxSizing: "border-box", outline: "none", fontFamily: "inherit" },
+  fieldLbl: { fontSize: 10, fontWeight: 800, color: P.textMuted, letterSpacing: "2.5px", marginBottom: 10 },
+  input: { background: P.phoneBg, border: `1px solid ${P.surface3}`, borderRadius: 14, padding: "14px 16px", color: P.textPrimary, fontSize: 16, width: "100%", boxSizing: "border-box", outline: "none", fontFamily: "inherit" },
   amountWrap: { position: "relative" },
-  dollarSign: { position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", color: "#475569", fontSize: 16, fontWeight: 700 },
+  dollarSign: { position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", color: P.textMuted, fontSize: 16, fontWeight: 700 },
   catRow: { display: "flex", flexWrap: "wrap", gap: 8 },
-  catBtn: { background: "#13131e", border: "1px solid #1e293b", color: "#64748b", borderRadius: 22, padding: "9px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer" },
+  catBtn: { background: P.surface1, border: `1px solid ${P.surface3}`, color: P.textMuted, borderRadius: 22, padding: "9px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer" },
   paidRow: { display: "flex", flexWrap: "wrap", gap: 8 },
-  paidBtn: { background: "#13131e", border: "1px solid #1e293b", color: "#64748b", borderRadius: 22, padding: "9px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer" },
-  paidBtnActive: { background: "#1e3a5f", border: "1px solid #3b82f6", color: "#60a5fa" },
+  paidBtn: { background: P.surface1, border: `1px solid ${P.surface3}`, color: P.textMuted, borderRadius: 22, padding: "9px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer" },
+  paidBtnActive: { background: P.surface2, border: `1px solid ${P.lightBlue}`, color: P.lightBlue },
 
   // Split
-  splitInfo: { textAlign: "center", padding: "18px 0 22px", borderBottom: "1px solid #1a1a28", marginBottom: 18 },
-  splitAmt: { fontSize: 44, fontWeight: 900, color: "#f1f5f9", letterSpacing: "-2px" },
-  splitLbl: { fontSize: 13, color: "#475569", marginTop: 4 },
-  perPerson: { fontSize: 15, color: "#4ade80", fontWeight: 700, marginTop: 6 },
+  splitInfo: { textAlign: "center", padding: "18px 0 22px", borderBottom: `1px solid ${P.surface3}`, marginBottom: 18 },
+  splitAmt: { fontSize: 44, fontWeight: 900, color: P.textPrimary, letterSpacing: "-2px" },
+  splitLbl: { fontSize: 13, color: P.textMuted, marginTop: 4 },
+  perPerson: { fontSize: 15, color: P.terracotta, fontWeight: 700, marginTop: 6 },
   splitGrid: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 22 },
-  splitMember: { background: "#13131e", border: "1px solid #1e293b", borderRadius: 14, padding: "14px 8px", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, position: "relative" },
-  splitMemberOn: { border: "1px solid #22c55e", background: "#0f1f0f" },
-  splitAvatar: { width: 40, height: 40, borderRadius: "50%", background: "#1e293b", color: "#64748b", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 800 },
-  splitName: { fontSize: 12, color: "#94a3b8", fontWeight: 600 },
-  splitCheck: { position: "absolute", top: 6, right: 6, fontSize: 10, color: "#4ade80", fontWeight: 800 },
+  splitMember: { background: P.surface2, border: `1px solid ${P.surface3}`, borderRadius: 14, padding: "14px 8px", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, position: "relative" },
+  splitMemberOn: { border: `1px solid ${P.terracotta}`, background: "#1e1810" },
+  splitAvatar: { width: 40, height: 40, borderRadius: "50%", background: P.surface3, color: P.textMuted, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 800 },
+  splitName: { fontSize: 12, color: P.textSecondary, fontWeight: 600 },
+  splitCheck: { position: "absolute", top: 6, right: 6, fontSize: 10, color: P.terracotta, fontWeight: 800 },
 
   // Confirm
-  confirmCard: { background: "#13131e", borderRadius: 18, padding: "18px", marginBottom: 22, border: "1px solid #1e1e2e" },
-  confirmRow: { display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid #1a1a28" },
-  confirmLbl: { fontSize: 13, color: "#475569" },
-  confirmVal: { fontSize: 14, fontWeight: 700, color: "#e2e8f0" },
+  confirmCard: { background: P.surface2, borderRadius: 18, padding: "18px", marginBottom: 22, border: `1px solid ${P.surface3}` },
+  confirmRow: { display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: `1px solid ${P.surface3}` },
+  confirmLbl: { fontSize: 13, color: P.textMuted },
+  confirmVal: { fontSize: 14, fontWeight: 700, color: P.textPrimary },
 
   // Buttons
-  primaryBtn: { background: "#1e293b", color: "#f1f5f9", border: "none", borderRadius: 16, padding: "16px", width: "100%", fontSize: 16, fontWeight: 800, cursor: "pointer", letterSpacing: "-0.3px" },
-  secondaryBtn: { background: "#13131e", color: "#64748b", border: "1px solid #1e293b", borderRadius: 16, padding: "16px", flex: 1, fontSize: 15, fontWeight: 700, cursor: "pointer" },
+  primaryBtn: { background: P.surface2, color: P.textPrimary, border: "none", borderRadius: 16, padding: "16px", width: "100%", fontSize: 16, fontWeight: 800, cursor: "pointer", letterSpacing: "-0.3px" },
+  secondaryBtn: { background: P.surface2, color: P.textMuted, border: `1px solid ${P.surface3}`, borderRadius: 16, padding: "16px", flex: 1, fontSize: 15, fontWeight: 700, cursor: "pointer" },
 
   // Settle
   settleSection: { marginBottom: 22 },
-  settleRow: { background: "#13131e", borderRadius: 16, padding: "16px", marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "center", transition: "opacity 0.2s", border: "1px solid #1a1a2a" },
+  settleRow: { background: P.surface2, borderRadius: 16, padding: "16px", marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "center", transition: "opacity 0.2s", border: `1px solid ${P.surface3}` },
   settlePeople: { fontSize: 16, fontWeight: 700, marginBottom: 4 },
-  settleAmt: { fontSize: 13, color: "#475569" },
-  payBtn: { background: "#13131e", border: "1px solid #2d3748", color: "#94a3b8", borderRadius: 10, padding: "8px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer" },
-  markBtn: { background: "#1e293b", border: "none", color: "#64748b", borderRadius: 10, padding: "8px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer" },
-  markBtnDone: { background: "#14532d", color: "#4ade80" },
+  settleAmt: { fontSize: 13, color: P.textMuted },
+  payBtn: { background: P.surface1, border: `1px solid ${P.surface3}`, color: P.textSecondary, borderRadius: 10, padding: "8px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer" },
+  markBtn: { background: P.surface2, border: "none", color: P.textMuted, borderRadius: 10, padding: "8px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer" },
+  markBtnDone: { background: P.successBg, color: P.success },
 
   // Share
-  shareSubtitle: { fontSize: 14, color: "#64748b", marginBottom: 18 },
-  shareOption: { display: "flex", alignItems: "center", gap: 14, background: "#13131e", border: "1px solid #1e1e2e", borderRadius: 18, padding: "16px", marginBottom: 12 },
+  shareSubtitle: { fontSize: 14, color: P.slateBlue, marginBottom: 18 },
+  shareOption: { display: "flex", alignItems: "center", gap: 14, background: P.surface2, border: `1px solid ${P.surface3}`, borderRadius: 18, padding: "16px", marginBottom: 12 },
   shareOptTitle: { fontSize: 15, fontWeight: 800, marginBottom: 3 },
-  shareOptSub: { fontSize: 13, color: "#475569" },
+  shareOptSub: { fontSize: 13, color: P.textMuted },
   copyBtn: { background: "transparent", border: "1px solid", borderRadius: 22, padding: "8px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer", flexShrink: 0 },
-  shareNote: { background: "#131310", border: "1px solid #2a2a1a", borderRadius: 14, padding: "12px 16px", fontSize: 13, color: "#8a8a60", marginTop: 8 },
+  shareNote: { background: P.surface1, border: `1px solid ${P.surface3}`, borderRadius: 14, padding: "12px 16px", fontSize: 13, color: P.slateBlue, marginTop: 8 },
 
   // Settings
   settingsSection: { marginBottom: 30 },
-  settingsSectionLabel: { fontSize: 11, fontWeight: 800, color: "#334155", letterSpacing: "2.5px", marginBottom: 14 },
-  settingsCard: { background: "#13131e", border: "1px solid #1e1e2e", borderRadius: 18, padding: "18px" },
+  settingsSectionLabel: { fontSize: 11, fontWeight: 800, color: P.textMuted, letterSpacing: "2.5px", marginBottom: 14 },
+  settingsCard: { background: P.surface1, border: `1px solid ${P.surface3}`, borderRadius: 18, padding: "18px" },
 
   // New trip prompt
   promptWrap: { position: "relative", marginBottom: 14 },
-  promptInput: { background: "#0f0f1a", border: "1px solid #1e293b", borderRadius: 16, padding: "16px 52px 16px 16px", color: "#f1f5f9", fontSize: 16, width: "100%", boxSizing: "border-box", outline: "none", fontFamily: "inherit", resize: "none", lineHeight: 1.6 },
-  micBtn: { position: "absolute", right: 12, top: 12, background: "#1e293b", border: "none", borderRadius: 10, width: 38, height: 38, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" },
-  micBtnActive: { background: "#2a0f0f", border: "1px solid #7f1d1d" },
-  listeningBadge: { display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#f87171", fontWeight: 700, marginBottom: 14 },
-  listeningDot: { width: 9, height: 9, borderRadius: "50%", background: "#f87171" },
-  examplesLabel: { fontSize: 10, fontWeight: 800, color: "#334155", letterSpacing: "2.5px", marginBottom: 10 },
-  exampleChip: { background: "#13131e", border: "1px solid #1e293b", borderRadius: 12, padding: "11px 14px", color: "#475569", fontSize: 13, textAlign: "left", cursor: "pointer", fontFamily: "inherit" },
-  previewCard: { borderRadius: 20, padding: "22px", marginBottom: 22, border: "1px solid rgba(255,255,255,0.05)" },
+  promptInput: { background: P.phoneBg, border: `1px solid ${P.surface3}`, borderRadius: 16, padding: "16px 52px 16px 16px", color: P.textPrimary, fontSize: 16, width: "100%", boxSizing: "border-box", outline: "none", fontFamily: "inherit", resize: "none", lineHeight: 1.6 },
+  micBtn: { position: "absolute", right: 12, top: 12, background: P.surface2, border: "none", borderRadius: 10, width: 38, height: 38, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" },
+  micBtnActive: { background: P.dangerBg, border: `1px solid ${P.danger}40` },
+  listeningBadge: { display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: P.danger, fontWeight: 700, marginBottom: 14 },
+  listeningDot: { width: 9, height: 9, borderRadius: "50%", background: P.danger },
+  examplesLabel: { fontSize: 10, fontWeight: 800, color: P.textMuted, letterSpacing: "2.5px", marginBottom: 10 },
+  exampleChip: { background: P.surface2, border: `1px solid ${P.surface3}`, borderRadius: 12, padding: "11px 14px", color: P.textMuted, fontSize: 13, textAlign: "left", cursor: "pointer", fontFamily: "inherit" },
+  previewCard: { borderRadius: 20, padding: "22px", marginBottom: 22, border: `1px solid rgba(255,255,255,0.05)` },
 };
