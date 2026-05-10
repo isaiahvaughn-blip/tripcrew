@@ -549,6 +549,7 @@ function ProfileScreen({ onOpen, user, onSignOut, onSettings, profile }) {
         </div>
         {showNewTrip && (
           <NewTripModal onClose={() => setShowNewTrip(false)} userId={user.id}
+            userProfile={profile}
             onSave={(trip) => { setTrips(prev => [trip, ...prev]); setShowNewTrip(false); }} />
         )}
 
@@ -1156,242 +1157,492 @@ function MembersTab({ trip, profile }) {
   );
 }
 
-// ─── NEW TRIP MODAL ───────────────────────────────────────────────────────────
+// ─── NEW TRIP MODAL v2 ────────────────────────────────────────────────────────
 
-function NewTripModal({ onClose, onSave, userId }) {
-  const [stage, setStage] = useState("prompt");
-  const [prompt, setPrompt] = useState("");
-  const [listening, setListening] = useState(false);
-  const [parsing, setParsing] = useState(false);
-  const [parseError, setParseError] = useState("");
-  const recognitionRef = useRef(null);
+// Vibe definitions — short-form vibes adapt location input to specific place
+const VIBES = [
+  { key: "trip",     label: "Trip",          emoji: "✈️", icon: Plane,        shortForm: false },
+  { key: "road",     label: "Road Trip",     emoji: "🚗", icon: Car,          shortForm: false },
+  { key: "weekend",  label: "Weekend Away",  emoji: "🌅", icon: Sunset,       shortForm: false },
+  { key: "hike",     label: "Hike",          emoji: "🏔️", icon: Mountain,     shortForm: false },
+  { key: "camping",  label: "Camping",       emoji: "🏕️", icon: Tent,        shortForm: false },
+  { key: "concert",  label: "Concert",       emoji: "🎵", icon: Music,        shortForm: true  },
+  { key: "dinner",   label: "Dinner",        emoji: "🍽️", icon: UtensilsCrossed, shortForm: true },
+  { key: "coffee",   label: "Coffee",        emoji: "☕", icon: Coffee,       shortForm: true  },
+  { key: "drinks",   label: "Drinks",        emoji: "🍷", icon: Wine,         shortForm: true  },
+  { key: "nightout", label: "Night Out",     emoji: "🎉", icon: PartyPopper,  shortForm: true  },
+  { key: "active",   label: "Workout",       emoji: "💪", icon: Dumbbell,     shortForm: true  },
+  { key: "beach",    label: "Beach Day",     emoji: "🏖️", icon: Umbrella,    shortForm: false },
+];
 
-  const EXAMPLES = [
-    "10 days in Tokyo with Marcus and Priya, late October",
-    "Dinner Saturday at Ox, just me and Jasmin",
-    "Banff long weekend, 5 people, early August",
-    "Coffee Tuesday morning with Derek",
-  ];
-  const [exampleIdx] = useState(() => Math.floor(Math.random() * EXAMPLES.length));
+function NewTripModal({ onClose, onSave, userId, userProfile }) {
+  const [step, setStep] = useState(1); // 1=vibe, 2=where, 3=who, 4=when, 5=confirm
+  const [answers, setAnswers] = useState({
+    vibe: null,       // vibe object
+    location: "",     // place name or city
+    who: [],          // array of email strings, empty = solo
+    solo: false,
+    startDate: "",
+    endDate: "",
+    time: "",
+    generatedName: "",
+    editedName: "",
+    emoji: "",
+  });
+  const [generating, setGenerating] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  const toggleVoice = async () => {
-    if (listening) {
-      recognitionRef.current?.stop();
-      setListening(false);
-      return;
+  const isShortForm = answers.vibe?.shortForm || false;
+
+  // Animate previous answers stacking at top
+  const Receipt = () => {
+    const items = [];
+    if (step > 1 && answers.vibe) items.push({ label: "vibe", value: `${answers.vibe.emoji} ${answers.vibe.label}` });
+    if (step > 2 && answers.location) items.push({ label: "where", value: answers.location });
+    if (step > 3) items.push({ label: "who", value: answers.solo ? "Just me" : answers.who.length ? `${answers.who.length} people` : "Just me" });
+    if (step > 4 && answers.startDate) {
+      const d = new Date(answers.startDate + 'T12:00:00');
+      const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      items.push({ label: "when", value: answers.time ? `${dateStr} · ${answers.time}` : dateStr });
     }
-    try {
-      await navigator.mediaDevices.getUserMedia({ audio: true });
-    } catch (err) {
-      alert("Microphone access denied. Please allow mic access in your browser settings.");
-      return;
-    }
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) {
-      alert("Voice input isn't supported in this browser. Try Chrome.");
-      return;
-    }
-    const recognition = new SR();
-    recognition.continuous = false;
-    recognition.interimResults = false;
-    recognition.lang = 'en-US';
-    recognition.onresult = (e) => {
-      const transcript = e.results[0][0].transcript;
-      setPrompt(prev => prev ? `${prev} ${transcript}` : transcript);
-      setListening(false);
-    };
-    recognition.onerror = (e) => { console.error('Speech recognition error:', e.error); setListening(false); };
-    recognition.onend = () => setListening(false);
-    recognitionRef.current = recognition;
-    recognition.start();
-    setListening(true);
+    if (!items.length) return null;
+    return (
+      <div style={SN.receipt}>
+        {items.map((item, i) => (
+          <div key={i} style={SN.receiptRow}>
+            <span style={SN.receiptLabel}>{item.label}</span>
+            <span style={SN.receiptValue}>{item.value}</span>
+          </div>
+        ))}
+      </div>
+    );
   };
 
-  const [form, setForm] = useState({
-    name: "", location: "", city: "", country: "",
-    startDate: "", endDate: "", emoji: "✈️",
-  });
-  const [loading, setLoading] = useState(false);
+  const goBack = () => setStep(s => Math.max(1, s - 1));
+
+  // Step 1 — What's the vibe?
+  const StepVibe = () => (
+    <div style={SN.stepWrap}>
+      <Receipt />
+      <div style={SN.question}>What's the vibe?</div>
+      <div style={SN.vibeGrid}>
+        {VIBES.map(v => {
+          const Icon = v.icon;
+          const selected = answers.vibe?.key === v.key;
+          return (
+            <button key={v.key}
+              style={{ ...SN.vibeChip, ...(selected ? SN.vibeChipOn : {}) }}
+              onClick={() => {
+                setAnswers(a => ({ ...a, vibe: v, emoji: v.emoji }));
+                setTimeout(() => setStep(2), 180);
+              }}>
+              <Icon size={18} color={selected ? P.terracotta : P.textMuted} strokeWidth={1.5} />
+              <span style={{ ...SN.vibeLabel, color: selected ? P.terracotta : P.textMuted }}>{v.label}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  // Step 2 — Where to?
+  const StepWhere = () => (
+    <div style={SN.stepWrap}>
+      <Receipt />
+      <div style={SN.question}>Where to?</div>
+      <div style={SN.subQuestion}>
+        {isShortForm ? "Name the spot" : "City or destination"}
+      </div>
+      <input
+        style={{ ...S.input, fontSize: 18, padding: "16px", marginBottom: 12 }}
+        placeholder={isShortForm ? "e.g. Barista, Ox Restaurant" : "e.g. Tokyo, Banff, Portland"}
+        value={answers.location}
+        onChange={e => setAnswers(a => ({ ...a, location: e.target.value }))}
+        autoFocus
+      />
+      <button
+        style={{ ...SN.nextBtn, opacity: answers.location.trim() ? 1 : 0.4 }}
+        disabled={!answers.location.trim()}
+        onClick={() => setStep(3)}>
+        Next →
+      </button>
+    </div>
+  );
+
+  // Step 3 — Who's coming?
+  const [emailInput, setEmailInput] = useState("");
+  const StepWho = () => (
+    <div style={SN.stepWrap}>
+      <Receipt />
+      <div style={SN.question}>Who's coming?</div>
+      <div style={SN.whoRow}>
+        <button
+          style={{ ...SN.whoChip, ...(answers.solo ? SN.whoChipOn : {}) }}
+          onClick={() => setAnswers(a => ({ ...a, solo: true, who: [] }))}>
+          Just me
+        </button>
+        <button
+          style={{ ...SN.whoChip, ...(!answers.solo ? SN.whoChipOn : {}) }}
+          onClick={() => setAnswers(a => ({ ...a, solo: false }))}>
+          + Add people
+        </button>
+      </div>
+      {!answers.solo && (
+        <div style={{ marginTop: 16 }}>
+          <div style={SN.emailRow}>
+            <input
+              style={{ ...S.input, flex: 1, fontSize: 15 }}
+              placeholder="friend@email.com"
+              value={emailInput}
+              type="email"
+              onChange={e => setEmailInput(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && emailInput.trim()) {
+                  setAnswers(a => ({ ...a, who: [...a.who, emailInput.trim()] }));
+                  setEmailInput("");
+                }
+              }}
+            />
+            <button style={SN.addEmailBtn} onClick={() => {
+              if (emailInput.trim()) {
+                setAnswers(a => ({ ...a, who: [...a.who, emailInput.trim()] }));
+                setEmailInput("");
+              }
+            }}>Add</button>
+          </div>
+          {answers.who.length > 0 && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
+              {answers.who.map((email, i) => (
+                <div key={i} style={SN.emailTag}>
+                  <span>{email}</span>
+                  <button style={SN.removeEmail}
+                    onClick={() => setAnswers(a => ({ ...a, who: a.who.filter((_, j) => j !== i) }))}>✕</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      <button style={{ ...SN.nextBtn, marginTop: 20 }} onClick={() => setStep(4)}>
+        Next →
+      </button>
+    </div>
+  );
+
+  // Step 4 — When?
+  const StepWhen = () => (
+    <div style={SN.stepWrap}>
+      <Receipt />
+      <div style={SN.question}>When?</div>
+      <div style={S.field}>
+        <div style={S.fieldLbl}>DATE</div>
+        <input style={{ ...S.input, colorScheme: "dark" }} type="date"
+          value={answers.startDate}
+          onChange={e => setAnswers(a => ({ ...a, startDate: e.target.value }))} />
+      </div>
+      {!isShortForm && (
+        <div style={S.field}>
+          <div style={{ ...S.fieldLbl, display: "flex", justifyContent: "space-between" }}>
+            <span>END DATE</span>
+            <span style={{ color: P.textMuted }}>optional</span>
+          </div>
+          <input style={{ ...S.input, colorScheme: "dark" }} type="date"
+            value={answers.endDate} min={answers.startDate}
+            onChange={e => setAnswers(a => ({ ...a, endDate: e.target.value }))} />
+        </div>
+      )}
+      {isShortForm && (
+        <div style={S.field}>
+          <div style={{ ...S.fieldLbl, display: "flex", justifyContent: "space-between" }}>
+            <span>TIME</span>
+            <span style={{ color: P.textMuted }}>optional</span>
+          </div>
+          <input style={{ ...S.input, colorScheme: "dark" }} type="time"
+            value={answers.time}
+            onChange={e => setAnswers(a => ({ ...a, time: e.target.value }))} />
+        </div>
+      )}
+      <button
+        style={{ ...SN.nextBtn, opacity: answers.startDate ? 1 : 0.4 }}
+        disabled={!answers.startDate}
+        onClick={handleGenerateName}>
+        {generating ? "Naming your plan..." : "Next →"}
+      </button>
+    </div>
+  );
 
   const formatDates = (start, end) => {
     if (!start) return "";
     const s = new Date(start + 'T12:00:00');
-    if (!end || start === end) {
-      return s.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-    }
+    if (!end || start === end) return s.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
     const e = new Date(end + 'T12:00:00');
-    const sameYear = s.getFullYear() === e.getFullYear();
-    const sameMonth = sameYear && s.getMonth() === e.getMonth();
-    if (sameMonth) {
-      return `${s.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}–${e.getDate()}, ${e.getFullYear()}`;
-    }
-    if (sameYear) {
-      return `${s.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${e.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}, ${e.getFullYear()}`;
-    }
-    return `${s.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} – ${e.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+    const sameMonth = s.getFullYear() === e.getFullYear() && s.getMonth() === e.getMonth();
+    if (sameMonth) return `${s.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}–${e.getDate()}, ${e.getFullYear()}`;
+    return `${s.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${e.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}, ${e.getFullYear()}`;
   };
 
-  const parseWithClaude = async () => {
-    if (!prompt.trim()) return;
-    setParsing(true);
-    setParseError("");
+  const handleGenerateName = async () => {
+    setGenerating(true);
     try {
+      const whoStr = answers.solo ? "just me" : answers.who.length ? `with ${answers.who.join(", ")}` : "just me";
+      const dateStr = formatDates(answers.startDate, answers.endDate);
+      const timeStr = answers.time ? ` at ${answers.time}` : "";
+      const promptText = `Generate a short, natural trip name (max 5 words) for: ${answers.vibe?.label} at ${answers.location}${timeStr}, ${dateStr}, ${whoStr}. Examples: "Coffee at Barista with Derek", "Tokyo October", "Banff Long Weekend". Only return the name, nothing else.`;
       const res = await fetch("/api/parse-trip", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ prompt: promptText, mode: "name" }),
       });
       const data = await res.json();
-      const text = data.content?.[0]?.text || "";
-      const clean = text.replace(/```json|```/g, "").trim();
-      const parsed = JSON.parse(clean);
-      const combined = [parsed.city, parsed.country].filter(Boolean).join(', ');
-      const location = combined || parsed.location || "";
-      setForm(f => ({ ...f, ...parsed, location }));
-      setStage("confirm");
+      const name = (data.content?.[0]?.text || "").trim().replace(/^"|"$/g, '');
+      setAnswers(a => ({ ...a, generatedName: name, editedName: name }));
     } catch (e) {
-      console.error(e);
-      setParseError("Couldn't parse that — try rephrasing or fill in manually.");
-      setStage("confirm");
+      const fallback = `${answers.vibe?.label} at ${answers.location}`;
+      setAnswers(a => ({ ...a, generatedName: fallback, editedName: fallback }));
     } finally {
-      setParsing(false);
+      setGenerating(false);
+      setStep(5);
     }
   };
 
-  const handleSave = async () => {
-    if (!form.name) return;
-    setLoading(true);
-    const { type, startDate, endDate, ...formData } = form;
-    const dates = formatDates(startDate, endDate);
-    const { data, error } = await supabase.from('trips')
-      .insert([{ ...formData, dates, total_spent: 0, settled: false, solo: false, user_id: userId }]).select();
-    if (error) { console.error(error); setLoading(false); return; }
-    // Add creator as trip member
-    await supabase.from('trip_members').insert([{ trip_id: data[0].id, user_id: userId, role: 'owner', status: 'accepted' }]);
-    onSave(data[0]);
+  // Step 5 — Looks good?
+  const StepConfirm = () => {
+    const IconComp = TRIP_ICONS[answers.emoji] || Plane;
+    const dateStr = formatDates(answers.startDate, answers.endDate);
+    return (
+      <div style={SN.stepWrap}>
+        <Receipt />
+        <div style={SN.question}>Looks good?</div>
+        <div style={SN.confirmCard}>
+          <div style={SN.confirmIcon}>
+            <IconComp size={28} color={P.terracotta} strokeWidth={1.5} />
+          </div>
+          <input
+            style={SN.nameInput}
+            value={answers.editedName}
+            onChange={e => setAnswers(a => ({ ...a, editedName: e.target.value }))}
+          />
+          <div style={SN.confirmMeta}>
+            {answers.location}{dateStr ? ` · ${dateStr}` : ""}
+            {answers.time ? ` · ${answers.time}` : ""}
+          </div>
+          <div style={SN.confirmPeople}>
+            {answers.solo ? "Just you" : answers.who.length ? `You + ${answers.who.length} others` : "Just you"}
+          </div>
+        </div>
+        <div style={{ fontSize: 12, color: P.textMuted, textAlign: "center", marginBottom: 16 }}>
+          Tap the name to edit it
+        </div>
+        <button
+          style={{ ...SN.nextBtn, background: saving ? P.surface2 : `linear-gradient(135deg, ${P.orange}, ${P.terracotta})` }}
+          onClick={handleSave} disabled={saving}>
+          {saving ? "Creating..." : "Create plan ✓"}
+        </button>
+      </div>
+    );
   };
 
-  const IconComp = TRIP_ICONS[form.emoji] || Plane;
+  const handleSave = async () => {
+    if (!answers.editedName) return;
+    setSaving(true);
+    try {
+      const dates = formatDates(answers.startDate, answers.endDate);
+      const location = answers.location;
+
+      // Create trip (no tag/bg — uses global palette)
+      const { data: tripData, error: tripError } = await supabase.from('trips').insert([{
+        name: answers.editedName,
+        location,
+        city: !answers.vibe?.shortForm ? location : "",
+        emoji: answers.emoji || "✈️",
+        dates,
+        total_spent: 0,
+        settled: false,
+        solo: answers.solo || answers.who.length === 0,
+        user_id: userId,
+      }]).select();
+      if (tripError) throw tripError;
+      const trip = tripData[0];
+
+      // Add creator as member
+      await supabase.from('trip_members').insert([{
+        trip_id: trip.id, user_id: userId, role: 'owner', status: 'accepted'
+      }]);
+
+      // Add creator to members table
+      const creatorName = userProfile?.display_name || "Me";
+      await supabase.from('members').insert([{ trip_id: trip.id, name: creatorName }]);
+
+      // Invite others
+      for (const email of answers.who) {
+        const { data: existingUser } = await supabase.rpc('get_user_id_by_email', { email_input: email.toLowerCase() });
+        const linkedUserId = existingUser?.[0]?.id || null;
+        await supabase.from('trip_members').insert([{
+          trip_id: trip.id, user_id: linkedUserId, invited_email: email.toLowerCase(),
+          role: 'member', status: linkedUserId ? 'accepted' : 'pending'
+        }]);
+        let displayName = email.split('@')[0];
+        if (linkedUserId) {
+          const { data: pd } = await supabase.from('profiles').select('display_name').eq('id', linkedUserId).single();
+          if (pd?.display_name) displayName = pd.display_name;
+        }
+        await supabase.from('members').insert([{ trip_id: trip.id, name: displayName }]);
+      }
+
+      // For short-form vibes with a specific place — auto-create itinerary item
+      if (answers.vibe?.shortForm && answers.location) {
+        const itinType = answers.vibe.key === 'dinner' ? 'restaurant'
+          : answers.vibe.key === 'coffee' ? 'restaurant'
+          : answers.vibe.key === 'drinks' ? 'restaurant'
+          : 'activity';
+        await supabase.from('itinerary').insert([{
+          trip_id: trip.id,
+          day: answers.startDate,
+          time: answers.time || "",
+          type: itinType,
+          title: answers.location,
+          detail: "",
+          icon: answers.emoji,
+          visibility: "group",
+        }]);
+      }
+
+      onSave(trip);
+    } catch (e) {
+      console.error(e);
+      setSaving(false);
+    }
+  };
+
+  const STEP_LABELS = ["", "vibe", "where", "who", "when", "confirm"];
 
   return (
     <div style={S.overlay}>
-      <div style={S.sheet}>
+      <div style={{ ...S.sheet, maxHeight: "92%" }}>
         <div style={S.sheetHandle} />
-        <div style={S.sheetHeader}>
-          <div style={S.sheetTitle}>
-            {stage === "prompt" ? "What's the plan?" : "Looks right?"}
+        <div style={SN.header}>
+          {step > 1
+            ? <button style={SN.backBtn} onClick={goBack}>← Back</button>
+            : <div />}
+          <div style={SN.stepIndicator}>
+            {[1,2,3,4,5].map(n => (
+              <div key={n} style={{ ...SN.stepPip, ...(n <= step ? SN.stepPipOn : n === step ? SN.stepPipCurrent : {}) }} />
+            ))}
           </div>
           <button style={S.closeBtn} onClick={onClose}>✕</button>
         </div>
-
-        {stage === "prompt" && (
-          <div style={S.sheetBody}>
-            <div style={S.promptWrap}>
-              <textarea style={S.promptInput} placeholder={EXAMPLES[exampleIdx]}
-                value={prompt} onChange={e => setPrompt(e.target.value)} rows={3} />
-              <button style={{ ...S.micBtn, ...(listening ? S.micBtnActive : {}) }} onClick={toggleVoice}>
-                {listening ? <MicOff size={20} color={P.danger} /> : <Mic size={20} color={P.textMuted} />}
-              </button>
-            </div>
-            {listening && (
-              <div style={S.listeningBadge}>
-                <div style={S.listeningDot} />
-                Listening...
-              </div>
-            )}
-            <div style={S.examplesLabel}>TRY SAYING</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
-              {EXAMPLES.map((ex, i) => (
-                <button key={i} style={S.exampleChip} onClick={() => setPrompt(ex)}>{ex}</button>
-              ))}
-            </div>
-            <button
-              style={{ ...S.primaryBtn, background: parsing ? P.surface2 : `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
-              onClick={parseWithClaude} disabled={parsing || !prompt.trim()}>
-              {parsing
-                ? <><Loader size={18} style={{ animation: "spin 1s linear infinite" }} /> Thinking...</>
-                : <><Sparkles size={18} /> Build it</>}
-            </button>
-            <button style={{ ...S.secondaryBtn, marginTop: 10, width: "100%" }}
-              onClick={() => setStage("confirm")}>Fill in manually →</button>
-            <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
-          </div>
-        )}
-
-        {stage === "confirm" && (
-          <div style={S.sheetBody}>
-            {parseError && (
-              <div style={{ background: P.dangerBg, border: `1px solid ${P.danger}40`, borderRadius: 12, padding: "12px 14px", fontSize: 13, color: P.danger, marginBottom: 16 }}>
-                {parseError}
-              </div>
-            )}
-            <div style={{ ...S.previewCard, background: `linear-gradient(135deg, ${P.surface1} 0%, ${P.surface2} 100%)` }}>
-              <div style={{ ...S.tcIconWrap, background: P.terracotta + "20", border: `1px solid ${P.terracotta}30`, marginBottom: 12 }}>
-                <IconComp size={26} color={P.terracotta} strokeWidth={1.5} />
-              </div>
-              <div style={{ fontSize: 22, fontWeight: 900, color: P.textPrimary, letterSpacing: "-0.8px" }}>{form.name || "Untitled"}</div>
-              <div style={{ fontSize: 13, color: P.textSecondary, marginTop: 4 }}>
-                {form.location}{formatDates(form.startDate, form.endDate) ? ` · ${formatDates(form.startDate, form.endDate)}` : ""}
-              </div>
-            </div>
-            <div style={S.field}>
-              <div style={S.fieldLbl}>NAME</div>
-              <input style={S.input} value={form.name}
-                onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Plan name" />
-            </div>
-            <div style={S.field}>
-              <div style={S.fieldLbl}>LOCATION</div>
-              <input style={S.input} value={form.location}
-                onChange={e => setForm(f => ({ ...f, location: e.target.value }))} placeholder="Where" />
-            </div>
-            <div style={{ display: "flex", gap: 10 }}>
-              <div style={{ ...S.field, flex: 1 }}>
-                <div style={S.fieldLbl}>START DATE</div>
-                <input style={{ ...S.input, colorScheme: "dark" }} type="date"
-                  value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} />
-              </div>
-              <div style={{ ...S.field, flex: 1 }}>
-                <div style={{ ...S.fieldLbl, display: "flex", justifyContent: "space-between" }}>
-                  <span>END DATE</span>
-                  <span style={{ color: P.textMuted, fontWeight: 600 }}>optional</span>
-                </div>
-                <input style={{ ...S.input, colorScheme: "dark" }} type="date"
-                  value={form.endDate} min={form.startDate}
-                  onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))} />
-              </div>
-            </div>
-            <div style={S.field}>
-              <div style={S.fieldLbl}>ICON</div>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                {TRIP_ICON_LIST.map(({ key, Icon, label }) => (
-                  <button key={key} onClick={() => setForm(f => ({ ...f, emoji: key }))}
-                    style={{
-                      background: form.emoji === key ? P.surface2 : "transparent",
-                      border: form.emoji === key ? `1px solid ${P.terracotta}` : `1px solid ${P.surface3}`,
-                      borderRadius: 12, padding: "8px 12px", cursor: "pointer",
-                      display: "flex", flexDirection: "column", alignItems: "center", gap: 4, minWidth: 56
-                    }}>
-                    <Icon size={20} color={form.emoji === key ? P.terracotta : P.textMuted} strokeWidth={1.5} />
-                    <span style={{ fontSize: 9, color: form.emoji === key ? P.terracotta : P.textMuted, fontWeight: 700, letterSpacing: "0.5px" }}>
-                      {label}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div style={{ display: "flex", gap: 10 }}>
-              <button style={S.secondaryBtn} onClick={() => setStage("prompt")}>← Redo</button>
-              <button style={{ ...S.primaryBtn, background: loading ? P.surface2 : `linear-gradient(135deg, ${P.orange}, ${P.terracotta})` }}
-                onClick={handleSave} disabled={loading}>
-                {loading ? "Saving..." : "Create ✓"}
-              </button>
-            </div>
-          </div>
-        )}
+        <div style={S.sheetBody}>
+          {step === 1 && <StepVibe />}
+          {step === 2 && <StepWhere />}
+          {step === 3 && <StepWho />}
+          {step === 4 && <StepWhen />}
+          {step === 5 && <StepConfirm />}
+        </div>
+        <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
       </div>
     </div>
   );
 }
+
+// New trip flow styles
+const SN = {
+  header: {
+    display: "flex", justifyContent: "space-between", alignItems: "center",
+    padding: "14px 22px 8px",
+  },
+  backBtn: {
+    background: "transparent", border: "none", color: P.slateBlue,
+    fontSize: 14, fontWeight: 700, cursor: "pointer", padding: 0,
+    fontFamily: "'DM Sans', sans-serif",
+  },
+  stepIndicator: { display: "flex", gap: 6 },
+  stepPip: { width: 6, height: 6, borderRadius: "50%", background: P.surface3 },
+  stepPipOn: { background: P.terracotta },
+  stepPipCurrent: { background: P.slateBlue },
+  stepWrap: { paddingBottom: 12 },
+  receipt: {
+    background: P.surface2, borderRadius: 14, padding: "12px 16px",
+    marginBottom: 24, border: `1px solid ${P.surface3}`,
+  },
+  receiptRow: {
+    display: "flex", justifyContent: "space-between",
+    alignItems: "center", paddingBottom: 6, marginBottom: 6,
+    borderBottom: `1px solid ${P.surface3}`,
+  },
+  receiptLabel: { fontSize: 10, fontWeight: 800, color: P.textMuted, letterSpacing: "2px" },
+  receiptValue: { fontSize: 14, fontWeight: 700, color: P.textPrimary },
+  question: {
+    fontFamily: "'Syne', sans-serif", fontSize: 26, fontWeight: 900,
+    color: P.textPrimary, letterSpacing: "-0.8px", marginBottom: 6,
+  },
+  subQuestion: {
+    fontSize: 13, color: P.slateBlue, marginBottom: 18,
+    fontFamily: "'DM Sans', sans-serif",
+  },
+  vibeGrid: { display: "flex", flexWrap: "wrap", gap: 10, marginTop: 16 },
+  vibeChip: {
+    display: "flex", alignItems: "center", gap: 8,
+    background: P.surface2, border: `1px solid ${P.surface3}`,
+    borderRadius: 22, padding: "10px 16px", cursor: "pointer",
+  },
+  vibeChipOn: {
+    background: P.terracotta + "18",
+    border: `1px solid ${P.terracotta}60`,
+  },
+  vibeLabel: { fontSize: 14, fontWeight: 700, fontFamily: "'DM Sans', sans-serif" },
+  nextBtn: {
+    width: "100%", background: `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`,
+    color: "#fff", border: "none", borderRadius: 16, padding: "16px",
+    fontSize: 16, fontWeight: 800, cursor: "pointer",
+    fontFamily: "'Syne', sans-serif", letterSpacing: "-0.3px",
+  },
+  whoRow: { display: "flex", gap: 10, marginTop: 16 },
+  whoChip: {
+    flex: 1, background: P.surface2, border: `1px solid ${P.surface3}`,
+    borderRadius: 14, padding: "14px", fontSize: 15, fontWeight: 700,
+    color: P.textMuted, cursor: "pointer", textAlign: "center",
+    fontFamily: "'DM Sans', sans-serif",
+  },
+  whoChipOn: {
+    background: P.terracotta + "18",
+    border: `1px solid ${P.terracotta}60`,
+    color: P.terracotta,
+  },
+  emailRow: { display: "flex", gap: 8 },
+  addEmailBtn: {
+    background: P.surface3, border: "none", color: P.textPrimary,
+    borderRadius: 12, padding: "0 18px", fontSize: 14, fontWeight: 700,
+    cursor: "pointer", flexShrink: 0,
+  },
+  emailTag: {
+    display: "flex", alignItems: "center", gap: 6,
+    background: P.surface2, border: `1px solid ${P.surface3}`,
+    borderRadius: 22, padding: "6px 12px", fontSize: 13, color: P.textSecondary,
+  },
+  removeEmail: {
+    background: "transparent", border: "none", color: P.textMuted,
+    cursor: "pointer", fontSize: 11, padding: 0, lineHeight: 1,
+  },
+  confirmCard: {
+    background: `linear-gradient(135deg, ${P.surface1}, ${P.surface2})`,
+    border: `1px solid ${P.surface3}`,
+    borderRadius: 20, padding: "24px", marginBottom: 16, textAlign: "center",
+  },
+  confirmIcon: {
+    width: 52, height: 52, borderRadius: 16,
+    background: P.terracotta + "20", border: `1px solid ${P.terracotta}30`,
+    display: "flex", alignItems: "center", justifyContent: "center",
+    margin: "0 auto 16px",
+  },
+  nameInput: {
+    background: "transparent", border: "none", borderBottom: `1px solid ${P.surface3}`,
+    color: P.textPrimary, fontSize: 22, fontWeight: 900, letterSpacing: "-0.8px",
+    width: "100%", textAlign: "center", outline: "none", marginBottom: 12,
+    fontFamily: "'Syne', sans-serif", padding: "4px 0",
+  },
+  confirmMeta: { fontSize: 13, color: P.textSecondary, marginBottom: 6 },
+  confirmPeople: { fontSize: 13, color: P.slateBlue },
+};
 
 // ─── MODALS ───────────────────────────────────────────────────────────────────
 
