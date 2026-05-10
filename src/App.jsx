@@ -7,6 +7,12 @@ import {
   Coffee, Wine, Music, ShoppingBag, Dumbbell, PartyPopper, House, Sunset, Sailboat, Camera
 } from "lucide-react";
 
+// Load Playfair Display for wordmark
+const fontLink = document.createElement('link');
+fontLink.rel = 'stylesheet';
+fontLink.href = 'https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,900&display=swap';
+document.head.appendChild(fontLink);
+
 // ─── PALETTE ──────────────────────────────────────────────────────────────────
 // Sunburn-inspired warm dark theme
 const P = {
@@ -206,17 +212,21 @@ function WelcomeScreen({ onGetStarted }) {
 
           {/* Decorative card stack preview */}
           <div style={SW.cardStack}>
-            <div style={{ ...SW.previewCard, ...SW.previewCard3 }}>
-              <span style={SW.previewEmoji}>🎵</span>
-              <span style={SW.previewLabel}>Concert with the crew</span>
-            </div>
-            <div style={{ ...SW.previewCard, ...SW.previewCard2 }}>
+            {/* Back card — coffee, peeking behind at an angle */}
+            <div style={{ ...SW.previewCard, ...SW.previewCardBack }}>
               <span style={SW.previewEmoji}>☕</span>
-              <span style={SW.previewLabel}>Coffee Tuesday</span>
+              <div>
+                <div style={SW.previewLabel}>Coffee Tuesday</div>
+                <div style={SW.previewSub}>with Derek · Portland</div>
+              </div>
             </div>
-            <div style={{ ...SW.previewCard, ...SW.previewCard1 }}>
+            {/* Front card — trip */}
+            <div style={{ ...SW.previewCard, ...SW.previewCardFront }}>
               <span style={SW.previewEmoji}>✈️</span>
-              <span style={SW.previewLabel}>Banff long weekend</span>
+              <div>
+                <div style={SW.previewLabel}>Banff long weekend</div>
+                <div style={SW.previewSub}>5 people · Aug 1–4</div>
+              </div>
             </div>
           </div>
 
@@ -225,7 +235,6 @@ function WelcomeScreen({ onGetStarted }) {
             <button style={SW.ctaBtn} onClick={onGetStarted}>
               Let's plan something
             </button>
-            <div style={SW.ctaNote}>free · no credit card needed</div>
           </div>
 
           {/* Bottom band */}
@@ -266,13 +275,14 @@ const SW = {
     padding: "48px 32px 0",
   },
   wordmark: {
-    fontFamily: "'Syne', 'DM Sans', sans-serif",
-    fontSize: 58,
+    fontFamily: "'Playfair Display', 'Syne', serif",
+    fontSize: 62,
     fontWeight: 900,
-    letterSpacing: "-3px",
+    letterSpacing: "-2px",
     color: P.textPrimary,
     marginBottom: 20,
     lineHeight: 1,
+    fontStyle: "italic",
   },
   tagline: {
     fontFamily: "'Syne', 'DM Sans', sans-serif",
@@ -293,45 +303,41 @@ const SW = {
   },
   cardStack: {
     position: "relative",
-    width: 280,
-    height: 160,
-    margin: "32px auto",
+    width: 300,
+    height: 120,
+    margin: "36px auto",
+    flexShrink: 0,
   },
   previewCard: {
     position: "absolute",
     left: "50%",
-    borderRadius: 18,
-    padding: "18px 22px",
+    borderRadius: 20,
+    padding: "16px 20px",
     display: "flex",
     alignItems: "center",
-    gap: 12,
-    border: `1px solid ${P.surface3}`,
-    width: 240,
+    gap: 14,
+    width: 260,
     boxSizing: "border-box",
   },
-  previewCard1: {
+  previewCardFront: {
     background: P.surface2,
-    transform: "translateX(-50%) rotate(0deg)",
-    top: 30,
-    zIndex: 3,
-    boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
-  },
-  previewCard2: {
-    background: P.surface1,
-    transform: "translateX(-50%) rotate(-4deg)",
-    top: 16,
+    border: `1px solid ${P.surface3}`,
+    transform: "translateX(-50%) rotate(-1deg)",
+    top: 18,
     zIndex: 2,
-    opacity: 0.85,
+    boxShadow: "0 12px 40px rgba(0,0,0,0.5)",
   },
-  previewCard3: {
-    background: P.phoneBg,
+  previewCardBack: {
+    background: P.surface1,
+    border: `1px solid ${P.surface3}`,
     transform: "translateX(-50%) rotate(4deg)",
-    top: 8,
+    top: 0,
     zIndex: 1,
-    opacity: 0.6,
+    opacity: 0.75,
   },
   previewEmoji: {
-    fontSize: 24,
+    fontSize: 26,
+    flexShrink: 0,
   },
   previewLabel: {
     fontFamily: "'Syne', sans-serif",
@@ -339,6 +345,12 @@ const SW = {
     fontWeight: 700,
     color: P.textPrimary,
     letterSpacing: "-0.3px",
+    marginBottom: 3,
+  },
+  previewSub: {
+    fontFamily: "'DM Sans', sans-serif",
+    fontSize: 12,
+    color: P.slateBlue,
   },
   ctaWrap: {
     width: "100%",
@@ -358,14 +370,6 @@ const SW = {
     fontFamily: "'Syne', sans-serif",
     letterSpacing: "-0.3px",
     boxShadow: `0 8px 24px rgba(240, 115, 64, 0.35)`,
-    marginBottom: 12,
-  },
-  ctaNote: {
-    textAlign: "center",
-    fontSize: 12,
-    color: P.textMuted,
-    fontFamily: "'DM Sans', sans-serif",
-    letterSpacing: "0.5px",
   },
 };
 
