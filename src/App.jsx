@@ -44,11 +44,11 @@ const P = {
 // ─── DATA ────────────────────────────────────────────────────────────────────
 
 const ITINERARY_COLORS = {
-  flight:     { bg: "#162840", accent: "#b8d4e0", border: "#1e3a52" },
-  stay:       { bg: "#1e2a1a", accent: "#6bbf8a", border: "#2a3d24" },
-  activity:   { bg: "#2a1c10", accent: "#e4a576", border: "#3d2a18" },
-  restaurant: { bg: "#2a1820", accent: "#e4a0b0", border: "#3d2030" },
-  transport:  { bg: "#1e1e2a", accent: "#a090d0", border: "#2a2a3d" },
+  flight:     { accent: P.lightBlue },
+  stay:       { accent: "#6bbf8a" },
+  activity:   { accent: P.terracotta },
+  restaurant: { accent: "#e4a0b0" },
+  transport:  { accent: "#a090d0" },
 };
 
 const CATEGORY_META = {
@@ -162,8 +162,21 @@ export default function App() {
   }
 
   const openTrip = (trip) => {
+    // Smart tab default: Summary for past trips, Itinerary for upcoming/current
+    const defaultTab = (() => {
+      if (!trip.dates) return "itinerary";
+      // Check if trip end date is in the past
+      const dateStr = trip.dates.includes('–') ? trip.dates.split('–').pop().trim() : trip.dates;
+      const parsed = new Date(dateStr);
+      if (!isNaN(parsed) && parsed < new Date()) return "summary";
+      // For single-day events, check the start date
+      const startStr = trip.dates.split('–')[0].trim();
+      const start = new Date(startStr);
+      if (!isNaN(start) && start < new Date() && !trip.dates.includes('–')) return "summary";
+      return "itinerary";
+    })();
     setActiveTrip(trip);
-    setActiveTab("itinerary");
+    setActiveTab(defaultTab);
     setView("trip");
   };
 
@@ -724,20 +737,62 @@ function TripShell({ trip, activeTab, setActiveTab, onBack, onModal, itinRefresh
 
 // ─── ITINERARY TAB ────────────────────────────────────────────────────────────
 
+const formatDayLabel = (dateStr) => {
+  if (!dateStr) return dateStr;
+  const d = new Date(dateStr + 'T12:00:00');
+  if (isNaN(d)) return dateStr;
+  const day = d.toLocaleDateString('en-US', { weekday: 'long' });
+  const date = d.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+  return `${day} · ${date}`;
+};
+
 function ItineraryTab({ trip, onModal, refreshKey }) {
   const [items, setItems] = useState([]);
   const [editingItem, setEditingItem] = useState(null);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [selecting, setSelecting] = useState(false);
+  const longPressTimers = useRef({});
 
-  const handleDeleteItem = async (item) => {
-    if (!window.confirm(`Delete "${item.title}"?`)) return;
-    const { error } = await supabase.from('itinerary').delete().eq('id', item.id);
-    if (!error) setItems(prev => prev.filter(i => i.id !== item.id));
+  const handleDeleteSelected = async () => {
+    if (!selectedIds.length) return;
+    for (const id of selectedIds) {
+      await supabase.from('itinerary').delete().eq('id', id);
+    }
+    setItems(prev => prev.filter(i => !selectedIds.includes(i.id)));
+    setSelectedIds([]);
+    setSelecting(false);
+  };
+
+  const handleLongPressStart = (id) => {
+    longPressTimers.current[id] = setTimeout(() => {
+      setSelecting(true);
+      setSelectedIds([id]);
+    }, 500);
+  };
+
+  const handleLongPressEnd = (id) => {
+    clearTimeout(longPressTimers.current[id]);
+  };
+
+  const handleItemTap = (item) => {
+    if (selecting) {
+      setSelectedIds(prev =>
+        prev.includes(item.id) ? prev.filter(id => id !== item.id) : [...prev, item.id]
+      );
+    } else {
+      setEditingItem(item);
+    }
+  };
+
+  const cancelSelection = () => {
+    setSelecting(false);
+    setSelectedIds([]);
   };
 
   useEffect(() => {
     const fetchItinerary = async () => {
       const { data, error } = await supabase.from('itinerary').select('*')
-        .eq('trip_id', trip.id).order('day', { ascending: true });
+        .eq('trip_id', trip.id).order('day', { ascending: true }).order('time', { ascending: true });
       if (error) console.error(error);
       else setItems(data);
     };
@@ -754,50 +809,76 @@ function ItineraryTab({ trip, onModal, refreshKey }) {
     <div style={S.tabScroll}>
       <div style={S.tabTopRow}>
         <div style={S.tabTitle}>Itinerary</div>
-        <button style={{ ...S.actionBtn, borderColor: P.terracotta + "60", color: P.terracotta }}
-          onClick={() => onModal("addItinerary")}>+ Add</button>
+        {selecting
+          ? <div style={{ display: "flex", gap: 8 }}>
+              <button style={{ ...S.actionBtn, color: P.slateBlue }} onClick={cancelSelection}>Cancel</button>
+              {selectedIds.length > 0 && (
+                <button style={{ ...S.actionBtn, borderColor: P.danger + "60", color: P.danger }}
+                  onClick={handleDeleteSelected}>Delete ({selectedIds.length})</button>
+              )}
+            </div>
+          : <button style={{ ...S.actionBtn, borderColor: P.terracotta + "60", color: P.terracotta }}
+              onClick={() => onModal("addItinerary")}>+ Add</button>
+        }
       </div>
+
+      {selecting && (
+        <div style={SI.selectHint}>Long press to select · Tap to toggle · Delete when ready</div>
+      )}
+
       {days.map(day => (
         <div key={day} style={S.dayBlock}>
-          <div style={S.dayLabel}>{day}</div>
+          <div style={SI.dayLabel}>{formatDayLabel(day)}</div>
           {items.filter(i => i.day === day).map(item => {
-            const meta = ITINERARY_COLORS[item.type];
+            const meta = ITINERARY_COLORS[item.type] || ITINERARY_COLORS.activity;
             const TypeIcon = ITIN_TYPE_ICONS[item.type] || Zap;
+            const isSelected = selectedIds.includes(item.id);
+            const hasLocation = item.type === "stay" || item.type === "restaurant";
             return (
-              <div key={item.id} style={{ ...S.iRow, background: meta.bg, borderColor: meta.border }}>
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                  <div style={S.iTime}>{item.time}</div>
-                  <button style={{ ...S.iActionBtn, background: P.surface2, color: P.lightBlue }}
-                    onClick={() => setEditingItem(item)}>✎</button>
-                  <button style={{ ...S.iActionBtn, background: P.dangerBg, color: P.danger }}
-                    onClick={() => handleDeleteItem(item)}>✕</button>
+              <div
+                key={item.id}
+                style={{ ...SI.item, borderLeftColor: meta.accent, ...(isSelected ? SI.itemSelected : {}) }}
+                onClick={() => handleItemTap(item)}
+                onTouchStart={() => handleLongPressStart(item.id)}
+                onTouchEnd={() => handleLongPressEnd(item.id)}
+                onMouseDown={() => handleLongPressStart(item.id)}
+                onMouseUp={() => handleLongPressEnd(item.id)}
+                onMouseLeave={() => handleLongPressEnd(item.id)}
+              >
+                {/* Time */}
+                <div style={SI.timeCol}>
+                  <span style={SI.time}>{item.time || "—"}</span>
                 </div>
-                <div style={S.iLine}>
-                  <div style={{ ...S.iDot, background: meta.accent }} />
-                  <div style={S.iConnector} />
-                </div>
-                <div style={S.iBody}>
-                  <div style={S.iTitle}>
-                    <TypeIcon size={14} color={meta.accent} strokeWidth={2} />
-                    {item.title}
-                  </div>
-                  <div style={{ ...S.iDetail, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <span>{item.detail}</span>
-                    {(item.type === "stay" || item.type === "restaurant") && (
-                      <a href={`https://maps.google.com/?q=${encodeURIComponent(item.title + " " + item.detail)}`}
+
+                {/* Content */}
+                <div style={SI.content}>
+                  <div style={SI.titleRow}>
+                    <TypeIcon size={13} color={meta.accent} strokeWidth={2} style={{ flexShrink: 0 }} />
+                    <span style={SI.title}>{item.title}</span>
+                    {hasLocation && (
+                      <a href={`https://maps.google.com/?q=${encodeURIComponent(item.title + " " + (item.detail || ""))}`}
                         target="_blank" rel="noopener noreferrer"
-                        style={{ color: P.lightBlue, fontSize: 11, fontWeight: 700, textDecoration: "none", flexShrink: 0, marginLeft: 8, display: "flex", alignItems: "center", gap: 3 }}>
+                        onClick={e => e.stopPropagation()}
+                        style={SI.mapsLink}>
                         <MapPin size={11} /> Maps
                       </a>
                     )}
                   </div>
-                  <div style={{ ...S.iType, color: meta.accent }}>{item.type}</div>
+                  {item.detail ? <div style={SI.detail}>{item.detail}</div> : null}
                 </div>
+
+                {/* Selection indicator */}
+                {selecting && (
+                  <div style={{ ...SI.checkbox, ...(isSelected ? SI.checkboxOn : {}) }}>
+                    {isSelected && <span style={{ fontSize: 11, color: "#fff", fontWeight: 800 }}>✓</span>}
+                  </div>
+                )}
               </div>
             );
           })}
         </div>
       ))}
+
       <div style={{ height: 20 }} />
       {editingItem && (
         <EditItinModal item={editingItem} onClose={() => setEditingItem(null)}
@@ -806,6 +887,69 @@ function ItineraryTab({ trip, onModal, refreshKey }) {
     </div>
   );
 }
+
+const SI = {
+  dayLabel: {
+    fontSize: 12, fontWeight: 800, color: P.slateBlue,
+    letterSpacing: "0.5px", marginBottom: 10, marginTop: 4,
+    fontFamily: "'DM Sans', sans-serif",
+  },
+  selectHint: {
+    fontSize: 12, color: P.textMuted, textAlign: "center",
+    marginBottom: 12, fontFamily: "'DM Sans', sans-serif",
+  },
+  item: {
+    display: "flex", alignItems: "flex-start", gap: 14,
+    background: P.surface1, borderRadius: 14,
+    borderLeft: `3px solid transparent`,
+    padding: "14px 14px 14px 16px",
+    marginBottom: 10, cursor: "pointer",
+    border: `1px solid ${P.surface3}`,
+    borderLeftWidth: 3,
+    userSelect: "none",
+    transition: "background 0.15s",
+  },
+  itemSelected: {
+    background: P.surface2,
+    borderColor: P.terracotta + "40",
+  },
+  timeCol: {
+    flexShrink: 0, width: 44, paddingTop: 2,
+  },
+  time: {
+    fontSize: 12, color: P.textMuted, fontWeight: 700,
+    fontFamily: "'DM Sans', sans-serif",
+  },
+  content: { flex: 1, minWidth: 0 },
+  titleRow: {
+    display: "flex", alignItems: "center", gap: 6,
+    marginBottom: 4, flexWrap: "nowrap",
+  },
+  title: {
+    fontSize: 16, fontWeight: 700, color: P.textPrimary,
+    letterSpacing: "-0.3px", fontFamily: "'Syne', sans-serif",
+    flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+  },
+  mapsLink: {
+    color: P.lightBlue, fontSize: 11, fontWeight: 700,
+    textDecoration: "none", flexShrink: 0,
+    display: "flex", alignItems: "center", gap: 2,
+  },
+  detail: {
+    fontSize: 13, color: P.textMuted,
+    fontFamily: "'DM Sans', sans-serif", lineHeight: 1.4,
+  },
+  checkbox: {
+    width: 22, height: 22, borderRadius: "50%",
+    border: `2px solid ${P.surface3}`,
+    display: "flex", alignItems: "center", justifyContent: "center",
+    flexShrink: 0, marginTop: 2,
+  },
+  checkboxOn: {
+    background: P.terracotta,
+    border: `2px solid ${P.terracotta}`,
+  },
+};
 
 // ─── EXPENSES TAB ─────────────────────────────────────────────────────────────
 
@@ -1602,9 +1746,13 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
         trip_id: trip.id, user_id: userId, role: 'owner', status: 'accepted'
       }]);
 
-      // Add creator to members table
+      // Add creator to members table (check first to avoid duplicate)
       const creatorName = userProfile?.display_name || "Me";
-      await supabase.from('members').insert([{ trip_id: trip.id, name: creatorName }]);
+      const { data: existingMember } = await supabase.from('members')
+        .select('id').eq('trip_id', trip.id).eq('name', creatorName).single();
+      if (!existingMember) {
+        await supabase.from('members').insert([{ trip_id: trip.id, name: creatorName }]);
+      }
 
       // Invite others
       for (const email of answers.who) {
