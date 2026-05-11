@@ -2351,12 +2351,6 @@ function AddItinModal({ onClose, trip, onAdd }) {
     </div>
   );
 }
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function EditItinModal({ item, onClose, onSave }) {
   const [form, setForm] = useState({
