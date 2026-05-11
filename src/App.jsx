@@ -959,6 +959,7 @@ function ItineraryTab({ trip, onModal, refreshKey }) {
           <div style={SI.emptySub}>Tap + Add to start building your itinerary</div>
         </div>
       )}
+      {days.map(day => (
         <div key={day} style={S.dayBlock}>
           <div style={SI.dayLabel}>{formatDayLabel(day)}</div>
           {items.filter(i => i.day === day).map(item => {
