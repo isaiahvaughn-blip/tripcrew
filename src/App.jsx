@@ -618,88 +618,73 @@ const SP = {
 };
 
 function AvatarEditSheet({ profile, user, onClose, onSave }) {
-  const [mode, setMode] = useState("initials"); // initials | emoji
-  const [initialsVal, setInitialsVal] = useState(() => {
+  const [displayName, setDisplayName] = useState(profile?.display_name || "");
+  const [avatarVal, setAvatarVal] = useState(() => {
     const av = profile?.avatar;
+    if (av?.startsWith('emoji:')) return av.slice(6);
     if (av?.startsWith('initials:')) return av.slice(9);
     if (av?.startsWith('name:')) return av.slice(5);
     return (profile?.display_name || user?.email || "").slice(0, 2).toUpperCase();
   });
-  const [emojiVal, setEmojiVal] = useState(() => {
-    const av = profile?.avatar;
-    if (av?.startsWith('emoji:')) return av.slice(6);
-    return "🌊";
-  });
   const [saving, setSaving] = useState(false);
-
-  const EMOJI_OPTIONS = ["🌊","🔥","⚡","🎯","🌙","🌈","🦋","🐉","🎸","🏄","🧠","💫","🌺","🦅","🎭","🍀","🌴","🎪","🚀","💎"];
-
-  const preview = mode === "emoji" ? `emoji:${emojiVal}` : `initials:${initialsVal.slice(0,3).toUpperCase()}`;
 
   const handleSave = async () => {
     setSaving(true);
+    const avatarStr = avatarVal.trim() ? `initials:${avatarVal.trim().slice(0,5)}` : null;
     const { data, error } = await supabase.from('profiles')
-      .update({ avatar: preview }).eq('id', user.id).select().single();
+      .update({ display_name: displayName, avatar: avatarStr })
+      .eq('id', user.id).select().single();
     if (!error) onSave(data);
     setSaving(false);
   };
+
+  // Live preview content
+  const previewContent = avatarVal.trim().slice(0, 5) || "?";
 
   return (
     <div style={S.overlay}>
       <div style={S.sheet}>
         <div style={S.sheetHandle} />
         <div style={S.sheetHeader}>
-          <div style={S.sheetTitle}>Edit Avatar</div>
+          <div style={S.sheetTitle}>Edit Profile</div>
           <button style={S.closeBtn} onClick={onClose}>✕</button>
         </div>
         <div style={S.sheetBody}>
-          {/* Preview */}
+          {/* Live preview */}
           <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
-            <div style={{ ...S.profileAvatar, width: 80, height: 80, fontSize: mode === "emoji" ? 36 : 24 }}>
-              {mode === "emoji"
-                ? <span style={{ fontSize: 36 }}>{emojiVal}</span>
-                : <span style={{ fontSize: 22, fontWeight: 900 }}>{initialsVal.slice(0,3).toUpperCase() || "?"}</span>}
+            <div style={{ ...S.profileAvatar, width: 84, height: 84 }}>
+              <span style={{ fontSize: previewContent.length === 1 ? 36 : 22, fontWeight: 900, letterSpacing: previewContent.length > 1 ? "-1px" : 0 }}>
+                {previewContent}
+              </span>
             </div>
           </div>
 
-          {/* Mode toggle */}
-          <div style={{ display: "flex", gap: 10, marginBottom: 22 }}>
-            <button style={{ ...SN.whoChip, flex: 1, ...(mode === "initials" ? SN.whoChipOn : {}) }}
-              onClick={() => setMode("initials")}>Initials</button>
-            <button style={{ ...SN.whoChip, flex: 1, ...(mode === "emoji" ? SN.whoChipOn : {}) }}
-              onClick={() => setMode("emoji")}>Emoji</button>
+          {/* Display name */}
+          <div style={S.field}>
+            <div style={S.fieldLbl}>DISPLAY NAME</div>
+            <input style={S.input} value={displayName}
+              onChange={e => setDisplayName(e.target.value)}
+              placeholder="Your name" />
           </div>
 
-          {mode === "initials" && (
-            <div style={S.field}>
-              <div style={S.fieldLbl}>UP TO 3 CHARACTERS</div>
-              <input style={{ ...S.input, fontSize: 22, fontWeight: 900, letterSpacing: "4px", textAlign: "center" }}
-                value={initialsVal} maxLength={3}
-                onChange={e => setInitialsVal(e.target.value.toUpperCase())}
-                placeholder="IVJ" />
+          {/* Avatar input */}
+          <div style={S.field}>
+            <div style={S.fieldLbl}>AVATAR — EMOJI OR INITIALS (UP TO 5)</div>
+            <input
+              style={{ ...S.input, fontSize: 22, textAlign: "center", letterSpacing: "2px" }}
+              value={avatarVal}
+              maxLength={5}
+              onChange={e => setAvatarVal(e.target.value)}
+              placeholder="🌊 or IVJ"
+            />
+            <div style={{ fontSize: 12, color: P.textMuted, marginTop: 8 }}>
+              Paste an emoji, type initials, or anything up to 5 characters
             </div>
-          )}
-
-          {mode === "emoji" && (
-            <div style={S.field}>
-              <div style={S.fieldLbl}>PICK AN EMOJI</div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>
-                {EMOJI_OPTIONS.map(em => (
-                  <button key={em}
-                    style={{ fontSize: 28, background: emojiVal === em ? P.terracotta + "20" : P.surface2, border: emojiVal === em ? `1px solid ${P.terracotta}` : `1px solid ${P.surface3}`, borderRadius: 12, padding: "8px 10px", cursor: "pointer" }}
-                    onClick={() => setEmojiVal(em)}>{em}</button>
-                ))}
-              </div>
-              <input style={{ ...S.input, fontSize: 22, textAlign: "center" }}
-                value={emojiVal} maxLength={2}
-                onChange={e => setEmojiVal(e.target.value)}
-                placeholder="Or type any emoji" />
-            </div>
-          )}
+          </div>
 
           <button style={{ ...S.primaryBtn, background: saving ? P.surface2 : `linear-gradient(135deg, ${P.orange}, ${P.terracotta})` }}
             onClick={handleSave} disabled={saving}>
-            {saving ? "Saving..." : "Save Avatar"}
+            {saving ? "Saving..." : "Save Profile"}
           </button>
         </div>
       </div>
@@ -774,11 +759,35 @@ function TripCard({ trip, idx, onOpen, onDelete, onEdit }) {
   const bg = CARD_GRADIENTS[idx % CARD_GRADIENTS.length];
   const IconComp = TRIP_ICONS[trip.emoji] || Plane;
   const showTime = trip.time && !trip.dates?.includes('–');
+  const longPressTimer = useRef(null);
+  const [pressing, setPressing] = useState(false);
+
+  const handlePressStart = (e) => {
+    e.stopPropagation();
+    setPressing(true);
+    longPressTimer.current = setTimeout(() => {
+      setPressing(false);
+      if (window.confirm(`Delete "${trip.name}"? You can restore it from settings.`)) {
+        onDelete(trip);
+      }
+    }, 600);
+  };
+
+  const handlePressEnd = () => {
+    clearTimeout(longPressTimer.current);
+    setPressing(false);
+  };
 
   return (
-    <div style={{ ...S.tripCard, background: bg }} onClick={() => onOpen(trip)}>
-      <button style={S.tcEditBtn} onClick={(e) => { e.stopPropagation(); onEdit(trip); }}>✎</button>
-      <button style={S.tcDeleteBtn} onClick={(e) => { e.stopPropagation(); onDelete(trip); }}>✕</button>
+    <div
+      style={{ ...S.tripCard, background: bg, opacity: pressing ? 0.7 : 1, transition: "opacity 0.1s" }}
+      onClick={() => onOpen(trip)}
+      onTouchStart={handlePressStart}
+      onTouchEnd={handlePressEnd}
+      onMouseDown={handlePressStart}
+      onMouseUp={handlePressEnd}
+      onMouseLeave={handlePressEnd}
+    >
       <div style={S.tcTop}>
         <div style={{ ...S.tcIconWrap, background: P.terracotta + "20", border: `1px solid ${P.terracotta}30` }}>
           <IconComp size={26} color={P.terracotta} strokeWidth={1.5} />
@@ -1603,7 +1612,7 @@ const SS = {
 const VIBES = [
   { key: "trip",     label: "Trip",          emoji: "✈️", icon: Plane,        shortForm: false },
   { key: "road",     label: "Road Trip",     emoji: "🚗", icon: Car,          shortForm: false },
-  { key: "weekend",  label: "Weekend Away",  emoji: "🌅", icon: Sunset,       shortForm: false },
+  { key: "staycation", label: "Staycation", emoji: "🏠", icon: House, shortForm: false },
   { key: "hike",     label: "Hike",          emoji: "🏔️", icon: Mountain,     shortForm: false },
   { key: "camping",  label: "Camping",       emoji: "🏕️", icon: Tent,        shortForm: false },
   { key: "concert",  label: "Concert",       emoji: "🎵", icon: Music,        shortForm: true  },
@@ -1849,7 +1858,6 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
     }
   };
 
-  // Shared time formatter for confirm screen and receipt
   const formatTime12 = (t) => {
     if (!t) return "";
     const [h, m] = t.split(':').map(Number);
@@ -1860,6 +1868,7 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
   };
 
   // Step 5 — Looks good?
+  const nameInputRef = useRef(null);
   const StepConfirm = () => {
     const IconComp = TRIP_ICONS[answers.emoji] || Plane;
     const dateStr = formatDates(answers.startDate, answers.endDate);
@@ -1873,13 +1882,11 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
             <IconComp size={28} color={P.terracotta} strokeWidth={1.5} />
           </div>
           <input
+            ref={nameInputRef}
             style={SN.nameInput}
-            value={answers.editedName}
-            onChange={e => {
-              const val = e.target.value;
-              setAnswers(a => ({ ...a, editedName: val }));
-            }}
-            autoFocus={false}
+            defaultValue={answers.editedName}
+            onBlur={e => setAnswers(a => ({ ...a, editedName: e.target.value }))}
+            onChange={e => setAnswers(a => ({ ...a, editedName: e.target.value }))}
           />
           <div style={SN.confirmMeta}>
             {answers.location}{dateStr ? ` · ${dateStr}` : ""}
@@ -1902,7 +1909,8 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
   };
 
   const handleSave = async () => {
-    if (!answers.editedName) return;
+    const finalName = nameInputRef.current?.value || answers.editedName;
+    if (!finalName) return;
     setSaving(true);
     try {
       const dates = formatDates(answers.startDate, answers.endDate);
@@ -1910,7 +1918,7 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
 
       // Create trip (no tag/bg — uses global palette)
       const { data: tripData, error: tripError } = await supabase.from('trips').insert([{
-        name: answers.editedName,
+        name: finalName,
         location,
         city: !answers.vibe?.shortForm ? location : "",
         emoji: answers.emoji || "✈️",
@@ -2286,14 +2294,22 @@ function AddItinModal({ onClose, trip, onAdd }) {
         <div style={S.sheetBody}>
           <div style={S.field}>
             <div style={S.fieldLbl}>TYPE</div>
-            <div style={S.catRow}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
               {types.map(t => {
                 const m = ITINERARY_COLORS[t];
                 const TIcon = ITIN_TYPE_ICONS[t];
+                const selected = form.type === t;
                 return (
                   <button key={t} onClick={() => setForm(f => ({ ...f, type: t }))}
-                    style={{ ...S.catBtn, display: "flex", alignItems: "center", gap: 5, textTransform: "capitalize", ...(form.type === t ? { background: m.bg, color: m.accent, borderColor: m.accent + "80" } : { borderColor: P.surface3, background: P.surface1, color: P.textMuted }) }}>
-                    <TIcon size={13} strokeWidth={2} />{t}
+                    style={{
+                      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                      gap: 6, padding: "12px 4px", borderRadius: 14, cursor: "pointer",
+                      background: selected ? P.surface2 : P.surface1,
+                      border: selected ? `1px solid ${m.accent}` : `1px solid ${P.surface3}`,
+                      minHeight: 64,
+                    }}>
+                    <TIcon size={18} color={selected ? m.accent : P.textMuted} strokeWidth={1.5} />
+                    <span style={{ fontSize: 10, fontWeight: 700, color: selected ? m.accent : P.textMuted, textTransform: "capitalize", letterSpacing: "0.3px" }}>{t}</span>
                   </button>
                 );
               })}
@@ -2301,29 +2317,40 @@ function AddItinModal({ onClose, trip, onAdd }) {
           </div>
           <div style={S.field}>
             <div style={S.fieldLbl}>TITLE</div>
-            <input style={S.input} placeholder="e.g. Fairmont Lake Louise"
+            <input style={{ ...S.input, fontSize: 18, padding: "16px" }} placeholder="e.g. Fairmont Lake Louise"
               value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
           </div>
           <div style={S.field}>
             <div style={S.fieldLbl}>DETAILS / CONFIRMATION #</div>
-            <input style={S.input} placeholder="Confirmation code, address, notes..."
-              value={form.detail} onChange={e => setForm(f => ({ ...f, detail: e.target.value }))} />
+            <textarea
+              style={{ ...S.input, fontSize: 16, padding: "16px", resize: "none", lineHeight: 1.5, minHeight: 80 }}
+              placeholder="Confirmation code, address, notes..."
+              value={form.detail} onChange={e => setForm(f => ({ ...f, detail: e.target.value }))}
+              rows={3}
+            />
           </div>
-          <div style={{ display: "flex", gap: 10 }}>
-            <div style={{ ...S.field, flex: 1 }}>
-              <div style={S.fieldLbl}>DATE</div>
-              <input style={{ ...S.input, colorScheme: "dark", width: "100%", boxSizing: "border-box" }} type="date"
-                value={form.day} onChange={e => setForm(f => ({ ...f, day: e.target.value }))} />
-            </div>
-            <div style={{ ...S.field, flex: 1 }}>
-              <div style={S.fieldLbl}>TIME</div>
-              <input style={{ ...S.input, colorScheme: "dark", width: "100%", boxSizing: "border-box" }} type="time"
-                value={form.time} onChange={e => setForm(f => ({ ...f, time: e.target.value }))} />
-            </div>
+          <div style={S.field}>
+            <div style={S.fieldLbl}>DATE</div>
+            <input style={{ ...S.input, colorScheme: "dark" }} type="date"
+              value={form.day} onChange={e => setForm(f => ({ ...f, day: e.target.value }))} />
           </div>
-          <button style={{ ...S.primaryBtn, background: meta.accent === P.terracotta ? `linear-gradient(135deg, ${P.orange}, ${P.terracotta})` : meta.accent, color: "#fff", marginTop: 8 }}
+          <div style={S.field}>
+            <div style={{ ...S.fieldLbl, display: "flex", justifyContent: "space-between" }}>
+              <span>TIME</span>
+              <span style={{ color: P.textMuted }}>optional</span>
+            </div>
+            <input style={{ ...S.input, colorScheme: "dark" }} type="time"
+              value={form.time} onChange={e => setForm(f => ({ ...f, time: e.target.value }))} />
+          </div>
+          <button style={{ ...S.primaryBtn, background: `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`, color: "#fff", marginTop: 8 }}
             onClick={handleAdd}>
             Add to Itinerary
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
           </button>
         </div>
       </div>
@@ -2359,14 +2386,22 @@ function EditItinModal({ item, onClose, onSave }) {
         <div style={S.sheetBody}>
           <div style={S.field}>
             <div style={S.fieldLbl}>TYPE</div>
-            <div style={S.catRow}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
               {types.map(t => {
                 const m = ITINERARY_COLORS[t];
                 const TIcon = ITIN_TYPE_ICONS[t];
+                const selected = form.type === t;
                 return (
                   <button key={t} onClick={() => setForm(f => ({ ...f, type: t }))}
-                    style={{ ...S.catBtn, display: "flex", alignItems: "center", gap: 5, textTransform: "capitalize", ...(form.type === t ? { background: m.bg, color: m.accent, borderColor: m.accent + "80" } : { borderColor: P.surface3, background: P.surface1, color: P.textMuted }) }}>
-                    <TIcon size={13} strokeWidth={2} />{t}
+                    style={{
+                      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                      gap: 6, padding: "12px 4px", borderRadius: 14, cursor: "pointer",
+                      background: selected ? P.surface2 : P.surface1,
+                      border: selected ? `1px solid ${m.accent}` : `1px solid ${P.surface3}`,
+                      minHeight: 64,
+                    }}>
+                    <TIcon size={18} color={selected ? m.accent : P.textMuted} strokeWidth={1.5} />
+                    <span style={{ fontSize: 10, fontWeight: 700, color: selected ? m.accent : P.textMuted, textTransform: "capitalize", letterSpacing: "0.3px" }}>{t}</span>
                   </button>
                 );
               })}
@@ -2374,7 +2409,7 @@ function EditItinModal({ item, onClose, onSave }) {
           </div>
           <div style={S.field}>
             <div style={S.fieldLbl}>TITLE</div>
-            <input style={S.input} value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
+            <input style={{ ...S.input, fontSize: 18, padding: "16px" }} value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
           </div>
           <div style={S.field}>
             <div style={S.fieldLbl}>DETAILS / CONFIRMATION #</div>
@@ -2840,10 +2875,20 @@ const S = {
   input: { background: P.phoneBg, border: `1px solid ${P.surface3}`, borderRadius: 14, padding: "14px 16px", color: P.textPrimary, fontSize: 16, width: "100%", boxSizing: "border-box", outline: "none", fontFamily: "inherit" },
   amountWrap: { position: "relative" },
   dollarSign: { position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", color: P.textMuted, fontSize: 16, fontWeight: 700 },
-  catRow: { display: "flex", flexWrap: "wrap", gap: 8 },
-  catBtn: { background: P.surface1, border: `1px solid ${P.surface3}`, color: P.textMuted, borderRadius: 22, padding: "9px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer" },
+  catRow: { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 },
+  catBtn: {
+    background: P.surface1, border: `1px solid ${P.surface3}`,
+    color: P.textMuted, borderRadius: 14, padding: "12px 8px",
+    fontSize: 13, fontWeight: 700, cursor: "pointer",
+    display: "flex", flexDirection: "column", alignItems: "center",
+    justifyContent: "center", minHeight: 56, gap: 4,
+  },
   paidRow: { display: "flex", flexWrap: "wrap", gap: 8 },
-  paidBtn: { background: P.surface1, border: `1px solid ${P.surface3}`, color: P.textMuted, borderRadius: 22, padding: "9px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer" },
+  paidBtn: {
+    background: P.surface1, border: `1px solid ${P.surface3}`,
+    color: P.textMuted, borderRadius: 14, padding: "10px 16px",
+    fontSize: 13, fontWeight: 700, cursor: "pointer",
+  },
   paidBtnActive: { background: P.surface2, border: `1px solid ${P.lightBlue}`, color: P.lightBlue },
 
   // Split
