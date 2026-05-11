@@ -529,7 +529,10 @@ function ProfileScreen({ onOpen, user, onSignOut, onSettings, profile }) {
           </div>
           <div style={S.statDiv} />
           <div style={S.statItem}>
-            <div style={S.statNum}>{new Set(trips.map(t => t.city || t.location?.split(',')[0]).filter(Boolean)).size}</div>
+            <div style={S.statNum}>{new Set(trips.map(t => {
+              const raw = t.city || t.location || "";
+              return raw.split(',')[0].trim().toLowerCase();
+            }).filter(Boolean)).size}</div>
             <div style={S.statLbl}>cities</div>
           </div>
           <div style={S.statDiv} />
@@ -667,9 +670,7 @@ function TripCard({ trip, idx, onOpen, onDelete, onEdit }) {
         {trip.total_spent > 0
           ? <div style={{ ...S.tcTotal, color: P.terracotta }}>${trip.total_spent.toLocaleString()}</div>
           : <div />}
-        <div style={{ ...S.tcViewBtn, color: P.terracotta, borderColor: P.terracotta + "40" }}>
-          View <ChevronRight size={14} />
-        </div>
+        <ChevronRight size={18} color={P.terracotta + "80"} />
       </div>
     </div>
   );
@@ -831,9 +832,20 @@ function ItineraryTab({ trip, onModal, refreshKey }) {
           <div style={SI.dayLabel}>{formatDayLabel(day)}</div>
           {items.filter(i => i.day === day).map(item => {
             const meta = ITINERARY_COLORS[item.type] || ITINERARY_COLORS.activity;
+            // Use stored icon emoji if available, otherwise fall back to type icon component
+            const hasEmojiIcon = item.icon && item.icon.length <= 4 && item.icon !== "🎯";
             const TypeIcon = ITIN_TYPE_ICONS[item.type] || Zap;
             const isSelected = selectedIds.includes(item.id);
             const hasLocation = item.type === "stay" || item.type === "restaurant";
+            // Format time as 12hr
+            const formatTime12 = (t) => {
+              if (!t) return "—";
+              const [h, m] = t.split(':').map(Number);
+              if (isNaN(h)) return t;
+              const ampm = h >= 12 ? 'pm' : 'am';
+              const hr = h % 12 || 12;
+              return `${hr}:${String(m).padStart(2, '0')}${ampm}`;
+            };
             return (
               <div
                 key={item.id}
@@ -847,13 +859,16 @@ function ItineraryTab({ trip, onModal, refreshKey }) {
               >
                 {/* Time */}
                 <div style={SI.timeCol}>
-                  <span style={SI.time}>{item.time || "—"}</span>
+                  <span style={SI.time}>{formatTime12(item.time)}</span>
                 </div>
 
                 {/* Content */}
                 <div style={SI.content}>
                   <div style={SI.titleRow}>
-                    <TypeIcon size={13} color={meta.accent} strokeWidth={2} style={{ flexShrink: 0 }} />
+                    {hasEmojiIcon
+                      ? <span style={{ fontSize: 18, lineHeight: 1, flexShrink: 0 }}>{item.icon}</span>
+                      : <TypeIcon size={16} color={meta.accent} strokeWidth={2} style={{ flexShrink: 0 }} />
+                    }
                     <span style={SI.title}>{item.title}</span>
                     {hasLocation && (
                       <a href={`https://maps.google.com/?q=${encodeURIComponent(item.title + " " + (item.detail || ""))}`}
@@ -914,10 +929,10 @@ const SI = {
     borderColor: P.terracotta + "40",
   },
   timeCol: {
-    flexShrink: 0, width: 44, paddingTop: 2,
+    flexShrink: 0, width: 52, paddingTop: 2,
   },
   time: {
-    fontSize: 12, color: P.textMuted, fontWeight: 700,
+    fontSize: 14, color: P.textSecondary, fontWeight: 700,
     fontFamily: "'DM Sans', sans-serif",
   },
   content: { flex: 1, minWidth: 0 },
@@ -1772,10 +1787,9 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
 
       // For short-form vibes with a specific place — auto-create itinerary item
       if (answers.vibe?.shortForm && answers.location) {
-        const itinType = answers.vibe.key === 'dinner' ? 'restaurant'
-          : answers.vibe.key === 'coffee' ? 'restaurant'
-          : answers.vibe.key === 'drinks' ? 'restaurant'
-          : 'activity';
+        const itinType = ['dinner', 'coffee', 'drinks'].includes(answers.vibe.key) ? 'restaurant' : 'activity';
+        // Use vibe's own icon key so itinerary item matches the trip vibe
+        const vibeIconKey = answers.vibe.emoji;
         await supabase.from('itinerary').insert([{
           trip_id: trip.id,
           day: answers.startDate,
@@ -1783,7 +1797,7 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
           type: itinType,
           title: answers.location,
           detail: "",
-          icon: answers.emoji,
+          icon: vibeIconKey,
           visibility: "group",
         }]);
       }
