@@ -163,16 +163,17 @@ export default function App() {
 
   const openTrip = (trip) => {
     // Smart tab default: Summary for past trips, Itinerary for upcoming/current
+    // Use raw startDate if available, otherwise skip to itinerary
     const defaultTab = (() => {
-      if (!trip.dates) return "itinerary";
-      // Check if trip end date is in the past
-      const dateStr = trip.dates.includes('–') ? trip.dates.split('–').pop().trim() : trip.dates;
-      const parsed = new Date(dateStr);
-      if (!isNaN(parsed) && parsed < new Date()) return "summary";
-      // For single-day events, check the start date
-      const startStr = trip.dates.split('–')[0].trim();
-      const start = new Date(startStr);
-      if (!isNaN(start) && start < new Date() && !trip.dates.includes('–')) return "summary";
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      // Try raw date fields first (v2 trips store these)
+      if (trip.start_date) {
+        const start = new Date(trip.start_date + 'T12:00:00');
+        const end = trip.end_date ? new Date(trip.end_date + 'T12:00:00') : start;
+        if (end < today) return "summary";
+        return "itinerary";
+      }
       return "itinerary";
     })();
     setActiveTrip(trip);
@@ -186,7 +187,8 @@ export default function App() {
         {view === "profile" && (
           <ProfileScreen onOpen={openTrip} user={user} profile={profile}
             onSignOut={async () => { await supabase.auth.signOut(); }}
-            onSettings={() => setView("settings")} />
+            onSettings={() => setView("settings")}
+            onProfileUpdate={(updated) => setProfile(updated)} />
         )}
         {view === "settings" && (
           <SettingsScreen user={user} profile={profile} onBack={() => setView("profile")}
@@ -468,12 +470,13 @@ const SA = {
     fontFamily: "'DM Sans', sans-serif",
   },
   wordmark: {
-    fontFamily: "'Syne', sans-serif",
+    fontFamily: "'Playfair Display', 'Syne', serif",
     fontSize: 38,
     fontWeight: 900,
     letterSpacing: "-2px",
     color: P.textPrimary,
     marginBottom: 8,
+    fontStyle: "italic",
   },
   subtitle: {
     fontSize: 16,
@@ -484,10 +487,21 @@ const SA = {
 
 // ─── PROFILE ──────────────────────────────────────────────────────────────────
 
-function ProfileScreen({ onOpen, user, onSignOut, onSettings, profile }) {
+// Helper to render avatar content from profile.avatar field
+function renderAvatarContent(profile, user) {
+  const av = profile?.avatar;
+  if (av?.startsWith('emoji:')) return <span style={{ fontSize: 32 }}>{av.slice(6)}</span>;
+  if (av?.startsWith('name:')) return <span style={{ fontSize: 18, fontWeight: 900, letterSpacing: "-0.5px" }}>{av.slice(5).slice(0, 3).toUpperCase()}</span>;
+  if (av?.startsWith('initials:')) return <span style={{ fontSize: 20, fontWeight: 900 }}>{av.slice(9).slice(0, 3).toUpperCase()}</span>;
+  // Default: initials from display name or email
+  return <span style={{ fontSize: 26, fontWeight: 900 }}>{(profile?.display_name || user?.email || "?").slice(0, 2).toUpperCase()}</span>;
+}
+
+function ProfileScreen({ onOpen, user, onSignOut, onSettings, profile, onProfileUpdate }) {
   const [trips, setTrips] = useState([]);
   const [showNewTrip, setShowNewTrip] = useState(false);
   const [editingTrip, setEditingTrip] = useState(null);
+  const [showAvatarEdit, setShowAvatarEdit] = useState(false);
 
   useEffect(() => {
     const fetchTrips = async () => {
@@ -515,8 +529,12 @@ function ProfileScreen({ onOpen, user, onSignOut, onSettings, profile }) {
   return (
     <div style={S.screen}>
       <div style={S.profileHero}>
-        <div style={S.profileAvatar}>
-          {(profile?.display_name || user.email).slice(0, 2).toUpperCase()}
+        <div style={{ position: "relative", display: "inline-block", marginBottom: 16 }}
+          onClick={() => setShowAvatarEdit(true)}>
+          <div style={S.profileAvatar}>
+            {renderAvatarContent(profile, user)}
+          </div>
+          <div style={SP.avatarEditBadge}>✎</div>
         </div>
         <div style={S.profileName}>{profile?.display_name || user.email}</div>
         <div style={S.profileSub}>
@@ -545,6 +563,13 @@ function ProfileScreen({ onOpen, user, onSignOut, onSettings, profile }) {
         </div>
       </div>
 
+      {showAvatarEdit && (
+        <AvatarEditSheet
+          profile={profile} user={user}
+          onClose={() => setShowAvatarEdit(false)}
+          onSave={(updated) => { onProfileUpdate?.(updated); setShowAvatarEdit(false); }}
+        />
+      )}
       {editingTrip && (
         <EditTripModal trip={editingTrip} onClose={() => setEditingTrip(null)}
           onSave={(updated) => {
@@ -577,6 +602,106 @@ function ProfileScreen({ onOpen, user, onSignOut, onSettings, profile }) {
           <TripCard key={t.id} trip={t} idx={i} onOpen={onOpen}
             onDelete={handleDeleteTrip} onEdit={setEditingTrip} />
         ))}
+      </div>
+    </div>
+  );
+}
+
+const SP = {
+  avatarEditBadge: {
+    position: "absolute", bottom: 0, right: 0,
+    background: P.surface2, border: `2px solid ${P.phoneBg}`,
+    borderRadius: "50%", width: 26, height: 26,
+    display: "flex", alignItems: "center", justifyContent: "center",
+    fontSize: 11, color: P.textSecondary, cursor: "pointer",
+  },
+};
+
+function AvatarEditSheet({ profile, user, onClose, onSave }) {
+  const [mode, setMode] = useState("initials"); // initials | emoji
+  const [initialsVal, setInitialsVal] = useState(() => {
+    const av = profile?.avatar;
+    if (av?.startsWith('initials:')) return av.slice(9);
+    if (av?.startsWith('name:')) return av.slice(5);
+    return (profile?.display_name || user?.email || "").slice(0, 2).toUpperCase();
+  });
+  const [emojiVal, setEmojiVal] = useState(() => {
+    const av = profile?.avatar;
+    if (av?.startsWith('emoji:')) return av.slice(6);
+    return "🌊";
+  });
+  const [saving, setSaving] = useState(false);
+
+  const EMOJI_OPTIONS = ["🌊","🔥","⚡","🎯","🌙","🌈","🦋","🐉","🎸","🏄","🧠","💫","🌺","🦅","🎭","🍀","🌴","🎪","🚀","💎"];
+
+  const preview = mode === "emoji" ? `emoji:${emojiVal}` : `initials:${initialsVal.slice(0,3).toUpperCase()}`;
+
+  const handleSave = async () => {
+    setSaving(true);
+    const { data, error } = await supabase.from('profiles')
+      .update({ avatar: preview }).eq('id', user.id).select().single();
+    if (!error) onSave(data);
+    setSaving(false);
+  };
+
+  return (
+    <div style={S.overlay}>
+      <div style={S.sheet}>
+        <div style={S.sheetHandle} />
+        <div style={S.sheetHeader}>
+          <div style={S.sheetTitle}>Edit Avatar</div>
+          <button style={S.closeBtn} onClick={onClose}>✕</button>
+        </div>
+        <div style={S.sheetBody}>
+          {/* Preview */}
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
+            <div style={{ ...S.profileAvatar, width: 80, height: 80, fontSize: mode === "emoji" ? 36 : 24 }}>
+              {mode === "emoji"
+                ? <span style={{ fontSize: 36 }}>{emojiVal}</span>
+                : <span style={{ fontSize: 22, fontWeight: 900 }}>{initialsVal.slice(0,3).toUpperCase() || "?"}</span>}
+            </div>
+          </div>
+
+          {/* Mode toggle */}
+          <div style={{ display: "flex", gap: 10, marginBottom: 22 }}>
+            <button style={{ ...SN.whoChip, flex: 1, ...(mode === "initials" ? SN.whoChipOn : {}) }}
+              onClick={() => setMode("initials")}>Initials</button>
+            <button style={{ ...SN.whoChip, flex: 1, ...(mode === "emoji" ? SN.whoChipOn : {}) }}
+              onClick={() => setMode("emoji")}>Emoji</button>
+          </div>
+
+          {mode === "initials" && (
+            <div style={S.field}>
+              <div style={S.fieldLbl}>UP TO 3 CHARACTERS</div>
+              <input style={{ ...S.input, fontSize: 22, fontWeight: 900, letterSpacing: "4px", textAlign: "center" }}
+                value={initialsVal} maxLength={3}
+                onChange={e => setInitialsVal(e.target.value.toUpperCase())}
+                placeholder="IVJ" />
+            </div>
+          )}
+
+          {mode === "emoji" && (
+            <div style={S.field}>
+              <div style={S.fieldLbl}>PICK AN EMOJI</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>
+                {EMOJI_OPTIONS.map(em => (
+                  <button key={em}
+                    style={{ fontSize: 28, background: emojiVal === em ? P.terracotta + "20" : P.surface2, border: emojiVal === em ? `1px solid ${P.terracotta}` : `1px solid ${P.surface3}`, borderRadius: 12, padding: "8px 10px", cursor: "pointer" }}
+                    onClick={() => setEmojiVal(em)}>{em}</button>
+                ))}
+              </div>
+              <input style={{ ...S.input, fontSize: 22, textAlign: "center" }}
+                value={emojiVal} maxLength={2}
+                onChange={e => setEmojiVal(e.target.value)}
+                placeholder="Or type any emoji" />
+            </div>
+          )}
+
+          <button style={{ ...S.primaryBtn, background: saving ? P.surface2 : `linear-gradient(135deg, ${P.orange}, ${P.terracotta})` }}
+            onClick={handleSave} disabled={saving}>
+            {saving ? "Saving..." : "Save Avatar"}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -827,7 +952,13 @@ function ItineraryTab({ trip, onModal, refreshKey }) {
         <div style={SI.selectHint}>Long press to select · Tap to toggle · Delete when ready</div>
       )}
 
-      {days.map(day => (
+      {items.length === 0 && (
+        <div style={SI.emptyState}>
+          <div style={{ fontSize: 32, marginBottom: 12 }}>🗺️</div>
+          <div style={SI.emptyTitle}>No stops yet</div>
+          <div style={SI.emptySub}>Tap + Add to start building your itinerary</div>
+        </div>
+      )}
         <div key={day} style={S.dayBlock}>
           <div style={SI.dayLabel}>{formatDayLabel(day)}</div>
           {items.filter(i => i.day === day).map(item => {
@@ -964,6 +1095,19 @@ const SI = {
     background: P.terracotta,
     border: `2px solid ${P.terracotta}`,
   },
+  emptyState: {
+    textAlign: "center", padding: "48px 24px",
+    background: P.surface1, borderRadius: 18,
+    border: `1px dashed ${P.surface3}`, marginTop: 8,
+  },
+  emptyTitle: {
+    fontFamily: "'Syne', sans-serif", fontSize: 18,
+    fontWeight: 800, color: P.textPrimary, marginBottom: 8,
+  },
+  emptySub: {
+    fontSize: 13, color: P.slateBlue,
+    fontFamily: "'DM Sans', sans-serif",
+  },
 };
 
 // ─── EXPENSES TAB ─────────────────────────────────────────────────────────────
@@ -1058,7 +1202,9 @@ function ExpensesTab({ trip, onModal, expRefresh, profile, user, onSettlementsCh
         </div>
         <div style={S.expSumDiv} />
         <div style={S.expSumItem}>
-          <div style={{ ...S.expSumVal, color: P.danger }}>${myOwed}</div>
+          {myOwed > 0
+            ? <div style={{ ...S.expSumVal, color: P.danger }}>${myOwed}</div>
+            : <div style={{ ...S.expSumVal, color: P.success }}>Even</div>}
           <div style={S.expSumLbl}>you owe</div>
         </div>
       </div>
@@ -1466,6 +1612,7 @@ const VIBES = [
   { key: "nightout", label: "Night Out",     emoji: "🎉", icon: PartyPopper,  shortForm: true  },
   { key: "active",   label: "Workout",       emoji: "💪", icon: Dumbbell,     shortForm: true  },
   { key: "beach",    label: "Beach Day",     emoji: "🏖️", icon: Umbrella,    shortForm: false },
+  { key: "other",    label: "Other",         emoji: "✨", icon: Sparkles,    shortForm: false },
 ];
 
 function NewTripModal({ onClose, onSave, userId, userProfile }) {
@@ -1496,7 +1643,12 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
     if (step > 4 && answers.startDate) {
       const d = new Date(answers.startDate + 'T12:00:00');
       const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      items.push({ label: "when", value: answers.time ? `${dateStr} · ${answers.time}` : dateStr });
+      const timeStr = answers.time ? (() => {
+        const [h, m] = answers.time.split(':').map(Number);
+        const ampm = h >= 12 ? 'pm' : 'am';
+        return ` · ${h % 12 || 12}:${String(m).padStart(2,'0')}${ampm}`;
+      })() : "";
+      items.push({ label: "when", value: `${dateStr}${timeStr}` });
     }
     if (!items.length) return null;
     return (
@@ -1696,10 +1848,21 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
     }
   };
 
+  // Shared time formatter for confirm screen and receipt
+  const formatTime12 = (t) => {
+    if (!t) return "";
+    const [h, m] = t.split(':').map(Number);
+    if (isNaN(h)) return t;
+    const ampm = h >= 12 ? 'pm' : 'am';
+    const hr = h % 12 || 12;
+    return `${hr}:${String(m).padStart(2, '0')}${ampm}`;
+  };
+
   // Step 5 — Looks good?
   const StepConfirm = () => {
     const IconComp = TRIP_ICONS[answers.emoji] || Plane;
     const dateStr = formatDates(answers.startDate, answers.endDate);
+    const timeStr = formatTime12(answers.time);
     return (
       <div style={SN.stepWrap}>
         <Receipt />
@@ -1711,11 +1874,15 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
           <input
             style={SN.nameInput}
             value={answers.editedName}
-            onChange={e => setAnswers(a => ({ ...a, editedName: e.target.value }))}
+            onChange={e => {
+              const val = e.target.value;
+              setAnswers(a => ({ ...a, editedName: val }));
+            }}
+            autoFocus={false}
           />
           <div style={SN.confirmMeta}>
             {answers.location}{dateStr ? ` · ${dateStr}` : ""}
-            {answers.time ? ` · ${answers.time}` : ""}
+            {timeStr ? ` · ${timeStr}` : ""}
           </div>
           <div style={SN.confirmPeople}>
             {answers.solo ? "Just you" : answers.who.length ? `You + ${answers.who.length} others` : "Just you"}
@@ -1747,6 +1914,8 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
         city: !answers.vibe?.shortForm ? location : "",
         emoji: answers.emoji || "✈️",
         dates,
+        start_date: answers.startDate || null,
+        end_date: answers.endDate || null,
         time: answers.time || null,
         total_spent: 0,
         settled: false,
