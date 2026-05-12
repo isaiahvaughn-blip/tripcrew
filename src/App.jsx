@@ -502,6 +502,8 @@ function ProfileScreen({ onOpen, user, onSignOut, onSettings, profile, onProfile
   const [showNewTrip, setShowNewTrip] = useState(false);
   const [editingTrip, setEditingTrip] = useState(null);
   const [showAvatarEdit, setShowAvatarEdit] = useState(false);
+  const [selecting, setSelecting] = useState(false);
+  const [selectedIds, setSelectedIds] = useState([]);
 
   useEffect(() => {
     const fetchTrips = async () => {
@@ -586,8 +588,29 @@ function ProfileScreen({ onOpen, user, onSignOut, onSettings, profile, onProfile
       <div style={{ padding: "0 22px 40px" }}>
         <div style={S.sectionRow}>
           <div style={S.sectionLabel}>YOUR TRIPS</div>
-          <button style={S.newBtn} onClick={() => setShowNewTrip(true)}>+ New</button>
+          {selecting
+            ? <div style={{ display: "flex", gap: 8 }}>
+                <button style={{ ...S.ghostBtn, fontSize: 12 }} onClick={() => { setSelecting(false); setSelectedIds([]); }}>Cancel</button>
+                {selectedIds.length > 0 && (
+                  <button style={{ ...S.ghostBtn, fontSize: 12, color: P.danger, borderColor: P.danger + "40" }}
+                    onClick={async () => {
+                      for (const id of selectedIds) {
+                        await supabase.from('trips').update({ deleted_at: new Date().toISOString() }).eq('id', id);
+                      }
+                      setTrips(prev => prev.filter(t => !selectedIds.includes(t.id)));
+                      setSelectedIds([]);
+                      setSelecting(false);
+                    }}>Delete ({selectedIds.length})</button>
+                )}
+              </div>
+            : <button style={S.newBtn} onClick={() => setShowNewTrip(true)}>+ New</button>
+          }
         </div>
+        {selecting && (
+          <div style={{ fontSize: 12, color: P.textMuted, textAlign: "center", marginBottom: 12, fontFamily: "'DM Sans', sans-serif" }}>
+            Hold to select · Tap to toggle · Delete when ready
+          </div>
+        )}
         {showNewTrip && (
           <NewTripModal onClose={() => setShowNewTrip(false)} userId={user.id}
             userProfile={profile}
@@ -600,7 +623,15 @@ function ProfileScreen({ onOpen, user, onSignOut, onSettings, profile, onProfile
 
         {trips.map((t, i) => (
           <TripCard key={t.id} trip={t} idx={i} onOpen={onOpen}
-            onDelete={handleDeleteTrip} onEdit={setEditingTrip} />
+            onDelete={handleDeleteTrip}
+            onEdit={setEditingTrip}
+            selecting={selecting}
+            selected={selectedIds.includes(t.id)}
+            onLongPress={() => { setSelecting(true); setSelectedIds([t.id]); }}
+            onToggleSelect={() => setSelectedIds(prev =>
+              prev.includes(t.id) ? prev.filter(id => id !== t.id) : [...prev, t.id]
+            )}
+          />
         ))}
       </div>
     </div>
@@ -755,39 +786,45 @@ const SE = {
   },
 };
 
-function TripCard({ trip, idx, onOpen, onDelete, onEdit }) {
+function TripCard({ trip, idx, onOpen, onDelete, onEdit, selecting, selected, onLongPress, onToggleSelect }) {
   const bg = CARD_GRADIENTS[idx % CARD_GRADIENTS.length];
   const IconComp = TRIP_ICONS[trip.emoji] || Plane;
   const showTime = trip.time && !trip.dates?.includes('–');
   const longPressTimer = useRef(null);
-  const [pressing, setPressing] = useState(false);
 
-  const handlePressStart = (e) => {
-    e.stopPropagation();
-    setPressing(true);
+  const handlePressStart = () => {
     longPressTimer.current = setTimeout(() => {
-      setPressing(false);
-      if (window.confirm(`Delete "${trip.name}"? You can restore it from settings.`)) {
-        onDelete(trip);
-      }
-    }, 600);
+      onLongPress?.();
+    }, 500);
   };
 
   const handlePressEnd = () => {
     clearTimeout(longPressTimer.current);
-    setPressing(false);
+  };
+
+  const handleTap = () => {
+    if (selecting) {
+      onToggleSelect?.();
+    } else {
+      onOpen(trip);
+    }
   };
 
   return (
     <div
-      style={{ ...S.tripCard, background: bg, opacity: pressing ? 0.7 : 1, transition: "opacity 0.1s" }}
-      onClick={() => onOpen(trip)}
+      style={{ ...S.tripCard, background: bg, opacity: selected ? 0.75 : 1, transition: "opacity 0.15s", outline: selected ? `2px solid ${P.terracotta}` : "none" }}
+      onClick={handleTap}
       onTouchStart={handlePressStart}
       onTouchEnd={handlePressEnd}
       onMouseDown={handlePressStart}
       onMouseUp={handlePressEnd}
       onMouseLeave={handlePressEnd}
     >
+      {selecting && (
+        <div style={{ position: "absolute", top: 14, right: 14, zIndex: 10, ...SI.checkbox, ...(selected ? SI.checkboxOn : {}) }}>
+          {selected && <span style={{ fontSize: 11, color: "#fff", fontWeight: 800 }}>✓</span>}
+        </div>
+      )}
       <div style={S.tcTop}>
         <div style={{ ...S.tcIconWrap, background: P.terracotta + "20", border: `1px solid ${P.terracotta}30` }}>
           <IconComp size={26} color={P.terracotta} strokeWidth={1.5} />
@@ -1610,27 +1647,29 @@ const SS = {
 
 // Vibe definitions — short-form vibes adapt location input to specific place
 const VIBES = [
-  { key: "trip",     label: "Trip",          emoji: "✈️", icon: Plane,        shortForm: false },
-  { key: "road",     label: "Road Trip",     emoji: "🚗", icon: Car,          shortForm: false },
-  { key: "staycation", label: "Staycation", emoji: "🏠", icon: House, shortForm: false },
-  { key: "hike",     label: "Hike",          emoji: "🏔️", icon: Mountain,     shortForm: false },
-  { key: "camping",  label: "Camping",       emoji: "🏕️", icon: Tent,        shortForm: false },
-  { key: "concert",  label: "Concert",       emoji: "🎵", icon: Music,        shortForm: true  },
-  { key: "dinner",   label: "Dinner",        emoji: "🍽️", icon: UtensilsCrossed, shortForm: true },
-  { key: "coffee",   label: "Coffee",        emoji: "☕", icon: Coffee,       shortForm: true  },
-  { key: "drinks",   label: "Drinks",        emoji: "🍷", icon: Wine,         shortForm: true  },
-  { key: "nightout", label: "Night Out",     emoji: "🎉", icon: PartyPopper,  shortForm: true  },
-  { key: "active",   label: "Workout",       emoji: "💪", icon: Dumbbell,     shortForm: true  },
-  { key: "beach",    label: "Beach Day",     emoji: "🏖️", icon: Umbrella,    shortForm: false },
-  { key: "other",    label: "Other",         emoji: "✨", icon: Sparkles,    shortForm: false },
+  { key: "trip",        label: "Trip",         emoji: "✈️", icon: Plane,           shortForm: false },
+  { key: "road",        label: "Road Trip",    emoji: "🚗", icon: Car,             shortForm: false },
+  { key: "staycation",  label: "Staycation",   emoji: "🏠", icon: House,           shortForm: false },
+  { key: "hike",        label: "Hike",         emoji: "🏔️", icon: Mountain,        shortForm: false },
+  { key: "camping",     label: "Camping",      emoji: "🏕️", icon: Tent,           shortForm: false },
+  { key: "concert",     label: "Concert",      emoji: "🎵", icon: Music,           shortForm: true  },
+  { key: "dinner",      label: "Dinner",       emoji: "🍽️", icon: UtensilsCrossed, shortForm: true  },
+  { key: "brunch",      label: "Brunch",       emoji: "🥂", icon: Wine,            shortForm: true  },
+  { key: "coffee",      label: "Coffee",       emoji: "☕", icon: Coffee,          shortForm: true  },
+  { key: "drinks",      label: "Drinks",       emoji: "🍷", icon: Wine,            shortForm: true  },
+  { key: "nightout",    label: "Night Out",    emoji: "🎉", icon: PartyPopper,     shortForm: true  },
+  { key: "active",      label: "Workout",      emoji: "💪", icon: Dumbbell,        shortForm: true  },
+  { key: "beach",       label: "Beach Day",    emoji: "🏖️", icon: Umbrella,       shortForm: false },
+  { key: "celebration", label: "Celebration",  emoji: "🎊", icon: PartyPopper,     shortForm: true  },
+  { key: "meetup",      label: "Meetup",       emoji: "👋", icon: Users,           shortForm: true  },
 ];
 
 function NewTripModal({ onClose, onSave, userId, userProfile }) {
   const [step, setStep] = useState(1); // 1=vibe, 2=where, 3=who, 4=when, 5=confirm
   const [answers, setAnswers] = useState({
-    vibe: null,       // vibe object
-    location: "",     // place name or city
-    who: [],          // array of email strings, empty = solo
+    vibe: null,
+    location: "",
+    who: [],
     solo: false,
     startDate: "",
     endDate: "",
@@ -1790,7 +1829,8 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
       <div style={S.field}>
         <div style={S.fieldLbl}>DATE</div>
         <input style={{ ...S.input, colorScheme: "dark" }} type="date"
-          value={answers.startDate}
+          value={answers.startDate || ""}
+          placeholder="yyyy-mm-dd"
           onChange={e => setAnswers(a => ({ ...a, startDate: e.target.value }))} />
       </div>
       {!isShortForm && (
@@ -1867,46 +1907,7 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
     return `${hr}:${String(m).padStart(2, '0')}${ampm}`;
   };
 
-  // Step 5 — Looks good?
   const nameInputRef = useRef(null);
-  const StepConfirm = () => {
-    const IconComp = TRIP_ICONS[answers.emoji] || Plane;
-    const dateStr = formatDates(answers.startDate, answers.endDate);
-    const timeStr = formatTime12(answers.time);
-    return (
-      <div style={SN.stepWrap}>
-        <Receipt />
-        <div style={SN.question}>Looks good?</div>
-        <div style={SN.confirmCard}>
-          <div style={SN.confirmIcon}>
-            <IconComp size={28} color={P.terracotta} strokeWidth={1.5} />
-          </div>
-          <input
-            ref={nameInputRef}
-            style={SN.nameInput}
-            defaultValue={answers.editedName}
-            onBlur={e => setAnswers(a => ({ ...a, editedName: e.target.value }))}
-            onChange={e => setAnswers(a => ({ ...a, editedName: e.target.value }))}
-          />
-          <div style={SN.confirmMeta}>
-            {answers.location}{dateStr ? ` · ${dateStr}` : ""}
-            {timeStr ? ` · ${timeStr}` : ""}
-          </div>
-          <div style={SN.confirmPeople}>
-            {answers.solo ? "Just you" : answers.who.length ? `You + ${answers.who.length} others` : "Just you"}
-          </div>
-        </div>
-        <div style={{ fontSize: 12, color: P.textMuted, textAlign: "center", marginBottom: 16 }}>
-          Tap the name to edit it
-        </div>
-        <button
-          style={{ ...SN.nextBtn, background: saving ? P.surface2 : `linear-gradient(135deg, ${P.orange}, ${P.terracotta})` }}
-          onClick={handleSave} disabled={saving}>
-          {saving ? "Working on it..." : "Let's go ✓"}
-        </button>
-      </div>
-    );
-  };
 
   const handleSave = async () => {
     const finalName = nameInputRef.current?.value || answers.editedName;
@@ -2009,7 +2010,44 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
           {step === 2 && <StepWhere />}
           {step === 3 && <StepWho />}
           {step === 4 && <StepWhen />}
-          {step === 5 && <StepConfirm />}
+          {step === 5 && (() => {
+            const IconComp = TRIP_ICONS[answers.emoji] || Plane;
+            const dateStr = formatDates(answers.startDate, answers.endDate);
+            const timeStr = formatTime12(answers.time);
+            return (
+              <div style={SN.stepWrap}>
+                <Receipt />
+                <div style={SN.question}>Looks good?</div>
+                <div style={SN.confirmCard}>
+                  <div style={SN.confirmIcon}>
+                    <IconComp size={28} color={P.terracotta} strokeWidth={1.5} />
+                  </div>
+                  <input
+                    ref={nameInputRef}
+                    key="name-input"
+                    style={SN.nameInput}
+                    defaultValue={answers.editedName}
+                    onBlur={e => setAnswers(a => ({ ...a, editedName: e.target.value }))}
+                  />
+                  <div style={SN.confirmMeta}>
+                    {answers.location}{dateStr ? ` · ${dateStr}` : ""}
+                    {timeStr ? ` · ${timeStr}` : ""}
+                  </div>
+                  <div style={SN.confirmPeople}>
+                    {answers.solo ? "Just you" : answers.who.length ? `You + ${answers.who.length} others` : "Just you"}
+                  </div>
+                </div>
+                <div style={{ fontSize: 12, color: P.textMuted, textAlign: "center", marginBottom: 16 }}>
+                  Tap the name to edit it
+                </div>
+                <button
+                  style={{ ...SN.nextBtn, background: saving ? P.surface2 : `linear-gradient(135deg, ${P.orange}, ${P.terracotta})` }}
+                  onClick={handleSave} disabled={saving}>
+                  {saving ? "Working on it..." : "Let's go ✓"}
+                </button>
+              </div>
+            );
+          })()}
         </div>
         <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
       </div>
