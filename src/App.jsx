@@ -1999,7 +1999,7 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
 
   return (
     <div style={S.overlay}>
-      <div style={{ ...S.sheet, maxHeight: "92%" }}>
+      <div style={{ ...S.sheet, height: "90%", maxHeight: "90%", display: "flex", flexDirection: "column", overflowY: "hidden" }}>
         <div style={S.sheetHandle} />
         <div style={SN.header}>
           {step > 1
@@ -2012,7 +2012,7 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
           </div>
           <button style={S.closeBtn} onClick={onClose}>✕</button>
         </div>
-        <div style={S.sheetBody}>
+        <div style={{ ...S.sheetBody, flex: 1, overflowY: "auto" }}>
           {step === 1 && <StepVibe />}
           {step === 2 && <StepWhere />}
           {step === 3 && <StepWho />}
