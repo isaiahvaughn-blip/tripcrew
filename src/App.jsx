@@ -64,6 +64,7 @@ const TRIP_ICONS = {
   "🏕️": Tent, "🎭": Theater, "☕": Coffee, "🍷": Wine,
   "🎵": Music, "🛍️": ShoppingBag, "💪": Dumbbell, "🎉": PartyPopper,
   "🏠": House, "🌅": Sunset, "📸": Camera, "🍽️": UtensilsCrossed,
+  "🎊": PartyPopper, "🥂": Wine, "👋": Users,
 };
 
 const TRIP_ICON_LIST = [
@@ -1014,7 +1015,7 @@ function ItineraryTab({ trip, onModal, refreshKey }) {
             const hasEmojiIcon = item.icon && item.icon.length <= 4 && item.icon !== "🎯";
             const TypeIcon = ITIN_TYPE_ICONS[item.type] || Zap;
             const isSelected = selectedIds.includes(item.id);
-            const hasLocation = item.type === "stay" || item.type === "restaurant";
+            const hasLocation = item.type === "stay" || item.type === "restaurant" || item.type === "activity";
             // Format time as 12hr
             const formatTime12 = (t) => {
               if (!t) return "—";
@@ -1828,10 +1829,19 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
       <div style={SN.question}>When?</div>
       <div style={S.field}>
         <div style={S.fieldLbl}>DATE</div>
-        <input style={{ ...S.input, colorScheme: "dark" }} type="date"
-          value={answers.startDate || ""}
-          placeholder="yyyy-mm-dd"
-          onChange={e => setAnswers(a => ({ ...a, startDate: e.target.value }))} />
+        <div style={{ position: "relative" }}>
+          <div style={{ ...S.input, color: answers.startDate ? P.textPrimary : P.textMuted, cursor: "pointer", display: "flex", alignItems: "center" }}>
+            {answers.startDate
+              ? new Date(answers.startDate + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+              : "Select a date"}
+          </div>
+          <input
+            type="date"
+            value={answers.startDate || ""}
+            onChange={e => setAnswers(a => ({ ...a, startDate: e.target.value }))}
+            style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer", width: "100%", height: "100%" }}
+          />
+        </div>
       </div>
       {!isShortForm && (
         <div style={S.field}>
@@ -1839,9 +1849,20 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
             <span>END DATE</span>
             <span style={{ color: P.textMuted }}>optional</span>
           </div>
-          <input style={{ ...S.input, colorScheme: "dark" }} type="date"
-            value={answers.endDate} min={answers.startDate}
-            onChange={e => setAnswers(a => ({ ...a, endDate: e.target.value }))} />
+          <div style={{ position: "relative" }}>
+            <div style={{ ...S.input, color: answers.endDate ? P.textPrimary : P.textMuted, cursor: "pointer", display: "flex", alignItems: "center" }}>
+              {answers.endDate
+                ? new Date(answers.endDate + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+                : "Select end date"}
+            </div>
+            <input
+              type="date"
+              value={answers.endDate || ""}
+              min={answers.startDate}
+              onChange={e => setAnswers(a => ({ ...a, endDate: e.target.value }))}
+              style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer", width: "100%", height: "100%" }}
+            />
+          </div>
         </div>
       )}
       {isShortForm && (
@@ -1850,9 +1871,17 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
             <span>TIME</span>
             <span style={{ color: P.textMuted }}>optional</span>
           </div>
-          <input style={{ ...S.input, colorScheme: "dark" }} type="time"
-            value={answers.time}
-            onChange={e => setAnswers(a => ({ ...a, time: e.target.value }))} />
+          <div style={{ position: "relative" }}>
+            <div style={{ ...S.input, color: answers.time ? P.textPrimary : P.textMuted, cursor: "pointer", display: "flex", alignItems: "center" }}>
+              {answers.time ? formatTime12(answers.time) : "Select a time"}
+            </div>
+            <input
+              type="time"
+              value={answers.time || ""}
+              onChange={e => setAnswers(a => ({ ...a, time: e.target.value }))}
+              style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer", width: "100%", height: "100%" }}
+            />
+          </div>
         </div>
       )}
       <button
