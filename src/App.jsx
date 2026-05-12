@@ -1672,7 +1672,7 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
     location: "",
     who: [],
     solo: false,
-    startDate: "",
+    startDate: new Date().toISOString().split('T')[0], // default today
     endDate: "",
     time: "",
     generatedName: "",
@@ -1741,6 +1741,7 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
   );
 
   // Step 2 — Where to?
+  const locationRef = useRef(null);
   const StepWhere = () => (
     <div style={SN.stepWrap}>
       <Receipt />
@@ -1749,16 +1750,21 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
         {isShortForm ? "Name the spot" : "City or destination"}
       </div>
       <input
+        ref={locationRef}
         style={{ ...S.input, fontSize: 18, padding: "16px", marginBottom: 12 }}
         placeholder={isShortForm ? "e.g. Barista, Ox Restaurant" : "e.g. Tokyo, Banff, Portland"}
-        value={answers.location}
-        onChange={e => setAnswers(a => ({ ...a, location: e.target.value }))}
+        defaultValue={answers.location}
+        onBlur={e => setAnswers(a => ({ ...a, location: e.target.value }))}
         autoFocus
       />
       <button
-        style={{ ...SN.nextBtn, opacity: answers.location.trim() ? 1 : 0.4 }}
-        disabled={!answers.location.trim()}
-        onClick={() => setStep(3)}>
+        style={{ ...SN.nextBtn, opacity: 1 }}
+        onClick={() => {
+          const loc = locationRef.current?.value || answers.location;
+          if (!loc.trim()) return;
+          setAnswers(a => ({ ...a, location: loc }));
+          setStep(3);
+        }}>
         Next →
       </button>
     </div>
@@ -1829,19 +1835,9 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
       <div style={SN.question}>When?</div>
       <div style={S.field}>
         <div style={S.fieldLbl}>DATE</div>
-        <div style={{ position: "relative" }}>
-          <div style={{ ...S.input, color: answers.startDate ? P.textPrimary : P.textMuted, cursor: "pointer", display: "flex", alignItems: "center" }}>
-            {answers.startDate
-              ? new Date(answers.startDate + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
-              : "Select a date"}
-          </div>
-          <input
-            type="date"
-            value={answers.startDate || ""}
-            onChange={e => setAnswers(a => ({ ...a, startDate: e.target.value }))}
-            style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer", width: "100%", height: "100%" }}
-          />
-        </div>
+        <input style={{ ...S.input, colorScheme: "dark" }} type="date"
+          defaultValue={answers.startDate}
+          onChange={e => setAnswers(a => ({ ...a, startDate: e.target.value }))} />
       </div>
       {!isShortForm && (
         <div style={S.field}>
@@ -1849,20 +1845,10 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
             <span>END DATE</span>
             <span style={{ color: P.textMuted }}>optional</span>
           </div>
-          <div style={{ position: "relative" }}>
-            <div style={{ ...S.input, color: answers.endDate ? P.textPrimary : P.textMuted, cursor: "pointer", display: "flex", alignItems: "center" }}>
-              {answers.endDate
-                ? new Date(answers.endDate + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
-                : "Select end date"}
-            </div>
-            <input
-              type="date"
-              value={answers.endDate || ""}
-              min={answers.startDate}
-              onChange={e => setAnswers(a => ({ ...a, endDate: e.target.value }))}
-              style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer", width: "100%", height: "100%" }}
-            />
-          </div>
+          <input style={{ ...S.input, colorScheme: "dark" }} type="date"
+            defaultValue={answers.endDate}
+            min={answers.startDate}
+            onChange={e => setAnswers(a => ({ ...a, endDate: e.target.value }))} />
         </div>
       )}
       {isShortForm && (
@@ -1871,17 +1857,9 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
             <span>TIME</span>
             <span style={{ color: P.textMuted }}>optional</span>
           </div>
-          <div style={{ position: "relative" }}>
-            <div style={{ ...S.input, color: answers.time ? P.textPrimary : P.textMuted, cursor: "pointer", display: "flex", alignItems: "center" }}>
-              {answers.time ? formatTime12(answers.time) : "Select a time"}
-            </div>
-            <input
-              type="time"
-              value={answers.time || ""}
-              onChange={e => setAnswers(a => ({ ...a, time: e.target.value }))}
-              style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer", width: "100%", height: "100%" }}
-            />
-          </div>
+          <input style={{ ...S.input, colorScheme: "dark" }} type="time"
+            defaultValue={answers.time}
+            onChange={e => setAnswers(a => ({ ...a, time: e.target.value }))} />
         </div>
       )}
       <button
@@ -2337,14 +2315,19 @@ function AddExpenseModal({ onClose, trip, onAdd, user, profile, existingExpense 
 }
 
 function AddItinModal({ onClose, trip, onAdd }) {
-  const [form, setForm] = useState({ type: "activity", title: "", detail: "", day: "", time: "", icon: "🎯", visibility: "group" });
-  const types = ["flight", "stay", "activity", "restaurant", "transport"];
-  const meta = ITINERARY_COLORS[form.type];
+  const [type, setType] = useState("activity");
+  const [day, setDay] = useState("");
+  const [time, setTime] = useState("");
+  const titleRef = useRef(null);
+  const detailRef = useRef(null);
+  const meta = ITINERARY_COLORS[type];
 
   const handleAdd = async () => {
-    if (!form.title) return;
+    const title = titleRef.current?.value || "";
+    const detail = detailRef.current?.value || "";
+    if (!title) return;
     const { data, error } = await supabase.from('itinerary')
-      .insert([{ trip_id: trip.id, day: form.day, time: form.time, type: form.type, title: form.title, detail: form.detail, icon: form.icon, visibility: form.visibility }]).select();
+      .insert([{ trip_id: trip.id, day, time, type, title, detail, icon: "🎯", visibility: "group" }]).select();
     if (error) { console.error(error); return; }
     onAdd(data[0]);
     onClose();
@@ -2362,12 +2345,12 @@ function AddItinModal({ onClose, trip, onAdd }) {
           <div style={S.field}>
             <div style={S.fieldLbl}>TYPE</div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
-              {types.map(t => {
+              {["flight","stay","activity","restaurant","transport"].map(t => {
                 const m = ITINERARY_COLORS[t];
                 const TIcon = ITIN_TYPE_ICONS[t];
-                const selected = form.type === t;
+                const selected = type === t;
                 return (
-                  <button key={t} onClick={() => setForm(f => ({ ...f, type: t }))}
+                  <button key={t} onClick={() => setType(t)}
                     style={{
                       display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
                       gap: 6, padding: "12px 4px", borderRadius: 14, cursor: "pointer",
@@ -2384,22 +2367,20 @@ function AddItinModal({ onClose, trip, onAdd }) {
           </div>
           <div style={S.field}>
             <div style={S.fieldLbl}>TITLE</div>
-            <input style={{ ...S.input, fontSize: 18, padding: "16px" }} placeholder="e.g. Fairmont Lake Louise"
-              value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
+            <input ref={titleRef} style={{ ...S.input, fontSize: 18, padding: "16px" }}
+              placeholder="e.g. Fairmont Lake Louise" defaultValue="" />
           </div>
           <div style={S.field}>
             <div style={S.fieldLbl}>DETAILS / CONFIRMATION #</div>
-            <textarea
+            <textarea ref={detailRef}
               style={{ ...S.input, fontSize: 16, padding: "16px", resize: "none", lineHeight: 1.5, minHeight: 80 }}
               placeholder="Confirmation code, address, notes..."
-              value={form.detail} onChange={e => setForm(f => ({ ...f, detail: e.target.value }))}
-              rows={3}
-            />
+              defaultValue="" rows={3} />
           </div>
           <div style={S.field}>
             <div style={S.fieldLbl}>DATE</div>
             <input style={{ ...S.input, colorScheme: "dark" }} type="date"
-              value={form.day} onChange={e => setForm(f => ({ ...f, day: e.target.value }))} />
+              value={day} onChange={e => setDay(e.target.value)} />
           </div>
           <div style={S.field}>
             <div style={{ ...S.fieldLbl, display: "flex", justifyContent: "space-between" }}>
@@ -2407,7 +2388,7 @@ function AddItinModal({ onClose, trip, onAdd }) {
               <span style={{ color: P.textMuted }}>optional</span>
             </div>
             <input style={{ ...S.input, colorScheme: "dark" }} type="time"
-              value={form.time} onChange={e => setForm(f => ({ ...f, time: e.target.value }))} />
+              value={time} onChange={e => setTime(e.target.value)} />
           </div>
           <button style={{ ...S.primaryBtn, background: `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`, color: "#fff", marginTop: 8 }}
             onClick={handleAdd}>
@@ -2420,18 +2401,21 @@ function AddItinModal({ onClose, trip, onAdd }) {
 }
 
 function EditItinModal({ item, onClose, onSave }) {
-  const [form, setForm] = useState({
-    type: item.type || "activity", title: item.title || "",
-    detail: item.detail || "", day: item.day || "",
-    time: item.time || "", icon: item.icon || "🎯",
-  });
-  const types = ["flight", "stay", "activity", "restaurant", "transport"];
+  const [type, setType] = useState(item.type || "activity");
+  const [day, setDay] = useState(item.day || "");
+  const [time, setTime] = useState(item.time || "");
+  const titleRef = useRef(null);
+  const detailRef = useRef(null);
   const [loading, setLoading] = useState(false);
 
   const handleSave = async () => {
-    if (!form.title) return;
+    const title = titleRef.current?.value || item.title;
+    const detail = detailRef.current?.value || item.detail || "";
+    if (!title) return;
     setLoading(true);
-    const { data, error } = await supabase.from('itinerary').update(form).eq('id', item.id).select().single();
+    const { data, error } = await supabase.from('itinerary')
+      .update({ type, title, detail, day, time, icon: item.icon })
+      .eq('id', item.id).select().single();
     if (error) { console.error(error); setLoading(false); return; }
     onSave(data);
   };
@@ -2448,12 +2432,12 @@ function EditItinModal({ item, onClose, onSave }) {
           <div style={S.field}>
             <div style={S.fieldLbl}>TYPE</div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
-              {types.map(t => {
+              {["flight","stay","activity","restaurant","transport"].map(t => {
                 const m = ITINERARY_COLORS[t];
                 const TIcon = ITIN_TYPE_ICONS[t];
-                const selected = form.type === t;
+                const selected = type === t;
                 return (
-                  <button key={t} onClick={() => setForm(f => ({ ...f, type: t }))}
+                  <button key={t} onClick={() => setType(t)}
                     style={{
                       display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
                       gap: 6, padding: "12px 4px", borderRadius: 14, cursor: "pointer",
@@ -2470,23 +2454,27 @@ function EditItinModal({ item, onClose, onSave }) {
           </div>
           <div style={S.field}>
             <div style={S.fieldLbl}>TITLE</div>
-            <input style={{ ...S.input, fontSize: 18, padding: "16px" }} value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
+            <input ref={titleRef} style={{ ...S.input, fontSize: 18, padding: "16px" }}
+              defaultValue={item.title} />
           </div>
           <div style={S.field}>
             <div style={S.fieldLbl}>DETAILS / CONFIRMATION #</div>
-            <input style={S.input} value={form.detail} onChange={e => setForm(f => ({ ...f, detail: e.target.value }))} />
+            <textarea ref={detailRef}
+              style={{ ...S.input, fontSize: 16, padding: "16px", resize: "none", lineHeight: 1.5, minHeight: 80 }}
+              defaultValue={item.detail || ""} rows={3} />
           </div>
-          <div style={{ display: "flex", gap: 10 }}>
-            <div style={{ ...S.field, flex: 1 }}>
-              <div style={S.fieldLbl}>DATE</div>
-              <input style={{ ...S.input, colorScheme: "dark", width: "100%", boxSizing: "border-box" }} type="date"
-                value={form.day} onChange={e => setForm(f => ({ ...f, day: e.target.value }))} />
+          <div style={S.field}>
+            <div style={S.fieldLbl}>DATE</div>
+            <input style={{ ...S.input, colorScheme: "dark" }} type="date"
+              value={day} onChange={e => setDay(e.target.value)} />
+          </div>
+          <div style={S.field}>
+            <div style={{ ...S.fieldLbl, display: "flex", justifyContent: "space-between" }}>
+              <span>TIME</span>
+              <span style={{ color: P.textMuted }}>optional</span>
             </div>
-            <div style={{ ...S.field, flex: 1 }}>
-              <div style={S.fieldLbl}>TIME</div>
-              <input style={{ ...S.input, colorScheme: "dark", width: "100%", boxSizing: "border-box" }} type="time"
-                value={form.time} onChange={e => setForm(f => ({ ...f, time: e.target.value }))} />
-            </div>
+            <input style={{ ...S.input, colorScheme: "dark" }} type="time"
+              value={time} onChange={e => setTime(e.target.value)} />
           </div>
           <button style={{ ...S.primaryBtn, background: loading ? P.surface2 : `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`, color: "#fff", marginTop: 8 }}
             onClick={handleSave} disabled={loading}>
