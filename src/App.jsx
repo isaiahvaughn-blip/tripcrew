@@ -2010,7 +2010,7 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
   return (
     <div style={{ position: "absolute", inset: 0, zIndex: 100, background: P.phoneBg, display: "flex", flexDirection: "column", overflowY: "auto" }}>
       {/* Header */}
-      <div style={{ ...SN.header, paddingTop: 52, flexShrink: 0 }}>
+      <div style={{ ...SN.header, paddingTop: 32, flexShrink: 0 }}>
         {step > 1
           ? <button style={SN.backBtn} onClick={goBack}>← Back</button>
           : <div />}
@@ -2099,19 +2099,19 @@ const SN = {
   receiptLabel: { fontSize: 10, fontWeight: 800, color: P.textMuted, letterSpacing: "2px" },
   receiptValue: { fontSize: 14, fontWeight: 700, color: P.textPrimary },
   question: {
-    fontFamily: "'Syne', sans-serif", fontSize: 26, fontWeight: 900,
-    color: P.textPrimary, letterSpacing: "-0.8px", marginBottom: 6,
+    fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 900,
+    color: P.textPrimary, letterSpacing: "-0.8px", marginBottom: 4,
   },
   subQuestion: {
     fontSize: 13, color: P.slateBlue, marginBottom: 18,
     fontFamily: "'DM Sans', sans-serif",
   },
-  vibeGrid: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginTop: 16 },
+  vibeGrid: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginTop: 8 },
   vibeTile: {
     display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-    gap: 8, background: P.surface2, border: `1px solid ${P.surface3}`,
-    borderRadius: 16, padding: "18px 8px", cursor: "pointer",
-    minHeight: 100,
+    gap: 5, background: P.surface2, border: `1px solid ${P.surface3}`,
+    borderRadius: 14, padding: "10px 6px", cursor: "pointer",
+    minHeight: 82,
   },
   vibeTileOn: {
     background: P.terracotta + "18",
