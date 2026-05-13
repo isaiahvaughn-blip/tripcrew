@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import {
   Plane, Mountain, Bike, Umbrella, Map, Snowflake, Car, Anchor, Tent, Theater,
   UtensilsCrossed, Hotel, Zap, Train, Calendar, DollarSign, Image, Users,
-  MapPin, ChevronRight, Mic, MicOff, Sparkles, Loader, BarChart2, Trophy,
+  MapPin, ChevronRight, Mic, MicOff, Sparkles, Loader, BarChart2, Trophy, Clock,
   Coffee, Wine, Music, ShoppingBag, Dumbbell, PartyPopper, House, Sunset, Sailboat, Camera
 } from "lucide-react";
 
@@ -826,24 +826,22 @@ function TripCard({ trip, idx, onOpen, onDelete, onEdit, selecting, selected, on
           {selected && <span style={{ fontSize: 11, color: "#fff", fontWeight: 800 }}>✓</span>}
         </div>
       )}
-      <div style={S.tcTop}>
-        <div style={{ ...S.tcIconWrap, background: P.terracotta + "20", border: `1px solid ${P.terracotta}30` }}>
-          <IconComp size={26} color={P.terracotta} strokeWidth={1.5} />
+      <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 14 }}>
+        <div style={{ ...S.tcIconWrap, background: P.terracotta + "20", border: `1px solid ${P.terracotta}30`, flexShrink: 0 }}>
+          <IconComp size={24} color={P.terracotta} strokeWidth={1.5} />
         </div>
-        <div style={{ display: "flex", gap: 6 }}>
-          {trip.settled && <span style={S.settledBadge}>SETTLED</span>}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={S.tcName}>{trip.name}</div>
+          <div style={S.tcLocation}>
+            {trip.location} · {trip.dates}{showTime ? ` · ${trip.time}` : ""}
+          </div>
         </div>
+        {trip.settled && <span style={S.settledBadge}>SETTLED</span>}
+        <ChevronRight size={18} color={P.terracotta + "80"} flexShrink={0} />
       </div>
-      <div style={S.tcName}>{trip.name}</div>
-      <div style={S.tcLocation}>
-        {trip.location} · {trip.dates}{showTime ? ` · ${trip.time}` : ""}
-      </div>
-      <div style={S.tcBottom}>
-        {trip.total_spent > 0
-          ? <div style={{ ...S.tcTotal, color: P.terracotta }}>${trip.total_spent.toLocaleString()}</div>
-          : <div />}
-        <ChevronRight size={18} color={P.terracotta + "80"} />
-      </div>
+      {trip.total_spent > 0 && (
+        <div style={{ ...S.tcTotal, color: P.terracotta }}>${trip.total_spent.toLocaleString()}</div>
+      )}
     </div>
   );
 }
@@ -866,7 +864,7 @@ function TripShell({ trip, activeTab, setActiveTab, onBack, onModal, itinRefresh
   return (
     <div style={S.tripShell}>
       <div style={{ ...S.tripHeader, background: `linear-gradient(135deg, ${P.surface1} 0%, ${P.surface2} 100%)` }}>
-        <button style={S.backBtn} onClick={onBack}>←</button>
+        <button style={S.backBtn} onClick={() => { setModal(null); onBack(); }}>←</button>
         <div style={S.thMid}>
           <div style={{ ...S.thIconWrap, background: P.terracotta + "20" }}>
             <IconComp size={22} color={P.terracotta} strokeWidth={1.5} />
@@ -2342,9 +2340,22 @@ function AddItinModal({ onClose, trip, onAdd }) {
     onClose();
   };
 
+  const formatDayDisplay = (d) => {
+    if (!d) return "Date";
+    const dt = new Date(d + 'T12:00:00');
+    return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
+  const formatTimeDisplay = (t) => {
+    if (!t) return "Time";
+    const [h, m] = t.split(':').map(Number);
+    const ampm = h >= 12 ? 'pm' : 'am';
+    return `${h % 12 || 12}:${String(m).padStart(2,'0')}${ampm}`;
+  };
+
   return (
     <div style={S.overlay}>
-      <div style={S.sheet}>
+      <div style={{ ...S.sheet, maxHeight: "85%", overflowY: "auto" }}>
         <div style={S.sheetHandle} />
         <div style={S.sheetHeader}>
           <div style={S.sheetTitle}>Add to Itinerary</div>
@@ -2382,24 +2393,39 @@ function AddItinModal({ onClose, trip, onAdd }) {
           <div style={S.field}>
             <div style={S.fieldLbl}>DETAILS / CONFIRMATION #</div>
             <textarea ref={detailRef}
-              style={{ ...S.input, fontSize: 16, padding: "16px", resize: "none", lineHeight: 1.5, minHeight: 80 }}
+              style={{ ...S.input, fontSize: 15, padding: "14px", resize: "none", lineHeight: 1.5, minHeight: 72 }}
               placeholder="Confirmation code, address, notes..."
               defaultValue="" rows={3} />
           </div>
-          <div style={S.field}>
-            <div style={S.fieldLbl}>DATE</div>
-            <input style={{ ...S.input, colorScheme: "dark" }} type="date"
-              value={day} onChange={e => setDay(e.target.value)} />
-          </div>
-          <div style={S.field}>
-            <div style={{ ...S.fieldLbl, display: "flex", justifyContent: "space-between" }}>
-              <span>TIME</span>
-              <span style={{ color: P.textMuted }}>optional</span>
+          {/* Date and time side by side with icon buttons */}
+          <div style={{ display: "flex", gap: 10, marginBottom: 18 }}>
+            <div style={{ flex: 1 }}>
+              <div style={S.fieldLbl}>DATE</div>
+              <div style={{ position: "relative" }}>
+                <div style={{ ...S.input, display: "flex", alignItems: "center", gap: 10, cursor: "pointer", color: day ? P.textPrimary : P.textMuted }}>
+                  <Calendar size={18} color={day ? P.terracotta : P.textMuted} strokeWidth={1.5} />
+                  <span style={{ fontSize: 15, fontWeight: day ? 700 : 400 }}>{formatDayDisplay(day)}</span>
+                </div>
+                <input type="date" value={day} onChange={e => setDay(e.target.value)}
+                  style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer", width: "100%", height: "100%" }} />
+              </div>
             </div>
-            <input style={{ ...S.input, colorScheme: "dark" }} type="time"
-              value={time} onChange={e => setTime(e.target.value)} />
+            <div style={{ flex: 1 }}>
+              <div style={{ ...S.fieldLbl, display: "flex", justifyContent: "space-between" }}>
+                <span>TIME</span>
+                <span style={{ color: P.textMuted }}>optional</span>
+              </div>
+              <div style={{ position: "relative" }}>
+                <div style={{ ...S.input, display: "flex", alignItems: "center", gap: 10, cursor: "pointer", color: time ? P.textPrimary : P.textMuted }}>
+                  <Clock size={18} color={time ? P.terracotta : P.textMuted} strokeWidth={1.5} />
+                  <span style={{ fontSize: 15, fontWeight: time ? 700 : 400 }}>{formatTimeDisplay(time)}</span>
+                </div>
+                <input type="time" value={time} onChange={e => setTime(e.target.value)}
+                  style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer", width: "100%", height: "100%" }} />
+              </div>
+            </div>
           </div>
-          <button style={{ ...S.primaryBtn, background: `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`, color: "#fff", marginTop: 8 }}
+          <button style={{ ...S.primaryBtn, background: `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`, color: "#fff" }}
             onClick={handleAdd}>
             Add to Itinerary
           </button>
@@ -2916,7 +2942,7 @@ const S = {
   evenBadge: { background: P.surface2, color: P.textMuted, fontSize: 12, fontWeight: 700, borderRadius: 8, padding: "5px 10px" },
 
   // Modals
-  overlay: { position: "absolute", bottom: 0, left: 0, right: 0, display: "flex", alignItems: "flex-end", zIndex: 100 },
+  overlay: { position: "absolute", top: 0, bottom: 0, left: 0, right: 0, display: "flex", alignItems: "flex-end", zIndex: 100, background: "rgba(0,0,0,0.4)" },
   sheet: { background: P.surface1, borderRadius: "24px 24px 0 0", width: "100%", maxHeight: "88%", overflowY: "auto", paddingBottom: 24, boxShadow: `0 -20px 60px rgba(0,0,0,0.8), 0 -1px 0 rgba(255,255,255,0.06)` },
   sheetHandle: { width: 40, height: 5, background: P.surface3, borderRadius: 10, margin: "14px auto 0" },
   sheetHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "18px 22px 14px" },
