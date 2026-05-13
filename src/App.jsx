@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import {
   Plane, Mountain, Bike, Umbrella, Map, Snowflake, Car, Anchor, Tent, Theater,
   UtensilsCrossed, Hotel, Zap, Train, Calendar, DollarSign, Image, Users,
-  MapPin, ChevronRight, Mic, MicOff, Sparkles, Loader, BarChart2,
+  MapPin, ChevronRight, Mic, MicOff, Sparkles, Loader, BarChart2, Trophy,
   Coffee, Wine, Music, ShoppingBag, Dumbbell, PartyPopper, House, Sunset, Sailboat, Camera
 } from "lucide-react";
 
@@ -64,7 +64,7 @@ const TRIP_ICONS = {
   "🏕️": Tent, "🎭": Theater, "☕": Coffee, "🍷": Wine,
   "🎵": Music, "🛍️": ShoppingBag, "💪": Dumbbell, "🎉": PartyPopper,
   "🏠": House, "🌅": Sunset, "📸": Camera, "🍽️": UtensilsCrossed,
-  "🎊": PartyPopper, "🥂": Wine, "👋": Users,
+  "🎊": PartyPopper, "🥂": Wine, "📍": MapPin, "🏆": Trophy, "🥗": UtensilsCrossed,
 };
 
 const TRIP_ICON_LIST = [
@@ -1655,14 +1655,17 @@ const VIBES = [
   { key: "camping",     label: "Camping",      emoji: "🏕️", icon: Tent,           shortForm: false },
   { key: "concert",     label: "Concert",      emoji: "🎵", icon: Music,           shortForm: true  },
   { key: "dinner",      label: "Dinner",       emoji: "🍽️", icon: UtensilsCrossed, shortForm: true  },
-  { key: "brunch",      label: "Brunch",       emoji: "🥂", icon: Wine,            shortForm: true  },
+  { key: "brunch",      label: "Brunch",       emoji: "🥂", icon: UtensilsCrossed, shortForm: true  },
+  { key: "lunch",       label: "Lunch",        emoji: "🥗", icon: UtensilsCrossed, shortForm: true  },
   { key: "coffee",      label: "Coffee",       emoji: "☕", icon: Coffee,          shortForm: true  },
   { key: "drinks",      label: "Drinks",       emoji: "🍷", icon: Wine,            shortForm: true  },
   { key: "nightout",    label: "Night Out",    emoji: "🎉", icon: PartyPopper,     shortForm: true  },
-  { key: "active",      label: "Workout",      emoji: "💪", icon: Dumbbell,        shortForm: true  },
+  { key: "active",      label: "Workout",      emoji: "💪", icon: Zap,             shortForm: true  },
   { key: "beach",       label: "Beach Day",    emoji: "🏖️", icon: Umbrella,       shortForm: false },
-  { key: "celebration", label: "Celebration",  emoji: "🎊", icon: PartyPopper,     shortForm: true  },
-  { key: "meetup",      label: "Meetup",       emoji: "👋", icon: Users,           shortForm: true  },
+  { key: "celebration", label: "Celebration",  emoji: "🎊", icon: Sparkles,        shortForm: true  },
+  { key: "gameday",     label: "Game Day",     emoji: "🏆", icon: Trophy,          shortForm: true  },
+  { key: "getaway",     label: "Getaway",      emoji: "🌅", icon: Sunset,          shortForm: false },
+  { key: "meetup",      label: "Meetup",       emoji: "📍", icon: MapPin,          shortForm: true  },
 ];
 
 function NewTripModal({ onClose, onSave, userId, userProfile }) {
@@ -1731,7 +1734,7 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
                 setAnswers(a => ({ ...a, vibe: v, emoji: v.emoji }));
                 setTimeout(() => setStep(2), 180);
               }}>
-              <Icon size={22} color={selected ? P.terracotta : P.textSecondary} strokeWidth={1.5} />
+              <Icon size={26} color={selected ? P.terracotta : P.textSecondary} strokeWidth={1.5} />
               <span style={{ ...SN.vibeLabel, color: selected ? P.terracotta : P.textSecondary }}>{v.label}</span>
             </button>
           );
@@ -1742,25 +1745,28 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
 
   // Step 2 — Where to?
   const locationRef = useRef(null);
+  const [locationInput, setLocationInput] = useState(answers.location || "");
   const StepWhere = () => (
-    <div style={SN.stepWrap}>
-      <Receipt />
-      <div style={SN.question}>Where to?</div>
-      <div style={SN.subQuestion}>
-        {isShortForm ? "Name the spot" : "City or destination"}
+    <div style={{ ...SN.stepWrap, display: "flex", flexDirection: "column", minHeight: "70vh" }}>
+      <div style={{ flex: 1 }}>
+        <Receipt />
+        <div style={SN.question}>Where to?</div>
+        <div style={SN.subQuestion}>
+          {isShortForm ? "Name the spot" : "City or destination"}
+        </div>
+        <input
+          ref={locationRef}
+          style={{ ...S.input, fontSize: 20, padding: "20px", marginBottom: 12, minHeight: 64 }}
+          placeholder={isShortForm ? "e.g. Barista, Ox Restaurant" : "e.g. Tokyo, Banff, Portland"}
+          defaultValue={locationInput}
+          onBlur={e => setLocationInput(e.target.value)}
+          autoFocus
+        />
       </div>
-      <input
-        ref={locationRef}
-        style={{ ...S.input, fontSize: 18, padding: "16px", marginBottom: 12 }}
-        placeholder={isShortForm ? "e.g. Barista, Ox Restaurant" : "e.g. Tokyo, Banff, Portland"}
-        defaultValue={answers.location}
-        onBlur={e => setAnswers(a => ({ ...a, location: e.target.value }))}
-        autoFocus
-      />
       <button
-        style={{ ...SN.nextBtn, opacity: 1 }}
+        style={{ ...SN.nextBtn, marginTop: "auto" }}
         onClick={() => {
-          const loc = locationRef.current?.value || answers.location;
+          const loc = locationRef.current?.value || locationInput;
           if (!loc.trim()) return;
           setAnswers(a => ({ ...a, location: loc }));
           setStep(3);
@@ -1780,49 +1786,51 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
   };
 
   const StepWho = () => (
-    <div style={SN.stepWrap}>
-      <Receipt />
-      <div style={SN.question}>Who's coming?</div>
-      <div style={SN.whoRow}>
-        <button
-          style={{ ...SN.whoChip, ...(answers.solo ? SN.whoChipOn : {}) }}
-          onClick={() => setAnswers(a => ({ ...a, solo: true, who: [] }))}>
-          Just me
-        </button>
-        <button
-          style={{ ...SN.whoChip, ...(!answers.solo ? SN.whoChipOn : {}) }}
-          onClick={() => setAnswers(a => ({ ...a, solo: false }))}>
-          + Add people
-        </button>
-      </div>
-      {!answers.solo && (
-        <div style={{ marginTop: 16 }}>
-          <div style={SN.emailRow}>
-            <input
-              style={{ ...S.input, flex: 1, fontSize: 15 }}
-              placeholder="friend@email.com"
-              value={emailInput}
-              type="email"
-              autoComplete="off"
-              onChange={e => setEmailInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') addEmail(); }}
-            />
-            <button style={SN.addEmailBtn} onClick={addEmail}>Add</button>
-          </div>
-          {answers.who.length > 0 && (
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
-              {answers.who.map((email, i) => (
-                <div key={i} style={SN.emailTag}>
-                  <span>{email}</span>
-                  <button style={SN.removeEmail}
-                    onClick={() => setAnswers(a => ({ ...a, who: a.who.filter((_, j) => j !== i) }))}>✕</button>
-                </div>
-              ))}
-            </div>
-          )}
+    <div style={{ ...SN.stepWrap, display: "flex", flexDirection: "column", minHeight: "70vh" }}>
+      <div style={{ flex: 1 }}>
+        <Receipt />
+        <div style={SN.question}>Who's coming?</div>
+        <div style={SN.whoRow}>
+          <button
+            style={{ ...SN.whoChip, ...(answers.solo ? SN.whoChipOn : {}) }}
+            onClick={() => setAnswers(a => ({ ...a, solo: true, who: [] }))}>
+            Just me
+          </button>
+          <button
+            style={{ ...SN.whoChip, ...(!answers.solo ? SN.whoChipOn : {}) }}
+            onClick={() => setAnswers(a => ({ ...a, solo: false }))}>
+            + Add people
+          </button>
         </div>
-      )}
-      <button style={{ ...SN.nextBtn, marginTop: 20 }} onClick={() => setStep(4)}>
+        {!answers.solo && (
+          <div style={{ marginTop: 16 }}>
+            <div style={SN.emailRow}>
+              <input
+                style={{ ...S.input, flex: 1, fontSize: 15 }}
+                placeholder="friend@email.com"
+                value={emailInput}
+                type="email"
+                autoComplete="off"
+                onChange={e => setEmailInput(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') addEmail(); }}
+              />
+              <button style={SN.addEmailBtn} onClick={addEmail}>Add</button>
+            </div>
+            {answers.who.length > 0 && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
+                {answers.who.map((email, i) => (
+                  <div key={i} style={SN.emailTag}>
+                    <span>{email}</span>
+                    <button style={SN.removeEmail}
+                      onClick={() => setAnswers(a => ({ ...a, who: a.who.filter((_, j) => j !== i) }))}>✕</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+      <button style={{ ...SN.nextBtn, marginTop: "auto" }} onClick={() => setStep(4)}>
         Next →
       </button>
     </div>
@@ -1830,9 +1838,10 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
 
   // Step 4 — When?
   const StepWhen = () => (
-    <div style={SN.stepWrap}>
-      <Receipt />
-      <div style={SN.question}>When?</div>
+    <div style={{ ...SN.stepWrap, display: "flex", flexDirection: "column", minHeight: "70vh" }}>
+      <div style={{ flex: 1 }}>
+        <Receipt />
+        <div style={SN.question}>When?</div>
       <div style={S.field}>
         <div style={S.fieldLbl}>DATE</div>
         <input style={{ ...S.input, colorScheme: "dark" }} type="date"
@@ -1862,8 +1871,9 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
             onChange={e => setAnswers(a => ({ ...a, time: e.target.value }))} />
         </div>
       )}
+      </div>
       <button
-        style={{ ...SN.nextBtn, opacity: answers.startDate ? 1 : 0.4 }}
+        style={{ ...SN.nextBtn, marginTop: "auto", opacity: answers.startDate ? 1 : 0.4 }}
         disabled={!answers.startDate}
         onClick={handleGenerateName}>
         {generating ? "Working on it..." : "Next →"}
@@ -1998,21 +2008,21 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
   const STEP_LABELS = ["", "vibe", "where", "who", "when", "confirm"];
 
   return (
-    <div style={S.overlay}>
-      <div style={{ ...S.sheet, height: "90%", maxHeight: "90%", display: "flex", flexDirection: "column", overflowY: "hidden" }}>
-        <div style={S.sheetHandle} />
-        <div style={SN.header}>
-          {step > 1
-            ? <button style={SN.backBtn} onClick={goBack}>← Back</button>
-            : <div />}
-          <div style={SN.stepIndicator}>
-            {[1,2,3,4,5].map(n => (
-              <div key={n} style={{ ...SN.stepPip, ...(n <= step ? SN.stepPipOn : n === step ? SN.stepPipCurrent : {}) }} />
-            ))}
-          </div>
-          <button style={S.closeBtn} onClick={onClose}>✕</button>
+    <div style={{ position: "absolute", inset: 0, zIndex: 100, background: P.phoneBg, display: "flex", flexDirection: "column", overflowY: "auto" }}>
+      {/* Header */}
+      <div style={{ ...SN.header, paddingTop: 52, flexShrink: 0 }}>
+        {step > 1
+          ? <button style={SN.backBtn} onClick={goBack}>← Back</button>
+          : <div />}
+        <div style={SN.stepIndicator}>
+          {[1,2,3,4,5].map(n => (
+            <div key={n} style={{ ...SN.stepPip, ...(n <= step ? SN.stepPipOn : {}) }} />
+          ))}
         </div>
-        <div style={{ ...S.sheetBody, flex: 1, overflowY: "auto" }}>
+        <button style={S.closeBtn} onClick={onClose}>✕</button>
+      </div>
+      {/* Content */}
+      <div style={{ flex: 1, padding: "0 22px 40px", overflowY: "auto" }}>
           {step === 1 && <StepVibe />}
           {step === 2 && <StepWhere />}
           {step === 3 && <StepWho />}
@@ -2057,7 +2067,6 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
           })()}
         </div>
         <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
-      </div>
     </div>
   );
 }
@@ -2101,8 +2110,8 @@ const SN = {
   vibeTile: {
     display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
     gap: 8, background: P.surface2, border: `1px solid ${P.surface3}`,
-    borderRadius: 16, padding: "16px 8px", cursor: "pointer",
-    minHeight: 80,
+    borderRadius: 16, padding: "18px 8px", cursor: "pointer",
+    minHeight: 100,
   },
   vibeTileOn: {
     background: P.terracotta + "18",
