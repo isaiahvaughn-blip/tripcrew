@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Plane, Mountain, Bike, Umbrella, Map, Snowflake, Car, Anchor, Tent, Theater,
   UtensilsCrossed, Hotel, Zap, Train, Calendar, DollarSign, Image, Users,
@@ -338,65 +338,168 @@ function renderAvatarContent(profile, user) {
   return <span style={{ fontSize: 26, fontWeight: 900 }}>{(profile?.display_name || user?.email || "?").slice(0, 2).toUpperCase()}</span>;
 }
 
+// ─── METRIC DEFINITIONS ───────────────────────────────────────────────────────
+
+const METRIC_DEFS = [
+  // Tier 1 — Personal
+  { key: "trips",       label: "trips",       tier: "Personal" },
+  { key: "cities",      label: "cities",      tier: "Personal" },
+  { key: "thisyear",    label: "this year",   tier: "Personal" },
+  { key: "nights",      label: "nights away", tier: "Personal" },
+  { key: "people",      label: "people",      tier: "Personal" },
+  { key: "countries",   label: "countries",   tier: "Personal" },
+  // Tier 2 — Activity
+  { key: "restaurants", label: "restaurants", tier: "Activity" },
+  { key: "activities",  label: "activities",  tier: "Activity" },
+  { key: "stays",       label: "stays",       tier: "Activity" },
+  { key: "stops",       label: "stops",       tier: "Activity" },
+  { key: "memories",    label: "memories",    tier: "Activity" },
+  // Tier 3 — Vibes
+  { key: "v_trip",        label: "✈️ flights",      tier: "Vibes", vibeEmoji: "✈️" },
+  { key: "v_road",        label: "🚗 road trips",   tier: "Vibes", vibeEmoji: "🚗" },
+  { key: "v_staycation",  label: "🏠 staycations",  tier: "Vibes", vibeEmoji: "🏠" },
+  { key: "v_hike",        label: "🏔️ hikes",        tier: "Vibes", vibeEmoji: "🏔️" },
+  { key: "v_camping",     label: "🏕️ camping",      tier: "Vibes", vibeEmoji: "🏕️" },
+  { key: "v_concert",     label: "🎵 concerts",     tier: "Vibes", vibeEmoji: "🎵" },
+  { key: "v_dinner",      label: "🍽️ dinners",      tier: "Vibes", vibeEmoji: "🍽️" },
+  { key: "v_brunch",      label: "🥂 brunches",     tier: "Vibes", vibeEmoji: "🥂" },
+  { key: "v_lunch",       label: "🥗 lunches",      tier: "Vibes", vibeEmoji: "🥗" },
+  { key: "v_coffee",      label: "☕ coffee",       tier: "Vibes", vibeEmoji: "☕" },
+  { key: "v_drinks",      label: "🍷 drinks",       tier: "Vibes", vibeEmoji: "🍷" },
+  { key: "v_nightout",    label: "🎉 nights out",   tier: "Vibes", vibeEmoji: "🎉" },
+  { key: "v_active",      label: "💪 workouts",     tier: "Vibes", vibeEmoji: "💪" },
+  { key: "v_beach",       label: "🏖️ beach days",   tier: "Vibes", vibeEmoji: "🏖️" },
+  { key: "v_celebration", label: "🎊 celebrations", tier: "Vibes", vibeEmoji: "🎊" },
+  { key: "v_gameday",     label: "🏆 game days",    tier: "Vibes", vibeEmoji: "🏆" },
+  { key: "v_getaway",     label: "🌅 getaways",     tier: "Vibes", vibeEmoji: "🌅" },
+  { key: "v_meetup",      label: "📍 meetups",      tier: "Vibes", vibeEmoji: "📍" },
+  // Tier 4 — Financial
+  { key: "spent",       label: "total spent", tier: "Financial", prefix: "$" },
+  { key: "expenses",    label: "expenses",    tier: "Financial" },
+];
+
+const DEFAULT_METRICS = ["trips", "cities", "thisyear"];
+
+function computeMetric(key, { trips, itinItems, expenses, photos, members }) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  switch (key) {
+    case "trips":       return trips.length;
+    case "cities":      return new Set(trips.map(t => (t.city || t.location || "").split(',')[0].trim().toLowerCase()).filter(Boolean)).size;
+    case "thisyear":    return trips.filter(t => new Date(t.created_at).getFullYear() === new Date().getFullYear()).length;
+    case "nights": {
+      let n = 0;
+      trips.forEach(t => {
+        if (t.start_date && t.end_date && t.start_date !== t.end_date) {
+          const diff = (new Date(t.end_date) - new Date(t.start_date)) / 86400000;
+          if (diff > 0) n += diff;
+        }
+      });
+      return Math.round(n);
+    }
+    case "people":      return new Set(members.map(m => m.name)).size;
+    case "countries":   return new Set(trips.map(t => { const loc = t.location || ""; const parts = loc.split(','); return parts[parts.length-1].trim().toLowerCase(); }).filter(Boolean)).size;
+    case "restaurants": return itinItems.filter(i => i.type === "restaurant").length;
+    case "activities":  return itinItems.filter(i => i.type === "activity").length;
+    case "stays":       return itinItems.filter(i => i.type === "stay").length;
+    case "stops":       return itinItems.length;
+    case "memories":    return photos.length;
+    case "spent":       return "$" + expenses.reduce((a, e) => a + (e.amount || 0), 0).toLocaleString();
+    case "expenses":    return expenses.length;
+    default: {
+      // Vibe metrics — key format: v_{vibeKey}
+      if (key.startsWith("v_")) {
+        const vibeKey = key.slice(2);
+        const vibeEmoji = METRIC_DEFS.find(m => m.key === key)?.vibeEmoji;
+        return trips.filter(t => {
+          const vibe = VIBES.find(v => v.key === vibeKey);
+          return vibe && t.emoji === vibe.emoji;
+        }).length;
+      }
+      return 0;
+    }
+  }
+}
+
 function ProfileScreen({ onOpen, user, onSignOut, onSettings, profile, onProfileUpdate }) {
   const [trips, setTrips] = useState([]);
   const [showNewTrip, setShowNewTrip] = useState(false);
   const [editingTrip, setEditingTrip] = useState(null);
   const [showAvatarEdit, setShowAvatarEdit] = useState(false);
+  const [showMetricPicker, setShowMetricPicker] = useState(false);
   const [selecting, setSelecting] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
+  // Extra data for metric computation
+  const [itinItems, setItinItems] = useState([]);
+  const [expenses, setExpenses] = useState([]);
+  const [photos, setPhotos] = useState([]);
+  const [members, setMembers] = useState([]);
+
+  const metricPrefs = profile?.metric_prefs || DEFAULT_METRICS;
 
   useEffect(() => {
-    const fetchTrips = async () => {
-      const { data: memberRows } = await supabase
-        .from('trip_members').select('trip_id').eq('user_id', user.id);
+    const fetchAll = async () => {
+      const { data: memberRows } = await supabase.from('trip_members').select('trip_id').eq('user_id', user.id);
       if (!memberRows?.length) { setTrips([]); return; }
       const tripIds = memberRows.map(r => r.trip_id);
-      const { data, error } = await supabase
-        .from('trips').select('*').in('id', tripIds)
-        .is('deleted_at', null).order('created_at', { ascending: false });
-      if (error) console.error(error);
-      else setTrips(data);
+
+      const [tripsRes, itinRes, expRes, photoRes, memberRes] = await Promise.all([
+        supabase.from('trips').select('*').in('id', tripIds).is('deleted_at', null).order('created_at', { ascending: false }),
+        supabase.from('itinerary').select('type').in('trip_id', tripIds),
+        supabase.from('expenses').select('amount').in('trip_id', tripIds),
+        supabase.from('photos').select('id').in('trip_id', tripIds),
+        supabase.from('members').select('name').in('trip_id', tripIds).neq('name', profile?.display_name || ''),
+      ]);
+
+      setTrips(tripsRes.data || []);
+      setItinItems(itinRes.data || []);
+      setExpenses(expRes.data || []);
+      setPhotos(photoRes.data || []);
+      setMembers(memberRes.data || []);
     };
-    fetchTrips();
+    fetchAll();
   }, []);
 
   const handleDeleteTrip = async (trip) => {
     if (!window.confirm(`Delete "${trip.name}"? You can restore it from settings.`)) return;
-    const { error } = await supabase.from('trips')
-      .update({ deleted_at: new Date().toISOString() }).eq('id', trip.id);
+    const { error } = await supabase.from('trips').update({ deleted_at: new Date().toISOString() }).eq('id', trip.id);
     if (error) { console.error(error); return; }
     setTrips(prev => prev.filter(t => t.id !== trip.id));
   };
 
+  const metricData = { trips, itinItems, expenses, photos, members };
+
   return (
     <div style={S.screen}>
       <div style={S.profileHero}>
-        <div style={{ position: "relative", display: "inline-block", marginBottom: 16 }}
-          onClick={() => setShowAvatarEdit(true)}>
+        <div style={{ position: "relative", display: "inline-block", marginBottom: 16 }} onClick={() => setShowAvatarEdit(true)}>
           <div style={S.profileAvatar}>{renderAvatarContent(profile, user)}</div>
           <div style={SP.avatarEditBadge}>✎</div>
         </div>
         <div style={S.profileName}>{profile?.display_name || user.email}</div>
         <div style={S.profileSub}>member since {profile?.created_at ? new Date(profile.created_at).getFullYear() : "—"}</div>
-        <div style={S.profileStats}>
-          <div style={S.statItem}>
-            <div style={S.statNum}>{trips.length}</div>
-            <div style={S.statLbl}>trips</div>
+
+        {/* Stats row — customizable */}
+        <div style={{ position: "relative" }}>
+          <div style={S.profileStats}>
+            {metricPrefs.slice(0, 3).map((key, i) => {
+              const def = METRIC_DEFS.find(m => m.key === key) || METRIC_DEFS[0];
+              const val = computeMetric(key, metricData);
+              return (
+                <React.Fragment key={key}>
+                  {i > 0 && <div style={S.statDiv} />}
+                  <div style={S.statItem}>
+                    <div style={S.statNum}>{val}</div>
+                    <div style={S.statLbl}>{def.label}</div>
+                  </div>
+                </React.Fragment>
+              );
+            })}
           </div>
-          <div style={S.statDiv} />
-          <div style={S.statItem}>
-            <div style={S.statNum}>{new Set(trips.map(t => {
-              const raw = t.city || t.location || "";
-              return raw.split(',')[0].trim().toLowerCase();
-            }).filter(Boolean)).size}</div>
-            <div style={S.statLbl}>cities</div>
-          </div>
-          <div style={S.statDiv} />
-          <div style={S.statItem}>
-            <div style={S.statNum}>{trips.filter(t => new Date(t.created_at).getFullYear() === new Date().getFullYear()).length}</div>
-            <div style={S.statLbl}>this year</div>
-          </div>
+          {/* Gear icon to open picker */}
+          <button onClick={() => setShowMetricPicker(true)}
+            style={{ position: "absolute", top: -8, right: -8, background: P.surface2, border: `1px solid ${P.surface3}`, borderRadius: "50%", width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 12 }}>
+            ⚙
+          </button>
         </div>
       </div>
 
@@ -408,6 +511,13 @@ function ProfileScreen({ onOpen, user, onSignOut, onSettings, profile, onProfile
       {editingTrip && (
         <EditTripModal trip={editingTrip} onClose={() => setEditingTrip(null)}
           onSave={(updated) => { setTrips(prev => prev.map(t => t.id === updated.id ? updated : t)); setEditingTrip(null); }} />
+      )}
+      {showMetricPicker && (
+        <MetricPickerSheet
+          current={metricPrefs}
+          userId={user.id}
+          onClose={() => setShowMetricPicker(false)}
+          onSave={(updated) => { onProfileUpdate?.({ ...profile, metric_prefs: updated }); setShowMetricPicker(false); }} />
       )}
 
       <div style={{ display: "flex", gap: 8, justifyContent: "center", marginTop: 14 }}>
@@ -445,7 +555,7 @@ function ProfileScreen({ onOpen, user, onSignOut, onSettings, profile, onProfile
             onSave={(trip) => { setTrips(prev => [trip, ...prev]); setShowNewTrip(false); }} />
         )}
         {trips.length === 0 && !showNewTrip && <EmptyTripsState onNew={() => setShowNewTrip(true)} />}
-        {trips.map((t, i) => (
+        {trips.map((t) => (
           <TripCard key={t.id} trip={t} onOpen={onOpen}
             onDelete={handleDeleteTrip} onEdit={setEditingTrip}
             selecting={selecting} selected={selectedIds.includes(t.id)}
@@ -453,6 +563,93 @@ function ProfileScreen({ onOpen, user, onSignOut, onSettings, profile, onProfile
             onToggleSelect={() => setSelectedIds(prev =>
               prev.includes(t.id) ? prev.filter(id => id !== t.id) : [...prev, t.id])} />
         ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── METRIC PICKER SHEET ──────────────────────────────────────────────────────
+
+function MetricPickerSheet({ current, userId, onClose, onSave }) {
+  const [selected, setSelected] = useState(current || DEFAULT_METRICS);
+  const [saving, setSaving] = useState(false);
+
+  const toggle = (key) => {
+    if (selected.includes(key)) {
+      setSelected(prev => prev.filter(k => k !== key));
+    } else {
+      if (selected.length >= 3) {
+        // Replace the last one
+        setSelected(prev => [...prev.slice(0, 2), key]);
+      } else {
+        setSelected(prev => [...prev, key]);
+      }
+    }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    const prefs = selected.slice(0, 3);
+    const { data, error } = await supabase.from('profiles')
+      .update({ metric_prefs: prefs }).eq('id', userId).select().single();
+    if (!error) onSave(prefs);
+    setSaving(false);
+  };
+
+  const tiers = ["Personal", "Activity", "Vibes", "Financial"];
+
+  return (
+    <div style={S.overlay}>
+      <div style={{ ...S.sheet, maxHeight: "85%" }}>
+        <div style={S.sheetHandle} />
+        <div style={S.sheetHeader}>
+          <div style={S.sheetTitle}>Customize Stats</div>
+          <button style={S.closeBtn} onClick={onClose}>✕</button>
+        </div>
+        <div style={{ padding: "0 22px 8px" }}>
+          <div style={{ fontSize: 13, color: P.slateBlue, marginBottom: 16, fontFamily: "'DM Sans', sans-serif" }}>
+            Pick 3 stats to show on your profile. Tap to swap the last selected.
+          </div>
+
+          {/* Selected preview */}
+          <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
+            {[0,1,2].map(i => {
+              const key = selected[i];
+              const def = key ? METRIC_DEFS.find(m => m.key === key) : null;
+              return (
+                <div key={i} style={{ flex: 1, background: def ? P.terracotta + "18" : P.surface2, border: `1px solid ${def ? P.terracotta + "60" : P.surface3}`, borderRadius: 12, padding: "10px 8px", textAlign: "center", minHeight: 48, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: def ? P.terracotta : P.textMuted, fontFamily: "'DM Sans', sans-serif" }}>
+                    {def ? def.label : `slot ${i+1}`}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Grouped options */}
+          {tiers.map(tier => (
+            <div key={tier} style={{ marginBottom: 18 }}>
+              <div style={{ fontSize: 10, fontWeight: 800, color: P.textMuted, letterSpacing: "2px", marginBottom: 10 }}>{tier.toUpperCase()}</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {METRIC_DEFS.filter(m => m.tier === tier).map(m => {
+                  const isOn = selected.includes(m.key);
+                  return (
+                    <button key={m.key} onClick={() => toggle(m.key)}
+                      style={{ background: isOn ? P.terracotta + "18" : P.surface2, border: `1px solid ${isOn ? P.terracotta : P.surface3}`, borderRadius: 22, padding: "8px 14px", fontSize: 13, fontWeight: 700, color: isOn ? P.terracotta : P.textMuted, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+                      {m.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{ padding: "8px 22px 24px" }}>
+          <button style={{ ...S.primaryBtn, background: saving ? P.surface2 : `linear-gradient(135deg, ${P.orange}, ${P.terracotta})` }}
+            onClick={handleSave} disabled={saving || selected.length === 0}>
+            {saving ? "Saving..." : "Save Stats"}
+          </button>
+        </div>
       </div>
     </div>
   );
