@@ -7,41 +7,29 @@ import {
   Coffee, Wine, Music, ShoppingBag, Dumbbell, PartyPopper, House, Sunset, Sailboat, Camera
 } from "lucide-react";
 
-// Load Playfair Display for wordmark
 const fontLink = document.createElement('link');
 fontLink.rel = 'stylesheet';
 fontLink.href = 'https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,900&display=swap';
 document.head.appendChild(fontLink);
 
-// ─── PALETTE ──────────────────────────────────────────────────────────────────
-// Sunburn-inspired warm dark theme
 const P = {
-  // Bases
-  outerBg:     "#0d1e28",   // deep navy outer
-  phoneBg:     "#112233",   // slightly lighter navy phone shell
-  surface1:    "#162c3a",   // cards, modals
-  surface2:    "#1c3448",   // elevated surfaces
-  surface3:    "#243d52",   // borders, dividers
-
-  // Accents
-  terracotta:  "#e4a576",   // primary accent (replaces green)
-  orange:      "#f07340",   // CTA buttons, key actions
-  slateBlue:   "#698ea2",   // secondary / muted elements
-  lightBlue:   "#b8d4e0",   // highlights, badges, positive states
-
-  // Text
-  textPrimary:   "#f0ebe4", // warm white
-  textSecondary: "#9ab0bd", // muted
-  textMuted:     "#4e6b7a", // very muted
-
-  // Semantic
+  outerBg:     "#0d1e28",
+  phoneBg:     "#112233",
+  surface1:    "#162c3a",
+  surface2:    "#1c3448",
+  surface3:    "#243d52",
+  terracotta:  "#e4a576",
+  orange:      "#f07340",
+  slateBlue:   "#698ea2",
+  lightBlue:   "#b8d4e0",
+  textPrimary:   "#f0ebe4",
+  textSecondary: "#9ab0bd",
+  textMuted:     "#4e6b7a",
   danger:   "#e07070",
   dangerBg: "#2a1515",
   success:  "#6bbf8a",
   successBg:"#142a1e",
 };
-
-// ─── DATA ────────────────────────────────────────────────────────────────────
 
 const ITINERARY_COLORS = {
   flight:     { accent: P.lightBlue },
@@ -95,16 +83,10 @@ const ITIN_TYPE_ICONS = {
   restaurant: UtensilsCrossed, transport: Train,
 };
 
-// Subtle card gradient variations to differentiate trips without per-trip colors
-const CARD_GRADIENTS = [
-  "linear-gradient(135deg, #162c3a 0%, #1e3a4a 100%)",
-  "linear-gradient(135deg, #1a2a32 0%, #243848 100%)",
-  "linear-gradient(135deg, #182030 0%, #22303e 100%)",
-  "linear-gradient(135deg, #1c2e3c 0%, #263c4c 100%)",
-  "linear-gradient(135deg, #14283a 0%, #1e3448 100%)",
-];
 
-// ─── ROOT ─────────────────────────────────────────────────────────────────────
+
+const CAT_ICONS = { Stay: Hotel, Food: UtensilsCrossed, Activity: Zap, Transport: Train };
+const CATS = ["Food","Stay","Activity","Transport"];
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -163,12 +145,9 @@ export default function App() {
   }
 
   const openTrip = (trip) => {
-    // Smart tab default: Summary for past trips, Itinerary for upcoming/current
-    // Use raw startDate if available, otherwise skip to itinerary
     const defaultTab = (() => {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      // Try raw date fields first (v2 trips store these)
       if (trip.start_date) {
         const start = new Date(trip.start_date + 'T12:00:00');
         const end = trip.end_date ? new Date(trip.end_date + 'T12:00:00') : start;
@@ -216,19 +195,13 @@ function WelcomeScreen({ onGetStarted }) {
     <div style={S.root}>
       <div style={S.phone}>
         <div style={SW.container}>
-          {/* Top decorative band */}
           <div style={SW.topBand} />
-
-          {/* Brand */}
           <div style={SW.brandWrap}>
             <div style={SW.wordmark}>vouze</div>
             <div style={SW.tagline}>Where every plan becomes a memory</div>
             <div style={SW.subTagline}>Your home for trips, nights out, and everything in between</div>
           </div>
-
-          {/* Decorative card stack preview */}
           <div style={SW.cardStack}>
-            {/* Back card — coffee, peeking behind at an angle */}
             <div style={{ ...SW.previewCard, ...SW.previewCardBack }}>
               <span style={SW.previewEmoji}>☕</span>
               <div>
@@ -236,7 +209,6 @@ function WelcomeScreen({ onGetStarted }) {
                 <div style={SW.previewSub}>with Derek · Portland</div>
               </div>
             </div>
-            {/* Front card — trip */}
             <div style={{ ...SW.previewCard, ...SW.previewCardFront }}>
               <span style={SW.previewEmoji}>✈️</span>
               <div>
@@ -245,15 +217,11 @@ function WelcomeScreen({ onGetStarted }) {
               </div>
             </div>
           </div>
-
-          {/* CTA */}
           <div style={SW.ctaWrap}>
             <button style={SW.ctaBtn} onClick={onGetStarted}>
               Let's plan something
             </button>
           </div>
-
-          {/* Bottom band */}
           <div style={SW.bottomBand} />
         </div>
       </div>
@@ -263,130 +231,26 @@ function WelcomeScreen({ onGetStarted }) {
 
 const SW = {
   container: {
-    height: "100%",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
+    height: "100%", display: "flex", flexDirection: "column", alignItems: "center",
     justifyContent: "space-between",
     background: `linear-gradient(170deg, ${P.outerBg} 0%, #0f2030 50%, #162535 100%)`,
-    position: "relative",
-    overflow: "hidden",
-    padding: "0 0 40px",
+    position: "relative", overflow: "hidden", padding: "0 0 40px",
   },
-  topBand: {
-    width: "100%",
-    height: 6,
-    background: `linear-gradient(90deg, ${P.terracotta}, ${P.orange}, ${P.terracotta})`,
-    flexShrink: 0,
-  },
-  bottomBand: {
-    width: "100%",
-    height: 4,
-    background: `linear-gradient(90deg, ${P.slateBlue}, ${P.lightBlue}, ${P.slateBlue})`,
-    position: "absolute",
-    bottom: 0,
-  },
-  brandWrap: {
-    textAlign: "center",
-    padding: "48px 32px 0",
-  },
-  wordmark: {
-    fontFamily: "'Playfair Display', 'Syne', serif",
-    fontSize: 62,
-    fontWeight: 900,
-    letterSpacing: "-2px",
-    color: P.textPrimary,
-    marginBottom: 20,
-    lineHeight: 1,
-    fontStyle: "italic",
-  },
-  tagline: {
-    fontFamily: "'Syne', 'DM Sans', sans-serif",
-    fontSize: 20,
-    fontWeight: 700,
-    color: P.terracotta,
-    letterSpacing: "-0.5px",
-    marginBottom: 12,
-    lineHeight: 1.3,
-  },
-  subTagline: {
-    fontFamily: "'DM Sans', sans-serif",
-    fontSize: 14,
-    color: P.slateBlue,
-    lineHeight: 1.5,
-    maxWidth: 280,
-    margin: "0 auto",
-  },
-  cardStack: {
-    position: "relative",
-    width: 300,
-    height: 160,
-    margin: "28px auto",
-    flexShrink: 0,
-  },
-  previewCard: {
-    position: "absolute",
-    left: "50%",
-    borderRadius: 20,
-    padding: "16px 20px",
-    display: "flex",
-    alignItems: "center",
-    gap: 14,
-    width: 255,
-    boxSizing: "border-box",
-  },
-  previewCardFront: {
-    background: P.surface2,
-    border: `1px solid ${P.surface3}`,
-    transform: "translateX(-50%) rotate(-2deg)",
-    top: 50,
-    zIndex: 2,
-    boxShadow: "0 12px 40px rgba(0,0,0,0.5)",
-  },
-  previewCardBack: {
-    background: P.surface1,
-    border: `1px solid ${P.terracotta}30`,
-    transform: "translateX(-50%) rotate(3deg)",
-    top: 10,
-    zIndex: 1,
-    opacity: 0.8,
-  },
-  previewEmoji: {
-    fontSize: 26,
-    flexShrink: 0,
-  },
-  previewLabel: {
-    fontFamily: "'Syne', sans-serif",
-    fontSize: 15,
-    fontWeight: 700,
-    color: P.textPrimary,
-    letterSpacing: "-0.3px",
-    marginBottom: 3,
-  },
-  previewSub: {
-    fontFamily: "'DM Sans', sans-serif",
-    fontSize: 12,
-    color: P.slateBlue,
-  },
-  ctaWrap: {
-    width: "100%",
-    padding: "0 28px",
-    marginTop: 8,
-  },
-  ctaBtn: {
-    width: "100%",
-    background: `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`,
-    color: "#fff",
-    border: "none",
-    borderRadius: 18,
-    padding: "18px",
-    fontSize: 17,
-    fontWeight: 800,
-    cursor: "pointer",
-    fontFamily: "'Syne', sans-serif",
-    letterSpacing: "-0.3px",
-    boxShadow: `0 8px 24px rgba(240, 115, 64, 0.35)`,
-  },
+  topBand: { width: "100%", height: 6, background: `linear-gradient(90deg, ${P.terracotta}, ${P.orange}, ${P.terracotta})`, flexShrink: 0 },
+  bottomBand: { width: "100%", height: 4, background: `linear-gradient(90deg, ${P.slateBlue}, ${P.lightBlue}, ${P.slateBlue})`, position: "absolute", bottom: 0 },
+  brandWrap: { textAlign: "center", padding: "48px 32px 0" },
+  wordmark: { fontFamily: "'Playfair Display', serif", fontSize: 62, fontWeight: 900, letterSpacing: "-2px", color: P.textPrimary, marginBottom: 20, lineHeight: 1, fontStyle: "italic" },
+  tagline: { fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 700, color: P.terracotta, letterSpacing: "-0.5px", marginBottom: 12, lineHeight: 1.3 },
+  subTagline: { fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: P.slateBlue, lineHeight: 1.5, maxWidth: 280, margin: "0 auto" },
+  cardStack: { position: "relative", width: 300, height: 160, margin: "28px auto", flexShrink: 0 },
+  previewCard: { position: "absolute", left: "50%", borderRadius: 20, padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, width: 255, boxSizing: "border-box" },
+  previewCardFront: { background: P.surface2, border: `1px solid ${P.surface3}`, transform: "translateX(-50%) rotate(-2deg)", top: 50, zIndex: 2, boxShadow: "0 12px 40px rgba(0,0,0,0.5)" },
+  previewCardBack: { background: P.surface1, border: `1px solid ${P.terracotta}30`, transform: "translateX(-50%) rotate(3deg)", top: 10, zIndex: 1, opacity: 0.8 },
+  previewEmoji: { fontSize: 26, flexShrink: 0 },
+  previewLabel: { fontFamily: "'Syne', sans-serif", fontSize: 15, fontWeight: 700, color: P.textPrimary, letterSpacing: "-0.3px", marginBottom: 3 },
+  previewSub: { fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: P.slateBlue },
+  ctaWrap: { width: "100%", padding: "0 28px", marginTop: 8 },
+  ctaBtn: { width: "100%", background: `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`, color: "#fff", border: "none", borderRadius: 18, padding: "18px", fontSize: 17, fontWeight: 800, cursor: "pointer", fontFamily: "'Syne', sans-serif", letterSpacing: "-0.3px", boxShadow: `0 8px 24px rgba(240, 115, 64, 0.35)` },
 };
 
 // ─── AUTH SCREEN ──────────────────────────────────────────────────────────────
@@ -459,42 +323,18 @@ function AuthScreen({ onAuth, onBack }) {
 }
 
 const SA = {
-  backBtn: {
-    background: "transparent",
-    border: "none",
-    color: P.slateBlue,
-    fontSize: 14,
-    fontWeight: 700,
-    cursor: "pointer",
-    padding: 0,
-    marginBottom: 32,
-    fontFamily: "'DM Sans', sans-serif",
-  },
-  wordmark: {
-    fontFamily: "'Playfair Display', 'Syne', serif",
-    fontSize: 38,
-    fontWeight: 900,
-    letterSpacing: "-2px",
-    color: P.textPrimary,
-    marginBottom: 8,
-    fontStyle: "italic",
-  },
-  subtitle: {
-    fontSize: 16,
-    color: P.slateBlue,
-    fontFamily: "'DM Sans', sans-serif",
-  },
+  backBtn: { background: "transparent", border: "none", color: P.slateBlue, fontSize: 14, fontWeight: 700, cursor: "pointer", padding: 0, marginBottom: 32, fontFamily: "'DM Sans', sans-serif" },
+  wordmark: { fontFamily: "'Playfair Display', serif", fontSize: 38, fontWeight: 900, letterSpacing: "-2px", color: P.textPrimary, marginBottom: 8, fontStyle: "italic" },
+  subtitle: { fontSize: 16, color: P.slateBlue, fontFamily: "'DM Sans', sans-serif" },
 };
 
 // ─── PROFILE ──────────────────────────────────────────────────────────────────
 
-// Helper to render avatar content from profile.avatar field
 function renderAvatarContent(profile, user) {
   const av = profile?.avatar;
   if (av?.startsWith('emoji:')) return <span style={{ fontSize: 32 }}>{av.slice(6)}</span>;
   if (av?.startsWith('name:')) return <span style={{ fontSize: 18, fontWeight: 900, letterSpacing: "-0.5px" }}>{av.slice(5).slice(0, 3).toUpperCase()}</span>;
   if (av?.startsWith('initials:')) return <span style={{ fontSize: 20, fontWeight: 900 }}>{av.slice(9).slice(0, 3).toUpperCase()}</span>;
-  // Default: initials from display name or email
   return <span style={{ fontSize: 26, fontWeight: 900 }}>{(profile?.display_name || user?.email || "?").slice(0, 2).toUpperCase()}</span>;
 }
 
@@ -534,15 +374,11 @@ function ProfileScreen({ onOpen, user, onSignOut, onSettings, profile, onProfile
       <div style={S.profileHero}>
         <div style={{ position: "relative", display: "inline-block", marginBottom: 16 }}
           onClick={() => setShowAvatarEdit(true)}>
-          <div style={S.profileAvatar}>
-            {renderAvatarContent(profile, user)}
-          </div>
+          <div style={S.profileAvatar}>{renderAvatarContent(profile, user)}</div>
           <div style={SP.avatarEditBadge}>✎</div>
         </div>
         <div style={S.profileName}>{profile?.display_name || user.email}</div>
-        <div style={S.profileSub}>
-          member since {profile?.created_at ? new Date(profile.created_at).getFullYear() : "—"}
-        </div>
+        <div style={S.profileSub}>member since {profile?.created_at ? new Date(profile.created_at).getFullYear() : "—"}</div>
         <div style={S.profileStats}>
           <div style={S.statItem}>
             <div style={S.statNum}>{trips.length}</div>
@@ -558,27 +394,20 @@ function ProfileScreen({ onOpen, user, onSignOut, onSettings, profile, onProfile
           </div>
           <div style={S.statDiv} />
           <div style={S.statItem}>
-            <div style={S.statNum}>
-              {trips.filter(t => new Date(t.created_at).getFullYear() === new Date().getFullYear()).length}
-            </div>
+            <div style={S.statNum}>{trips.filter(t => new Date(t.created_at).getFullYear() === new Date().getFullYear()).length}</div>
             <div style={S.statLbl}>this year</div>
           </div>
         </div>
       </div>
 
       {showAvatarEdit && (
-        <AvatarEditSheet
-          profile={profile} user={user}
+        <AvatarEditSheet profile={profile} user={user}
           onClose={() => setShowAvatarEdit(false)}
-          onSave={(updated) => { onProfileUpdate?.(updated); setShowAvatarEdit(false); }}
-        />
+          onSave={(updated) => { onProfileUpdate?.(updated); setShowAvatarEdit(false); }} />
       )}
       {editingTrip && (
         <EditTripModal trip={editingTrip} onClose={() => setEditingTrip(null)}
-          onSave={(updated) => {
-            setTrips(prev => prev.map(t => t.id === updated.id ? updated : t));
-            setEditingTrip(null);
-          }} />
+          onSave={(updated) => { setTrips(prev => prev.map(t => t.id === updated.id ? updated : t)); setEditingTrip(null); }} />
       )}
 
       <div style={{ display: "flex", gap: 8, justifyContent: "center", marginTop: 14 }}>
@@ -599,8 +428,7 @@ function ProfileScreen({ onOpen, user, onSignOut, onSettings, profile, onProfile
                         await supabase.from('trips').update({ deleted_at: new Date().toISOString() }).eq('id', id);
                       }
                       setTrips(prev => prev.filter(t => !selectedIds.includes(t.id)));
-                      setSelectedIds([]);
-                      setSelecting(false);
+                      setSelectedIds([]); setSelecting(false);
                     }}>Delete ({selectedIds.length})</button>
                 )}
               </div>
@@ -613,26 +441,17 @@ function ProfileScreen({ onOpen, user, onSignOut, onSettings, profile, onProfile
           </div>
         )}
         {showNewTrip && (
-          <NewTripModal onClose={() => setShowNewTrip(false)} userId={user.id}
-            userProfile={profile}
+          <NewTripModal onClose={() => setShowNewTrip(false)} userId={user.id} userProfile={profile}
             onSave={(trip) => { setTrips(prev => [trip, ...prev]); setShowNewTrip(false); }} />
         )}
-
-        {trips.length === 0 && !showNewTrip && (
-          <EmptyTripsState onNew={() => setShowNewTrip(true)} />
-        )}
-
+        {trips.length === 0 && !showNewTrip && <EmptyTripsState onNew={() => setShowNewTrip(true)} />}
         {trips.map((t, i) => (
-          <TripCard key={t.id} trip={t} idx={i} onOpen={onOpen}
-            onDelete={handleDeleteTrip}
-            onEdit={setEditingTrip}
-            selecting={selecting}
-            selected={selectedIds.includes(t.id)}
+          <TripCard key={t.id} trip={t} onOpen={onOpen}
+            onDelete={handleDeleteTrip} onEdit={setEditingTrip}
+            selecting={selecting} selected={selectedIds.includes(t.id)}
             onLongPress={() => { setSelecting(true); setSelectedIds([t.id]); }}
             onToggleSelect={() => setSelectedIds(prev =>
-              prev.includes(t.id) ? prev.filter(id => id !== t.id) : [...prev, t.id]
-            )}
-          />
+              prev.includes(t.id) ? prev.filter(id => id !== t.id) : [...prev, t.id])} />
         ))}
       </div>
     </div>
@@ -640,13 +459,7 @@ function ProfileScreen({ onOpen, user, onSignOut, onSettings, profile, onProfile
 }
 
 const SP = {
-  avatarEditBadge: {
-    position: "absolute", bottom: 0, right: 0,
-    background: P.surface2, border: `2px solid ${P.phoneBg}`,
-    borderRadius: "50%", width: 26, height: 26,
-    display: "flex", alignItems: "center", justifyContent: "center",
-    fontSize: 11, color: P.textSecondary, cursor: "pointer",
-  },
+  avatarEditBadge: { position: "absolute", bottom: 0, right: 0, background: P.surface2, border: `2px solid ${P.phoneBg}`, borderRadius: "50%", width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: P.textSecondary, cursor: "pointer" },
 };
 
 function AvatarEditSheet({ profile, user, onClose, onSave }) {
@@ -670,7 +483,6 @@ function AvatarEditSheet({ profile, user, onClose, onSave }) {
     setSaving(false);
   };
 
-  // Live preview content
   const previewContent = avatarVal.trim().slice(0, 5) || "?";
 
   return (
@@ -682,40 +494,21 @@ function AvatarEditSheet({ profile, user, onClose, onSave }) {
           <button style={S.closeBtn} onClick={onClose}>✕</button>
         </div>
         <div style={S.sheetBody}>
-          {/* Live preview */}
           <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
             <div style={{ ...S.profileAvatar, width: 84, height: 84 }}>
-              <span style={{ fontSize: previewContent.length === 1 ? 36 : 22, fontWeight: 900, letterSpacing: previewContent.length > 1 ? "-1px" : 0 }}>
-                {previewContent}
-              </span>
+              <span style={{ fontSize: previewContent.length === 1 ? 36 : 22, fontWeight: 900, letterSpacing: previewContent.length > 1 ? "-1px" : 0 }}>{previewContent}</span>
             </div>
           </div>
-
-          {/* Display name */}
           <div style={S.field}>
             <div style={S.fieldLbl}>DISPLAY NAME</div>
-            <input style={S.input} value={displayName}
-              onChange={e => setDisplayName(e.target.value)}
-              placeholder="Your name" />
+            <input style={S.input} value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Your name" />
           </div>
-
-          {/* Avatar input */}
           <div style={S.field}>
             <div style={S.fieldLbl}>AVATAR — EMOJI OR INITIALS (UP TO 5)</div>
-            <input
-              style={{ ...S.input, fontSize: 22, textAlign: "center", letterSpacing: "2px" }}
-              value={avatarVal}
-              maxLength={5}
-              onChange={e => setAvatarVal(e.target.value)}
-              placeholder="🌊 or IVJ"
-            />
-            <div style={{ fontSize: 12, color: P.textMuted, marginTop: 8 }}>
-              Paste an emoji, type initials, or anything up to 5 characters
-            </div>
+            <input style={{ ...S.input, fontSize: 22, textAlign: "center", letterSpacing: "2px" }} value={avatarVal} maxLength={5} onChange={e => setAvatarVal(e.target.value)} placeholder="🌊 or IVJ" />
+            <div style={{ fontSize: 12, color: P.textMuted, marginTop: 8 }}>Paste an emoji, type initials, or anything up to 5 characters</div>
           </div>
-
-          <button style={{ ...S.primaryBtn, background: saving ? P.surface2 : `linear-gradient(135deg, ${P.orange}, ${P.terracotta})` }}
-            onClick={handleSave} disabled={saving}>
+          <button style={{ ...S.primaryBtn, background: saving ? P.surface2 : `linear-gradient(135deg, ${P.orange}, ${P.terracotta})` }} onClick={handleSave} disabled={saving}>
             {saving ? "Saving..." : "Save Profile"}
           </button>
         </div>
@@ -729,11 +522,7 @@ function AvatarEditSheet({ profile, user, onClose, onSave }) {
 function EmptyTripsState({ onNew }) {
   return (
     <div style={SE.wrap}>
-      <div style={SE.iconRow}>
-        <span style={SE.icon}>✈️</span>
-        <span style={SE.icon}>☕</span>
-        <span style={SE.icon}>🎉</span>
-      </div>
+      <div style={SE.iconRow}><span style={SE.icon}>✈️</span><span style={SE.icon}>☕</span><span style={SE.icon}>🎉</span></div>
       <div style={SE.headline}>Nothing planned yet</div>
       <div style={SE.sub}>Your next trip, dinner, or night out starts here.</div>
       <button style={SE.btn} onClick={onNew}>Plan something →</button>
@@ -742,116 +531,107 @@ function EmptyTripsState({ onNew }) {
 }
 
 const SE = {
-  wrap: {
-    background: P.surface1,
-    border: `1px dashed ${P.surface3}`,
-    borderRadius: 24,
-    padding: "40px 28px",
-    textAlign: "center",
-    marginTop: 8,
-  },
-  iconRow: {
-    display: "flex",
-    justifyContent: "center",
-    gap: 12,
-    fontSize: 28,
-    marginBottom: 18,
-  },
+  wrap: { background: P.surface1, border: `1px dashed ${P.surface3}`, borderRadius: 24, padding: "40px 28px", textAlign: "center", marginTop: 8 },
+  iconRow: { display: "flex", justifyContent: "center", gap: 12, fontSize: 28, marginBottom: 18 },
   icon: {},
-  headline: {
-    fontFamily: "'Syne', sans-serif",
-    fontSize: 20,
-    fontWeight: 800,
-    color: P.textPrimary,
-    letterSpacing: "-0.5px",
-    marginBottom: 8,
-  },
-  sub: {
-    fontSize: 14,
-    color: P.slateBlue,
-    fontFamily: "'DM Sans', sans-serif",
-    lineHeight: 1.5,
-    marginBottom: 24,
-  },
-  btn: {
-    background: `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`,
-    color: "#fff",
-    border: "none",
-    borderRadius: 14,
-    padding: "13px 24px",
-    fontSize: 15,
-    fontWeight: 800,
-    cursor: "pointer",
-    fontFamily: "'Syne', sans-serif",
-    letterSpacing: "-0.2px",
-  },
+  headline: { fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 800, color: P.textPrimary, letterSpacing: "-0.5px", marginBottom: 8 },
+  sub: { fontSize: 14, color: P.slateBlue, fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5, marginBottom: 24 },
+  btn: { background: `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`, color: "#fff", border: "none", borderRadius: 14, padding: "13px 24px", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: "'Syne', sans-serif", letterSpacing: "-0.2px" },
 };
 
-function TripCard({ trip, idx, onOpen, onDelete, onEdit, selecting, selected, onLongPress, onToggleSelect }) {
-  const bg = CARD_GRADIENTS[idx % CARD_GRADIENTS.length];
+function TripCard({ trip, onOpen, onDelete, onEdit, selecting, selected, onLongPress, onToggleSelect }) {
   const IconComp = TRIP_ICONS[trip.emoji] || Plane;
   const showTime = trip.time && !trip.dates?.includes('–');
+  const formatTime12 = (t) => {
+    if (!t) return "";
+    const [h, m] = t.split(':').map(Number);
+    if (isNaN(h)) return t;
+    const ampm = h >= 12 ? 'pm' : 'am';
+    return `${h % 12 || 12}:${String(m).padStart(2,'0')}${ampm}`;
+  };
   const longPressTimer = useRef(null);
 
-  const handlePressStart = () => {
-    longPressTimer.current = setTimeout(() => {
-      onLongPress?.();
-    }, 500);
-  };
-
-  const handlePressEnd = () => {
-    clearTimeout(longPressTimer.current);
-  };
-
-  const handleTap = () => {
-    if (selecting) {
-      onToggleSelect?.();
-    } else {
-      onOpen(trip);
-    }
-  };
+  const handlePressStart = () => { longPressTimer.current = setTimeout(() => { onLongPress?.(); }, 500); };
+  const handlePressEnd = () => { clearTimeout(longPressTimer.current); };
+  const handleTap = () => { if (selecting) { onToggleSelect?.(); } else { onOpen(trip); } };
 
   return (
-    <div
-      style={{ ...S.tripCard, background: bg, opacity: selected ? 0.75 : 1, transition: "opacity 0.15s", outline: selected ? `2px solid ${P.terracotta}` : "none" }}
-      onClick={handleTap}
-      onTouchStart={handlePressStart}
-      onTouchEnd={handlePressEnd}
-      onMouseDown={handlePressStart}
-      onMouseUp={handlePressEnd}
-      onMouseLeave={handlePressEnd}
-    >
+    <div style={{ ...S.tripCard, opacity: selected ? 0.75 : 1, transition: "opacity 0.15s", outline: selected ? `2px solid ${P.terracotta}` : "none" }}
+      onClick={handleTap} onTouchStart={handlePressStart} onTouchEnd={handlePressEnd} onMouseDown={handlePressStart} onMouseUp={handlePressEnd} onMouseLeave={handlePressEnd}>
       {selecting && (
         <div style={{ position: "absolute", top: 14, right: 14, zIndex: 10, ...SI.checkbox, ...(selected ? SI.checkboxOn : {}) }}>
           {selected && <span style={{ fontSize: 11, color: "#fff", fontWeight: 800 }}>✓</span>}
         </div>
       )}
-      <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 14 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
         <div style={{ ...S.tcIconWrap, background: P.terracotta + "20", border: `1px solid ${P.terracotta}30`, flexShrink: 0 }}>
           <IconComp size={24} color={P.terracotta} strokeWidth={1.5} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={S.tcName}>{trip.name}</div>
-          <div style={S.tcLocation}>
-            {trip.location} · {trip.dates}{showTime ? ` · ${trip.time}` : ""}
+          <div style={S.tcLocation}>{trip.location}</div>
+          <div style={{ fontSize: 12, color: P.textMuted, fontFamily: "'DM Sans', sans-serif" }}>
+            {trip.dates}{showTime ? ` · ${formatTime12(trip.time)}` : ""}
           </div>
         </div>
-        {trip.settled && <span style={S.settledBadge}>SETTLED</span>}
-        <ChevronRight size={18} color={P.terracotta + "80"} flexShrink={0} />
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
+          {trip.settled && <span style={S.settledBadge}>SETTLED</span>}
+          {trip.total_spent > 0 && <div style={{ ...S.tcTotal, color: P.terracotta }}>${trip.total_spent.toLocaleString()}</div>}
+          <ChevronRight size={18} color={P.terracotta + "80"} />
+        </div>
       </div>
-      {trip.total_spent > 0 && (
-        <div style={{ ...S.tcTotal, color: P.terracotta }}>${trip.total_spent.toLocaleString()}</div>
-      )}
     </div>
   );
+}
+
+// ─── SETTLEMENT CALCULATOR (shared utility) ───────────────────────────────────
+
+function calcSettlements(expenses) {
+  const balances = {};
+  expenses.forEach(exp => {
+    const paidBy = exp.paid_by;
+    const splitWith = exp.split_with || [];
+    if (!splitWith.length) return;
+    const share = exp.amount / splitWith.length;
+    if (!balances[paidBy]) balances[paidBy] = 0;
+    balances[paidBy] += exp.amount;
+    splitWith.forEach(person => { if (!balances[person]) balances[person] = 0; balances[person] -= share; });
+  });
+  const settlements = [];
+  const debtors = Object.entries(balances).filter(([_, v]) => v < -0.01).map(([k, v]) => ({ name: k, amount: v }));
+  const creditors = Object.entries(balances).filter(([_, v]) => v > 0.01).map(([k, v]) => ({ name: k, amount: v }));
+  debtors.forEach(debtor => {
+    let remaining = Math.abs(debtor.amount);
+    creditors.forEach(creditor => {
+      if (remaining < 0.01 || creditor.amount < 0.01) return;
+      const payment = Math.min(remaining, creditor.amount);
+      settlements.push({ from: debtor.name, to: creditor.name, amount: Math.round(payment) });
+      remaining -= payment; creditor.amount -= payment;
+    });
+  });
+  return settlements;
 }
 
 // ─── TRIP SHELL ───────────────────────────────────────────────────────────────
 
 function TripShell({ trip, activeTab, setActiveTab, onBack, onModal, itinRefresh, modal, setModal, user, profile, onItinRefresh }) {
-  const [settlements, setSettlements] = useState([]);
+  const [expenses, setExpenses] = useState([]);
   const myName = profile?.display_name || user?.email?.split('@')[0] || 'Me';
   const IconComp = TRIP_ICONS[trip.emoji] || Plane;
+  const settlements = calcSettlements(expenses);
+
+  // Fetch expenses at shell level so Summary + Members always have data
+  useEffect(() => {
+    const fetchExpenses = async () => {
+      const { data } = await supabase.from('expenses').select('*').eq('trip_id', trip.id).order('created_at', { ascending: false });
+      setExpenses(data || []);
+    };
+    fetchExpenses();
+    const sub = supabase.channel(`shell-expenses:${trip.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, fetchExpenses)
+      .subscribe();
+    return () => sub.unsubscribe();
+  }, [trip.id, itinRefresh]);
 
   const tabs = [
     { id: "itinerary", label: "Itinerary", Icon: Calendar },
@@ -863,7 +643,7 @@ function TripShell({ trip, activeTab, setActiveTab, onBack, onModal, itinRefresh
 
   return (
     <div style={S.tripShell}>
-      <div style={{ ...S.tripHeader, background: `linear-gradient(135deg, ${P.surface1} 0%, ${P.surface2} 100%)` }}>
+      <div style={{ ...S.tripHeader, background: P.surface1 }}>
         <button style={S.backBtn} onClick={() => { setModal(null); onBack(); }}>←</button>
         <div style={S.thMid}>
           <div style={{ ...S.thIconWrap, background: P.terracotta + "20" }}>
@@ -874,20 +654,18 @@ function TripShell({ trip, activeTab, setActiveTab, onBack, onModal, itinRefresh
             <div style={S.thSub}>{trip.location} · {trip.dates}</div>
           </div>
         </div>
-        <button style={{ ...S.shareHeaderBtn, color: P.terracotta }} onClick={() => onModal("share")}>
-          ↗ Share
-        </button>
+        <button style={{ ...S.shareHeaderBtn, color: P.terracotta }} onClick={() => onModal("share")}>↗ Share</button>
       </div>
 
       <div style={{ ...S.tabContent, position: "relative" }}>
         {activeTab === "itinerary" && <ItineraryTab trip={trip} onModal={onModal} refreshKey={itinRefresh} />}
-        {activeTab === "expenses"  && <ExpensesTab  trip={trip} onModal={onModal} expRefresh={itinRefresh} profile={profile} user={user} onSettlementsChange={setSettlements} />}
+        {activeTab === "expenses"  && <ExpensesTab  trip={trip} onModal={onModal} expRefresh={itinRefresh} profile={profile} user={user} expenses={expenses} settlements={settlements} myName={myName} />}
         {activeTab === "uploads"   && <UploadsTab trip={trip} user={user} profile={profile} />}
-        {activeTab === "members"   && <MembersTab trip={trip} profile={profile} />}
+        {activeTab === "members"   && <MembersTab trip={trip} profile={profile} expenses={expenses} />}
         {activeTab === "summary"   && <SummaryTab trip={trip} settlements={settlements} myName={myName} />}
         {modal === "addExpense"    && <AddExpenseModal trip={trip} user={user} profile={profile} onClose={() => setModal(null)} onAdd={onItinRefresh} />}
         {modal === "addItinerary"  && <AddItinModal trip={trip} onClose={() => setModal(null)} onAdd={() => { setModal(null); onItinRefresh(); setTimeout(onItinRefresh, 100); }} />}
-        {modal === "settle"        && <SettleModal settlements={settlements} myName={myName} onClose={() => setModal(null)} />}
+        {modal === "settle"        && <SettleModal settlements={settlements} myName={myName} trip={trip} onClose={() => setModal(null)} />}
         {modal === "share"         && <ShareModal trip={trip} onClose={() => setModal(null)} />}
       </div>
 
@@ -895,9 +673,7 @@ function TripShell({ trip, activeTab, setActiveTab, onBack, onModal, itinRefresh
         {tabs.map(({ id, label, Icon }) => (
           <button key={id} style={S.tabBtn} onClick={() => { setActiveTab(id); setModal(null); }}>
             <Icon size={24} color={activeTab === id ? P.terracotta : P.textMuted} strokeWidth={activeTab === id ? 2 : 1.5} />
-            <span style={{ ...S.tabLabel, ...(activeTab === id ? { color: P.terracotta } : {}) }}>
-              {label}
-            </span>
+            <span style={{ ...S.tabLabel, ...(activeTab === id ? { color: P.terracotta } : {}) }}>{label}</span>
             {activeTab === id && <div style={{ ...S.tabDot, background: P.terracotta }} />}
           </button>
         ))}
@@ -926,39 +702,15 @@ function ItineraryTab({ trip, onModal, refreshKey }) {
 
   const handleDeleteSelected = async () => {
     if (!selectedIds.length) return;
-    for (const id of selectedIds) {
-      await supabase.from('itinerary').delete().eq('id', id);
-    }
+    for (const id of selectedIds) { await supabase.from('itinerary').delete().eq('id', id); }
     setItems(prev => prev.filter(i => !selectedIds.includes(i.id)));
-    setSelectedIds([]);
-    setSelecting(false);
+    setSelectedIds([]); setSelecting(false);
   };
 
-  const handleLongPressStart = (id) => {
-    longPressTimers.current[id] = setTimeout(() => {
-      setSelecting(true);
-      setSelectedIds([id]);
-    }, 500);
-  };
-
-  const handleLongPressEnd = (id) => {
-    clearTimeout(longPressTimers.current[id]);
-  };
-
-  const handleItemTap = (item) => {
-    if (selecting) {
-      setSelectedIds(prev =>
-        prev.includes(item.id) ? prev.filter(id => id !== item.id) : [...prev, item.id]
-      );
-    } else {
-      setEditingItem(item);
-    }
-  };
-
-  const cancelSelection = () => {
-    setSelecting(false);
-    setSelectedIds([]);
-  };
+  const handleLongPressStart = (id) => { longPressTimers.current[id] = setTimeout(() => { setSelecting(true); setSelectedIds([id]); }, 500); };
+  const handleLongPressEnd = (id) => { clearTimeout(longPressTimers.current[id]); };
+  const handleItemTap = (item) => { if (selecting) { setSelectedIds(prev => prev.includes(item.id) ? prev.filter(id => id !== item.id) : [...prev, item.id]); } else { setEditingItem(item); } };
+  const cancelSelection = () => { setSelecting(false); setSelectedIds([]); };
 
   useEffect(() => {
     const fetchItinerary = async () => {
@@ -984,19 +736,13 @@ function ItineraryTab({ trip, onModal, refreshKey }) {
           ? <div style={{ display: "flex", gap: 8 }}>
               <button style={{ ...S.actionBtn, color: P.slateBlue }} onClick={cancelSelection}>Cancel</button>
               {selectedIds.length > 0 && (
-                <button style={{ ...S.actionBtn, borderColor: P.danger + "60", color: P.danger }}
-                  onClick={handleDeleteSelected}>Delete ({selectedIds.length})</button>
+                <button style={{ ...S.actionBtn, borderColor: P.danger + "60", color: P.danger }} onClick={handleDeleteSelected}>Delete ({selectedIds.length})</button>
               )}
             </div>
-          : <button style={{ ...S.actionBtn, borderColor: P.terracotta + "60", color: P.terracotta }}
-              onClick={() => onModal("addItinerary")}>+ Add</button>
+          : <button style={S.newBtn} onClick={() => onModal("addItinerary")}>+ Add</button>
         }
       </div>
-
-      {selecting && (
-        <div style={SI.selectHint}>Long press to select · Tap to toggle · Delete when ready</div>
-      )}
-
+      {selecting && <div style={SI.selectHint}>Long press to select · Tap to toggle · Delete when ready</div>}
       {items.length === 0 && (
         <div style={SI.emptyState}>
           <div style={{ fontSize: 32, marginBottom: 12 }}>🗺️</div>
@@ -1009,57 +755,37 @@ function ItineraryTab({ trip, onModal, refreshKey }) {
           <div style={SI.dayLabel}>{formatDayLabel(day)}</div>
           {items.filter(i => i.day === day).map(item => {
             const meta = ITINERARY_COLORS[item.type] || ITINERARY_COLORS.activity;
-            // Use stored icon emoji if available, otherwise fall back to type icon component
             const hasEmojiIcon = item.icon && item.icon.length <= 4 && item.icon !== "🎯";
             const TypeIcon = ITIN_TYPE_ICONS[item.type] || Zap;
             const isSelected = selectedIds.includes(item.id);
             const hasLocation = item.type === "stay" || item.type === "restaurant" || item.type === "activity";
-            // Format time as 12hr
             const formatTime12 = (t) => {
               if (!t) return "—";
               const [h, m] = t.split(':').map(Number);
               if (isNaN(h)) return t;
               const ampm = h >= 12 ? 'pm' : 'am';
-              const hr = h % 12 || 12;
-              return `${hr}:${String(m).padStart(2, '0')}${ampm}`;
+              return `${h % 12 || 12}:${String(m).padStart(2, '0')}${ampm}`;
             };
             return (
-              <div
-                key={item.id}
+              <div key={item.id}
                 style={{ ...SI.item, borderLeftColor: meta.accent, ...(isSelected ? SI.itemSelected : {}) }}
                 onClick={() => handleItemTap(item)}
-                onTouchStart={() => handleLongPressStart(item.id)}
-                onTouchEnd={() => handleLongPressEnd(item.id)}
-                onMouseDown={() => handleLongPressStart(item.id)}
-                onMouseUp={() => handleLongPressEnd(item.id)}
-                onMouseLeave={() => handleLongPressEnd(item.id)}
-              >
-                {/* Time */}
-                <div style={SI.timeCol}>
-                  <span style={SI.time}>{formatTime12(item.time)}</span>
-                </div>
-
-                {/* Content */}
+                onTouchStart={() => handleLongPressStart(item.id)} onTouchEnd={() => handleLongPressEnd(item.id)}
+                onMouseDown={() => handleLongPressStart(item.id)} onMouseUp={() => handleLongPressEnd(item.id)} onMouseLeave={() => handleLongPressEnd(item.id)}>
+                <div style={SI.timeCol}><span style={SI.time}>{formatTime12(item.time)}</span></div>
                 <div style={SI.content}>
                   <div style={SI.titleRow}>
-                    {hasEmojiIcon
-                      ? <span style={{ fontSize: 18, lineHeight: 1, flexShrink: 0 }}>{item.icon}</span>
-                      : <TypeIcon size={16} color={meta.accent} strokeWidth={2} style={{ flexShrink: 0 }} />
-                    }
+                    {hasEmojiIcon ? <span style={{ fontSize: 18, lineHeight: 1, flexShrink: 0 }}>{item.icon}</span> : <TypeIcon size={16} color={meta.accent} strokeWidth={2} style={{ flexShrink: 0 }} />}
                     <span style={SI.title}>{item.title}</span>
                     {hasLocation && (
                       <a href={`https://maps.google.com/?q=${encodeURIComponent(item.title + " " + (item.detail || ""))}`}
-                        target="_blank" rel="noopener noreferrer"
-                        onClick={e => e.stopPropagation()}
-                        style={SI.mapsLink}>
+                        target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={SI.mapsLink}>
                         <MapPin size={11} /> Maps
                       </a>
                     )}
                   </div>
                   {item.detail ? <div style={SI.detail}>{item.detail}</div> : null}
                 </div>
-
-                {/* Selection indicator */}
                 {selecting && (
                   <div style={{ ...SI.checkbox, ...(isSelected ? SI.checkboxOn : {}) }}>
                     {isSelected && <span style={{ fontSize: 11, color: "#fff", fontWeight: 800 }}>✓</span>}
@@ -1070,7 +796,6 @@ function ItineraryTab({ trip, onModal, refreshKey }) {
           })}
         </div>
       ))}
-
       <div style={{ height: 20 }} />
       {editingItem && (
         <EditItinModal item={editingItem} onClose={() => setEditingItem(null)}
@@ -1081,176 +806,53 @@ function ItineraryTab({ trip, onModal, refreshKey }) {
 }
 
 const SI = {
-  dayLabel: {
-    fontSize: 12, fontWeight: 800, color: P.slateBlue,
-    letterSpacing: "0.5px", marginBottom: 10, marginTop: 4,
-    fontFamily: "'DM Sans', sans-serif",
-  },
-  selectHint: {
-    fontSize: 12, color: P.textMuted, textAlign: "center",
-    marginBottom: 12, fontFamily: "'DM Sans', sans-serif",
-  },
-  item: {
-    display: "flex", alignItems: "flex-start", gap: 14,
-    background: P.surface1, borderRadius: 14,
-    borderLeft: `3px solid transparent`,
-    padding: "14px 14px 14px 16px",
-    marginBottom: 10, cursor: "pointer",
-    border: `1px solid ${P.surface3}`,
-    borderLeftWidth: 3,
-    userSelect: "none",
-    transition: "background 0.15s",
-  },
-  itemSelected: {
-    background: P.surface2,
-    borderColor: P.terracotta + "40",
-  },
-  timeCol: {
-    flexShrink: 0, width: 52, paddingTop: 2,
-  },
-  time: {
-    fontSize: 14, color: P.textSecondary, fontWeight: 700,
-    fontFamily: "'DM Sans', sans-serif",
-  },
+  dayLabel: { fontSize: 12, fontWeight: 800, color: P.slateBlue, letterSpacing: "0.5px", marginBottom: 10, marginTop: 4, fontFamily: "'DM Sans', sans-serif" },
+  selectHint: { fontSize: 12, color: P.textMuted, textAlign: "center", marginBottom: 12, fontFamily: "'DM Sans', sans-serif" },
+  item: { display: "flex", alignItems: "flex-start", gap: 14, background: P.surface1, borderRadius: 14, borderLeft: `3px solid transparent`, padding: "14px 14px 14px 16px", marginBottom: 10, cursor: "pointer", border: `1px solid ${P.surface3}`, borderLeftWidth: 3, userSelect: "none", transition: "background 0.15s" },
+  itemSelected: { background: P.surface2, borderColor: P.terracotta + "40" },
+  timeCol: { flexShrink: 0, width: 52, paddingTop: 2 },
+  time: { fontSize: 14, color: P.textSecondary, fontWeight: 700, fontFamily: "'DM Sans', sans-serif" },
   content: { flex: 1, minWidth: 0 },
-  titleRow: {
-    display: "flex", alignItems: "center", gap: 6,
-    marginBottom: 4, flexWrap: "nowrap",
-  },
-  title: {
-    fontSize: 16, fontWeight: 700, color: P.textPrimary,
-    letterSpacing: "-0.3px", fontFamily: "'Syne', sans-serif",
-    flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-  },
-  mapsLink: {
-    color: P.lightBlue, fontSize: 11, fontWeight: 700,
-    textDecoration: "none", flexShrink: 0,
-    display: "flex", alignItems: "center", gap: 2,
-  },
-  detail: {
-    fontSize: 13, color: P.textMuted,
-    fontFamily: "'DM Sans', sans-serif", lineHeight: 1.4,
-  },
-  checkbox: {
-    width: 22, height: 22, borderRadius: "50%",
-    border: `2px solid ${P.surface3}`,
-    display: "flex", alignItems: "center", justifyContent: "center",
-    flexShrink: 0, marginTop: 2,
-  },
-  checkboxOn: {
-    background: P.terracotta,
-    border: `2px solid ${P.terracotta}`,
-  },
-  emptyState: {
-    textAlign: "center", padding: "48px 24px",
-    background: P.surface1, borderRadius: 18,
-    border: `1px dashed ${P.surface3}`, marginTop: 8,
-  },
-  emptyTitle: {
-    fontFamily: "'Syne', sans-serif", fontSize: 18,
-    fontWeight: 800, color: P.textPrimary, marginBottom: 8,
-  },
-  emptySub: {
-    fontSize: 13, color: P.slateBlue,
-    fontFamily: "'DM Sans', sans-serif",
-  },
+  titleRow: { display: "flex", alignItems: "center", gap: 6, marginBottom: 4, flexWrap: "nowrap" },
+  title: { fontSize: 16, fontWeight: 700, color: P.textPrimary, letterSpacing: "-0.3px", fontFamily: "'Syne', sans-serif", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+  mapsLink: { color: P.lightBlue, fontSize: 11, fontWeight: 700, textDecoration: "none", flexShrink: 0, display: "flex", alignItems: "center", gap: 2 },
+  detail: { fontSize: 13, color: P.textMuted, fontFamily: "'DM Sans', sans-serif", lineHeight: 1.4 },
+  checkbox: { width: 22, height: 22, borderRadius: "50%", border: `2px solid ${P.surface3}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2 },
+  checkboxOn: { background: P.terracotta, border: `2px solid ${P.terracotta}` },
+  emptyState: { textAlign: "center", padding: "48px 24px", background: P.surface1, borderRadius: 18, border: `1px dashed ${P.surface3}`, marginTop: 8 },
+  emptyTitle: { fontFamily: "'Syne', sans-serif", fontSize: 18, fontWeight: 800, color: P.textPrimary, marginBottom: 8 },
+  emptySub: { fontSize: 13, color: P.slateBlue, fontFamily: "'DM Sans', sans-serif" },
 };
 
 // ─── EXPENSES TAB ─────────────────────────────────────────────────────────────
 
-function ExpensesTab({ trip, onModal, expRefresh, profile, user, onSettlementsChange }) {
+function ExpensesTab({ trip, onModal, expRefresh, profile, user, expenses, settlements, myName }) {
   const [filter, setFilter] = useState("All");
-  const [expenses, setExpenses] = useState([]);
   const [editingExpense, setEditingExpense] = useState(null);
   const [memberCount, setMemberCount] = useState(0);
   const cats = ["All", "Stay", "Food", "Activity", "Transport"];
 
   useEffect(() => {
-    supabase.from('members').select('id').eq('trip_id', trip.id)
-      .then(({ data }) => setMemberCount(data?.length || 0));
+    supabase.from('members').select('id').eq('trip_id', trip.id).then(({ data }) => setMemberCount(data?.length || 0));
   }, [trip.id]);
-
-  useEffect(() => {
-    const fetchExpenses = async () => {
-      const { data, error } = await supabase.from('expenses').select('*')
-        .eq('trip_id', trip.id).order('created_at', { ascending: false });
-      if (error) console.error(error);
-      else setExpenses(data);
-    };
-    fetchExpenses();
-    const subscription = supabase.channel(`expenses:${trip.id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, () => fetchExpenses())
-      .subscribe();
-    return () => subscription.unsubscribe();
-  }, [trip.id, expRefresh]);
 
   const filtered = filter === "All" ? expenses : expenses.filter(e => e.category === filter);
   const total = expenses.reduce((a, e) => a + e.amount, 0);
-
-  const calcSettlements = (expenses) => {
-    const balances = {};
-    expenses.forEach(exp => {
-      const paidBy = exp.paid_by;
-      const splitWith = exp.split_with || [];
-      if (!splitWith.length) return;
-      const share = exp.amount / splitWith.length;
-      if (!balances[paidBy]) balances[paidBy] = 0;
-      balances[paidBy] += exp.amount;
-      splitWith.forEach(person => {
-        if (!balances[person]) balances[person] = 0;
-        balances[person] -= share;
-      });
-    });
-    const settlements = [];
-    const debtors = Object.entries(balances).filter(([_, v]) => v < -0.01).map(([k, v]) => ({ name: k, amount: v }));
-    const creditors = Object.entries(balances).filter(([_, v]) => v > 0.01).map(([k, v]) => ({ name: k, amount: v }));
-    debtors.forEach(debtor => {
-      let remaining = Math.abs(debtor.amount);
-      creditors.forEach(creditor => {
-        if (remaining < 0.01 || creditor.amount < 0.01) return;
-        const payment = Math.min(remaining, creditor.amount);
-        settlements.push({ from: debtor.name, to: creditor.name, amount: Math.round(payment) });
-        remaining -= payment;
-        creditor.amount -= payment;
-      });
-    });
-    return settlements;
-  };
-
-  const settlements = calcSettlements(expenses);
-  useEffect(() => { onSettlementsChange?.(settlements); }, [expenses]);
-
-  const myName = profile?.display_name || user?.email?.split('@')[0] || 'Me';
   const myOwed = settlements.filter(s => s.from === myName).reduce((a, s) => a + s.amount, 0);
-
-  const handleDeleteExpense = async (exp) => {
-    if (!window.confirm(`Delete "${exp.title}"?`)) return;
-    const { error } = await supabase.from('expenses').delete().eq('id', exp.id);
-    if (!error) setExpenses(prev => prev.filter(e => e.id !== exp.id));
-  };
 
   return (
     <div style={S.tabScroll}>
       <div style={S.tabTopRow}>
         <div style={S.tabTitle}>Expenses</div>
-        <button style={{ ...S.actionBtn, borderColor: P.terracotta + "60", color: P.terracotta }}
-          onClick={() => onModal("addExpense")}>+ Add</button>
+        <button style={S.newBtn} onClick={() => onModal("addExpense")}>+ Add</button>
       </div>
       <div style={S.expSummary}>
-        <div style={S.expSumItem}>
-          <div style={S.expSumVal}>${total.toLocaleString()}</div>
-          <div style={S.expSumLbl}>total spent</div>
-        </div>
+        <div style={S.expSumItem}><div style={S.expSumVal}>${total.toLocaleString()}</div><div style={S.expSumLbl}>total spent</div></div>
+        <div style={S.expSumDiv} />
+        <div style={S.expSumItem}><div style={S.expSumVal}>{memberCount}</div><div style={S.expSumLbl}>travelers</div></div>
         <div style={S.expSumDiv} />
         <div style={S.expSumItem}>
-          <div style={S.expSumVal}>{memberCount}</div>
-          <div style={S.expSumLbl}>travelers</div>
-        </div>
-        <div style={S.expSumDiv} />
-        <div style={S.expSumItem}>
-          {myOwed > 0
-            ? <div style={{ ...S.expSumVal, color: P.danger }}>${myOwed}</div>
-            : <div style={{ ...S.expSumVal, color: P.success }}>Even</div>}
+          {myOwed > 0 ? <div style={{ ...S.expSumVal, color: P.danger }}>${myOwed}</div> : <div style={{ ...S.expSumVal, color: P.success }}>Even</div>}
           <div style={S.expSumLbl}>you owe</div>
         </div>
       </div>
@@ -1260,39 +862,53 @@ function ExpensesTab({ trip, onModal, expRefresh, profile, user, onSettlementsCh
           <span style={S.settleArrow}>→</span>
         </button>
       )}
-      <div style={S.filterRow}>
-        {cats.map(c => (
-          <button key={c} onClick={() => setFilter(c)}
-            style={{ ...S.chip, ...(filter === c ? { ...S.chipActive, borderColor: P.terracotta, color: P.terracotta, background: P.terracotta + "15" } : {}) }}>
-            {c}
-          </button>
-        ))}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 6, marginBottom: 16 }}>
+        {cats.map(c => {
+          const meta = CATEGORY_META[c];
+          const CIcon = CAT_ICONS[c] || DollarSign;
+          const selected = filter === c;
+          return (
+            <button key={c} onClick={() => setFilter(c)}
+              style={{
+                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                gap: 4, padding: "8px 4px", borderRadius: 12, cursor: "pointer", minHeight: 50,
+                background: selected ? (c === "All" ? P.terracotta + "18" : meta?.bg || P.surface2) : P.surface1,
+                border: selected ? `1px solid ${c === "All" ? P.terracotta : meta?.color || P.terracotta}` : `1px solid ${P.surface3}`,
+              }}>
+              {c === "All"
+                ? <DollarSign size={15} color={selected ? P.terracotta : P.textMuted} strokeWidth={1.5} />
+                : <CIcon size={15} color={selected ? meta?.color : P.textMuted} strokeWidth={1.5} />
+              }
+              <span style={{ fontSize: 9, fontWeight: 700, color: selected ? (c === "All" ? P.terracotta : meta?.color) : P.textMuted, textTransform: "capitalize", letterSpacing: "0.3px" }}>{c}</span>
+            </button>
+          );
+        })}
       </div>
       {filtered.map(exp => {
         const meta = CATEGORY_META[exp.category];
         const splitWith = exp.split_with || exp.splitWith || [];
-        const perPerson = splitWith.length ? (exp.amount / splitWith.length).toFixed(0) : 0;
+        const perPerson = splitWith.length ? (exp.amount / splitWith.length).toFixed(0) : exp.amount;
+        const CatIcon = CAT_ICONS[exp.category] || DollarSign;
         return (
-          <div key={exp.id} style={S.expRow}>
-            <div style={{ ...S.expIcon, background: meta?.bg || P.surface1, color: meta?.color || P.terracotta }}>{exp.category?.[0]}</div>
-            <div style={S.expBody}>
-              <div style={S.expTitle}>{exp.title}</div>
-              <div style={S.expMeta}>
-                {exp.date} · <span style={{ color: P.textPrimary }}>{exp.paid_by || exp.paidBy}</span> paid · ${perPerson}/person
+          <div key={exp.id}
+            style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", marginBottom: 8, background: P.surface1, borderRadius: 14, borderLeft: `3px solid ${meta?.color || P.terracotta}`, cursor: "pointer" }}
+            onClick={() => setEditingExpense(exp)}>
+            <div style={{ width: 36, height: 36, borderRadius: 10, background: meta?.bg || P.surface2, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <CatIcon size={16} color={meta?.color || P.terracotta} strokeWidth={1.5} />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: P.textPrimary, marginBottom: 2 }}>{exp.title}</div>
+              <div style={{ fontSize: 12, color: P.textMuted, fontFamily: "'DM Sans', sans-serif" }}>
+                ${perPerson}/person{splitWith.length > 1 ? ` · ${splitWith.length} people` : ""}
               </div>
             </div>
-            <div style={S.expRight}>
-              <div style={S.expAmt}>${exp.amount}</div>
-              {exp.receipt && <div style={S.receiptBadge}>📎</div>}
-            </div>
-            <button style={S.rowEditBtn} onClick={() => setEditingExpense(exp)}>✎</button>
-            <button style={S.rowDeleteBtn} onClick={() => handleDeleteExpense(exp)}>✕</button>
+            <div style={{ fontSize: 17, fontWeight: 900, color: P.textPrimary, letterSpacing: "-0.5px", flexShrink: 0 }}>${exp.amount}</div>
           </div>
         );
       })}
       <div style={{ height: 20 }} />
       {editingExpense && (
-        <AddExpenseModal trip={trip} user={null} profile={null}
+        <AddExpenseModal trip={trip} user={user} profile={profile}
           existingExpense={editingExpense}
           onClose={() => setEditingExpense(null)}
           onAdd={() => setEditingExpense(null)} />
@@ -1306,7 +922,11 @@ function ExpensesTab({ trip, onModal, expRefresh, profile, user, onSettlementsCh
 function UploadsTab({ trip, user, profile }) {
   const [photos, setPhotos] = useState([]);
   const [uploading, setUploading] = useState(false);
+  const [previewPhoto, setPreviewPhoto] = useState(null);
+  const [selecting, setSelecting] = useState(false);
+  const [selectedIds, setSelectedIds] = useState([]);
   const fileInputRef = useRef(null);
+  const longPressTimers = useRef({});
 
   useEffect(() => {
     fetchPhotos();
@@ -1317,8 +937,7 @@ function UploadsTab({ trip, user, profile }) {
   }, [trip.id]);
 
   const fetchPhotos = async () => {
-    const { data, error } = await supabase.from('photos').select('*')
-      .eq('trip_id', trip.id).order('created_at', { ascending: false });
+    const { data, error } = await supabase.from('photos').select('*').eq('trip_id', trip.id).order('created_at', { ascending: false });
     if (error) console.error(error);
     else setPhotos(data || []);
   };
@@ -1329,136 +948,236 @@ function UploadsTab({ trip, user, profile }) {
     try {
       const ext = file.name.split('.').pop();
       const path = `${trip.id}/${Date.now()}.${ext}`;
-      const { error: uploadError } = await supabase.storage
-        .from('trip-photos').upload(path, file);
+      const { error: uploadError } = await supabase.storage.from('trip-photos').upload(path, file);
       if (uploadError) throw uploadError;
-      const { data: { publicUrl } } = supabase.storage
-        .from('trip-photos').getPublicUrl(path);
+      const { data: { publicUrl } } = supabase.storage.from('trip-photos').getPublicUrl(path);
       const uploader = profile?.display_name || user?.email?.split('@')[0] || 'Me';
-      const { error: dbError } = await supabase.from('photos').insert([{
-        trip_id: trip.id, user_id: user?.id, storage_path: path,
-        url: publicUrl, caption: file.name.split('.')[0], uploader, sensitive: false
-      }]);
+      const { error: dbError } = await supabase.from('photos').insert([{ trip_id: trip.id, user_id: user?.id, storage_path: path, url: publicUrl, caption: file.name.split('.')[0], uploader, sensitive: false }]);
       if (dbError) throw dbError;
       await fetchPhotos();
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setUploading(false);
-    }
+    } catch (e) { console.error(e); } finally { setUploading(false); }
   };
 
   const toggleSensitive = async (photo) => {
-    const { error } = await supabase.from('photos')
-      .update({ sensitive: !photo.sensitive }).eq('id', photo.id);
+    const { error } = await supabase.from('photos').update({ sensitive: !photo.sensitive }).eq('id', photo.id);
     if (!error) setPhotos(p => p.map(ph => ph.id === photo.id ? { ...ph, sensitive: !ph.sensitive } : ph));
   };
 
-  const handleDelete = async (photo) => {
-    if (!window.confirm('Remove this photo?')) return;
-    await supabase.storage.from('trip-photos').remove([photo.storage_path]);
-    await supabase.from('photos').delete().eq('id', photo.id);
-    setPhotos(p => p.filter(ph => ph.id !== photo.id));
+  const handleDeleteSelected = async () => {
+    if (!window.confirm(`Remove ${selectedIds.length} photo${selectedIds.length > 1 ? 's' : ''}?`)) return;
+    for (const id of selectedIds) {
+      const ph = photos.find(p => p.id === id);
+      if (ph) {
+        await supabase.storage.from('trip-photos').remove([ph.storage_path]);
+        await supabase.from('photos').delete().eq('id', id);
+      }
+    }
+    setPhotos(p => p.filter(ph => !selectedIds.includes(ph.id)));
+    setSelectedIds([]); setSelecting(false);
   };
 
-  const handleDrop = (e) => {
-    e.preventDefault();
-    const file = e.dataTransfer.files[0];
-    if (file) handleUpload(file);
+  const handleMarkSensitiveSelected = async () => {
+    for (const id of selectedIds) {
+      const ph = photos.find(p => p.id === id);
+      if (ph) await supabase.from('photos').update({ sensitive: !ph.sensitive }).eq('id', id);
+    }
+    await fetchPhotos();
+    setSelectedIds([]); setSelecting(false);
   };
+
+  const handleLongPressStart = (id) => {
+    longPressTimers.current[id] = setTimeout(() => { setSelecting(true); setSelectedIds([id]); }, 500);
+  };
+  const handleLongPressEnd = (id) => { clearTimeout(longPressTimers.current[id]); };
+
+  const handleTap = (ph) => {
+    if (selecting) {
+      setSelectedIds(prev => prev.includes(ph.id) ? prev.filter(x => x !== ph.id) : [...prev, ph.id]);
+    } else {
+      setPreviewPhoto(ph);
+    }
+  };
+
+  const handleDrop = (e) => { e.preventDefault(); const file = e.dataTransfer.files[0]; if (file) handleUpload(file); };
 
   return (
     <div style={S.tabScroll}>
       <div style={S.tabTopRow}>
         <div style={S.tabTitle}>Memories</div>
-        <button style={{ ...S.actionBtn, borderColor: P.terracotta + "60", color: P.terracotta }}
-          onClick={() => fileInputRef.current?.click()} disabled={uploading}>
-          {uploading ? "Uploading..." : "+ Upload"}
-        </button>
+        {selecting
+          ? <div style={{ display: "flex", gap: 8 }}>
+              <button style={{ ...S.actionBtn, color: P.slateBlue }} onClick={() => { setSelecting(false); setSelectedIds([]); }}>Cancel</button>
+              {selectedIds.length > 0 && <>
+                <button style={{ ...S.actionBtn, borderColor: P.terracotta + "60", color: P.terracotta }} onClick={handleMarkSensitiveSelected}>🔒</button>
+                <button style={{ ...S.actionBtn, borderColor: P.danger + "60", color: P.danger }} onClick={handleDeleteSelected}>Remove</button>
+              </>}
+            </div>
+          : <button style={S.newBtn} onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+              {uploading ? "Uploading..." : "+ Upload"}
+            </button>
+        }
       </div>
-      <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }}
-        onChange={e => handleUpload(e.target.files[0])} />
-      <div style={S.sensitiveNote}>🔒 Mark photos as sensitive to exclude them from shared exports.</div>
+      <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={e => handleUpload(e.target.files[0])} />
+
+      {/* Subtle hint */}
+      <div style={{ fontSize: 12, color: P.textMuted, marginBottom: 14, fontFamily: "'DM Sans', sans-serif" }}>
+        Tap to preview · Hold to select · 🔒 = sensitive
+      </div>
 
       {photos.length === 0 && !uploading && (
-        <div style={{ ...S.uploadDrop, marginBottom: 16 }}
-          onDrop={handleDrop} onDragOver={e => e.preventDefault()}
-          onClick={() => fileInputRef.current?.click()}>
+        <div style={{ ...S.uploadDrop, marginBottom: 16 }} onDrop={handleDrop} onDragOver={e => e.preventDefault()} onClick={() => fileInputRef.current?.click()}>
           <div style={S.uploadIcon}>📎</div>
           <div style={S.uploadText}>Drop your first photo here</div>
           <div style={S.uploadSub}>Tap to browse or drag and drop</div>
         </div>
       )}
 
+      {/* 4-column tile grid */}
       {photos.length > 0 && (
-        <div style={S.photoGrid}>
-          {photos.map((ph, idx) => (
-            <div key={ph.id}
-              style={{ ...S.photoCard, ...(idx === 0 ? S.photoWide : {}), opacity: ph.sensitive ? 0.55 : 1 }}>
-              <img src={ph.url} alt={ph.caption}
-                style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 18 }} />
-              {ph.sensitive && <div style={S.sensitiveLock}>🔒</div>}
-              <div style={S.photoOverlay}>
-                <div style={S.photoCaption}>{ph.caption}</div>
-                <div style={S.photoMeta}>{ph.uploader}</div>
-                <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
-                  <button style={{ ...S.sensitiveBtn, ...(ph.sensitive ? S.sensitiveBtnOn : {}) }}
-                    onClick={() => toggleSensitive(ph)}>
-                    {ph.sensitive ? "Sensitive" : "Mark sensitive"}
-                  </button>
-                  <button style={{ ...S.sensitiveBtn, background: P.dangerBg, color: P.danger }}
-                    onClick={() => handleDelete(ph)}>Remove</button>
-                </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 4, marginBottom: 16 }}>
+          {photos.map(ph => {
+            const isSelected = selectedIds.includes(ph.id);
+            return (
+              <div key={ph.id}
+                style={{ position: "relative", aspectRatio: "1", borderRadius: 10, overflow: "hidden", cursor: "pointer", opacity: ph.sensitive ? 0.5 : 1, outline: isSelected ? `2px solid ${P.terracotta}` : "none", transition: "opacity 0.15s" }}
+                onClick={() => handleTap(ph)}
+                onTouchStart={() => handleLongPressStart(ph.id)} onTouchEnd={() => handleLongPressEnd(ph.id)}
+                onMouseDown={() => handleLongPressStart(ph.id)} onMouseUp={() => handleLongPressEnd(ph.id)} onMouseLeave={() => handleLongPressEnd(ph.id)}>
+                <img src={ph.url} alt={ph.caption} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                {ph.sensitive && <div style={{ position: "absolute", top: 4, right: 4, fontSize: 10 }}>🔒</div>}
+                {isSelected && (
+                  <div style={{ position: "absolute", inset: 0, background: P.terracotta + "30", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <div style={{ width: 20, height: 20, borderRadius: "50%", background: P.terracotta, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <span style={{ fontSize: 11, color: "#fff", fontWeight: 800 }}>✓</span>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
-      {photos.length > 0 && (
-        <div style={{ ...S.uploadDrop, marginTop: 12 }}
-          onDrop={handleDrop} onDragOver={e => e.preventDefault()}
-          onClick={() => fileInputRef.current?.click()}>
+      {photos.length > 0 && !selecting && (
+        <div style={{ ...S.uploadDrop, marginBottom: 16 }} onDrop={handleDrop} onDragOver={e => e.preventDefault()} onClick={() => fileInputRef.current?.click()}>
           <div style={S.uploadIcon}>📎</div>
           <div style={S.uploadText}>Add more</div>
           <div style={S.uploadSub}>Photos, receipts, anything</div>
         </div>
       )}
+
       <div style={{ height: 20 }} />
+
+      {/* Full-screen photo preview */}
+      {previewPhoto && (
+        <div style={{ position: "absolute", inset: 0, zIndex: 200, background: "rgba(0,0,0,0.95)", display: "flex", flexDirection: "column" }}
+          onClick={() => setPreviewPhoto(null)}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 20px 12px", flexShrink: 0 }}>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: P.textPrimary }}>{previewPhoto.caption}</div>
+              <div style={{ fontSize: 12, color: P.textMuted, marginTop: 2 }}>by {previewPhoto.uploader}</div>
+            </div>
+            <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+              <button onClick={e => { e.stopPropagation(); toggleSensitive(previewPhoto); setPreviewPhoto(p => ({ ...p, sensitive: !p.sensitive })); }}
+                style={{ background: previewPhoto.sensitive ? "#2a1810" : P.surface2, border: "none", color: previewPhoto.sensitive ? P.terracotta : P.textMuted, borderRadius: 10, padding: "7px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                {previewPhoto.sensitive ? "🔒 Sensitive" : "Mark 🔒"}
+              </button>
+              <button style={S.closeBtn} onClick={() => setPreviewPhoto(null)}>✕</button>
+            </div>
+          </div>
+          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 12px" }}>
+            <img src={previewPhoto.url} alt={previewPhoto.caption}
+              style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain", borderRadius: 12 }}
+              onClick={e => e.stopPropagation()} />
+          </div>
+          <div style={{ height: 32 }} />
+        </div>
+      )}
     </div>
   );
 }
 
 // ─── MEMBERS TAB ──────────────────────────────────────────────────────────────
 
-function MembersTab({ trip, profile }) {
+function MembersTab({ trip, profile, expenses }) {
   const [members, setMembers] = useState([]);
+  const [memberProfiles, setMemberProfiles] = useState({});
   const [showInvite, setShowInvite] = useState(false);
   const [newName, setNewName] = useState("");
   const myName = profile?.display_name || "";
 
+  // Compute per-member net balance from expenses
+  const memberBalances = {};
+  expenses.forEach(exp => {
+    const paidBy = exp.paid_by;
+    const splitWith = exp.split_with || [];
+    if (!splitWith.length) return;
+    const share = exp.amount / splitWith.length;
+    if (!memberBalances[paidBy]) memberBalances[paidBy] = 0;
+    memberBalances[paidBy] += exp.amount;
+    splitWith.forEach(p => { if (!memberBalances[p]) memberBalances[p] = 0; memberBalances[p] -= share; });
+  });
+
+  const getBalanceLabel = (name) => {
+    const bal = memberBalances[name];
+    if (!bal || Math.abs(bal) < 0.5) return { text: "even", color: P.textMuted };
+    if (bal > 0) return { text: `owed $${Math.round(bal)}`, color: P.success };
+    return { text: `owes $${Math.round(Math.abs(bal))}`, color: P.danger };
+  };
+
   useEffect(() => {
-    supabase.from('members').select('*').eq('trip_id', trip.id)
-      .then(({ data, error }) => { if (error) console.error(error); else setMembers(data); });
+    const fetchMembers = async () => {
+      const { data, error } = await supabase.from('members').select('*').eq('trip_id', trip.id);
+      if (error) { console.error(error); return; }
+      setMembers(data || []);
+
+      // Join trip_members → profiles to get avatars
+      const { data: tmRows } = await supabase
+        .from('trip_members').select('user_id, invited_email').eq('trip_id', trip.id);
+      if (!tmRows?.length) return;
+      const userIds = tmRows.map(r => r.user_id).filter(Boolean);
+      if (!userIds.length) return;
+      const { data: profileRows } = await supabase
+        .from('profiles').select('id, display_name, avatar').in('id', userIds);
+      if (!profileRows) return;
+      // Map by display_name so we can match against members.name
+      const byName = {};
+      profileRows.forEach(p => { if (p.display_name) byName[p.display_name] = p; });
+      setMemberProfiles(byName);
+    };
+    fetchMembers();
   }, [trip.id]);
 
   const avatarColors = [P.terracotta, P.lightBlue, P.orange, P.slateBlue, P.success];
+
+  // Derive avatar display from profile avatar field or fall back to initials
+  const getAvatarContent = (memberName, idx) => {
+    const p = memberProfiles[memberName];
+    if (p?.avatar) {
+      const av = p.avatar;
+      if (av.startsWith('emoji:')) return { content: av.slice(6), isEmoji: true };
+      if (av.startsWith('initials:')) return { content: av.slice(9).slice(0, 3).toUpperCase(), isEmoji: false };
+      if (av.startsWith('name:')) return { content: av.slice(5).slice(0, 3).toUpperCase(), isEmoji: false };
+    }
+    // Fallback: initials from name
+    const parts = memberName.trim().split(/\s+/);
+    const initials = parts.length >= 2
+      ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+      : memberName.slice(0, 2).toUpperCase();
+    return { content: initials, isEmoji: false };
+  };
 
   return (
     <div style={S.tabScroll}>
       <div style={S.tabTopRow}>
         <div style={S.tabTitle}>Members</div>
-        <button style={{ ...S.actionBtn, borderColor: P.terracotta + "60", color: P.terracotta }}
-          onClick={() => setShowInvite(true)}>+ Invite</button>
+        <button style={S.newBtn} onClick={() => setShowInvite(true)}>+ Invite</button>
       </div>
       {showInvite && (
         <div style={{ background: P.surface1, borderRadius: 16, padding: 18, marginBottom: 16, border: `1px solid ${P.surface3}` }}>
           <div style={S.fieldLbl}>INVITE BY EMAIL</div>
-          <input style={S.input} placeholder="friend@email.com" value={newName}
-            onChange={e => setNewName(e.target.value)} type="email" />
-          <div style={{ fontSize: 12, color: P.textMuted, marginTop: 8, marginBottom: 12 }}>
-            They'll see this trip when they sign in.
-          </div>
+          <input style={S.input} placeholder="friend@email.com" value={newName} onChange={e => setNewName(e.target.value)} type="email" />
+          <div style={{ fontSize: 12, color: P.textMuted, marginTop: 8, marginBottom: 12 }}>They'll see this trip when they sign in.</div>
           <div style={{ display: "flex", gap: 8 }}>
             <button style={S.secondaryBtn} onClick={() => setShowInvite(false)}>Cancel</button>
             <button style={{ ...S.primaryBtn, background: `linear-gradient(135deg, ${P.orange}, ${P.terracotta})` }} onClick={async () => {
@@ -1466,16 +1185,14 @@ function MembersTab({ trip, profile }) {
               const email = newName.trim().toLowerCase();
               const { data: existingUser } = await supabase.rpc('get_user_id_by_email', { email_input: email });
               const linkedUserId = existingUser?.[0]?.id || null;
-              const { error: tmError } = await supabase.from('trip_members')
-                .insert([{ trip_id: trip.id, user_id: linkedUserId, invited_email: email, role: 'member', status: linkedUserId ? 'accepted' : 'pending' }]).select();
+              const { error: tmError } = await supabase.from('trip_members').insert([{ trip_id: trip.id, user_id: linkedUserId, invited_email: email, role: 'member', status: linkedUserId ? 'accepted' : 'pending' }]).select();
               if (tmError && tmError.code !== '23505') { console.error(tmError); return; }
               let displayName = email.split('@')[0];
               if (linkedUserId) {
                 const { data: profileData } = await supabase.from('profiles').select('display_name').eq('id', linkedUserId).single();
                 if (profileData?.display_name) displayName = profileData.display_name;
               }
-              const { data: memberData, error: memberError } = await supabase.from('members')
-                .insert([{ trip_id: trip.id, name: displayName }]).select();
+              const { data: memberData, error: memberError } = await supabase.from('members').insert([{ trip_id: trip.id, name: displayName }]).select();
               if (memberError) console.error(memberError);
               else if (memberData) setMembers(prev => [...prev, memberData[0]]);
               setNewName(""); setShowInvite(false);
@@ -1483,32 +1200,36 @@ function MembersTab({ trip, profile }) {
           </div>
         </div>
       )}
-      {members.map((m, i) => (
-        <div key={m.id} style={S.memberRow}>
-          <div style={{ ...S.memberAvatar, background: avatarColors[i % avatarColors.length] + "25", color: avatarColors[i % avatarColors.length] }}>
-            {m.name[0]}
-          </div>
-          <div style={S.memberInfo}>
-            <div style={S.memberName}>
-              {m.name}
-              {myName && m.name === myName ? <span style={S.youTag}>you</span> : ""}
+      {members.map((m, i) => {
+        const { content, isEmoji } = getAvatarContent(m.name, i);
+        const color = avatarColors[i % avatarColors.length];
+        const balance = getBalanceLabel(m.name);
+        return (
+          <div key={m.id} style={S.memberRow}>
+            <div style={{ ...S.memberAvatar, background: color + "25", color }}>
+              <span style={{ fontSize: isEmoji ? 22 : 16, fontWeight: isEmoji ? 400 : 900, letterSpacing: "-0.5px" }}>{content}</span>
             </div>
-            <div style={S.memberMeta}>Member</div>
-          </div>
-          <div style={S.memberRight}>
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <div style={S.evenBadge}>even</div>
-              {m.name !== myName && (
-                <button style={S.rowDeleteBtn} onClick={async () => {
-                  if (!window.confirm(`Remove ${m.name}?`)) return;
-                  const { error } = await supabase.from('members').delete().eq('id', m.id);
-                  if (!error) setMembers(prev => prev.filter(mb => mb.id !== m.id));
-                }}>✕</button>
-              )}
+            <div style={S.memberInfo}>
+              <div style={S.memberName}>
+                {m.name}
+                {myName && m.name === myName ? <span style={S.youTag}>you</span> : ""}
+              </div>
+            </div>
+            <div style={S.memberRight}>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <div style={{ ...S.evenBadge, color: balance.color, borderColor: balance.color + "30" }}>{balance.text}</div>
+                {m.name !== myName && (
+                  <button style={S.rowDeleteBtn} onClick={async () => {
+                    if (!window.confirm(`Remove ${m.name}?`)) return;
+                    const { error } = await supabase.from('members').delete().eq('id', m.id);
+                    if (!error) setMembers(prev => prev.filter(mb => mb.id !== m.id));
+                  }}>✕</button>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
       <div style={{ height: 20 }} />
     </div>
   );
@@ -1531,63 +1252,26 @@ function SummaryTab({ trip, settlements, myName }) {
 
   const total = expenses.reduce((a, e) => a + (e.amount || 0), 0);
   const myOwed = settlements.filter(s => s.from === myName).reduce((a, s) => a + s.amount, 0);
-  const categoryTotals = expenses.reduce((acc, e) => {
-    acc[e.category] = (acc[e.category] || 0) + e.amount;
-    return acc;
-  }, {});
+  const categoryTotals = expenses.reduce((acc, e) => { acc[e.category] = (acc[e.category] || 0) + e.amount; return acc; }, {});
 
   return (
     <div style={S.tabScroll}>
-      <div style={S.tabTopRow}>
-        <div style={S.tabTitle}>Summary</div>
-      </div>
-
-      {/* Stats row */}
+      <div style={S.tabTopRow}><div style={S.tabTitle}>Summary</div></div>
       <div style={SS.statsGrid}>
-        <div style={SS.statCard}>
-          <div style={SS.statVal}>${total.toLocaleString()}</div>
-          <div style={SS.statLbl}>total spent</div>
-        </div>
-        <div style={SS.statCard}>
-          <div style={SS.statVal}>{members.length}</div>
-          <div style={SS.statLbl}>travelers</div>
-        </div>
-        <div style={SS.statCard}>
-          <div style={{ ...SS.statVal, color: myOwed > 0 ? P.danger : P.success }}>
-            {myOwed > 0 ? `-$${myOwed}` : "Even"}
-          </div>
-          <div style={SS.statLbl}>your balance</div>
-        </div>
-        <div style={SS.statCard}>
-          <div style={SS.statVal}>{itinCount}</div>
-          <div style={SS.statLbl}>stops</div>
-        </div>
+        <div style={SS.statCard}><div style={SS.statVal}>${total.toLocaleString()}</div><div style={SS.statLbl}>total spent</div></div>
+        <div style={SS.statCard}><div style={SS.statVal}>{members.length}</div><div style={SS.statLbl}>travelers</div></div>
+        <div style={SS.statCard}><div style={{ ...SS.statVal, color: myOwed > 0 ? P.danger : P.success }}>{myOwed > 0 ? `-$${myOwed}` : "Even"}</div><div style={SS.statLbl}>your balance</div></div>
+        <div style={SS.statCard}><div style={SS.statVal}>{itinCount}</div><div style={SS.statLbl}>stops</div></div>
       </div>
-
-      {/* Trip details */}
       <div style={SS.section}>
         <div style={SS.sectionLabel}>TRIP DETAILS</div>
         <div style={SS.detailCard}>
-          <div style={SS.detailRow}>
-            <span style={SS.detailLbl}>Destination</span>
-            <span style={SS.detailVal}>{trip.location || "—"}</span>
-          </div>
-          <div style={SS.detailRow}>
-            <span style={SS.detailLbl}>Dates</span>
-            <span style={SS.detailVal}>{trip.dates || "—"}</span>
-          </div>
-          <div style={SS.detailRow}>
-            <span style={SS.detailLbl}>Travelers</span>
-            <span style={SS.detailVal}>{members.map(m => m.name).join(", ") || "—"}</span>
-          </div>
-          <div style={{ ...SS.detailRow, borderBottom: "none" }}>
-            <span style={SS.detailLbl}>Memories</span>
-            <span style={SS.detailVal}>{photoCount} photo{photoCount !== 1 ? "s" : ""}</span>
-          </div>
+          <div style={SS.detailRow}><span style={SS.detailLbl}>Destination</span><span style={SS.detailVal}>{trip.location || "—"}</span></div>
+          <div style={SS.detailRow}><span style={SS.detailLbl}>Dates</span><span style={SS.detailVal}>{trip.dates || "—"}</span></div>
+          <div style={SS.detailRow}><span style={SS.detailLbl}>Travelers</span><span style={SS.detailVal}>{members.map(m => m.name).join(", ") || "—"}</span></div>
+          <div style={{ ...SS.detailRow, borderBottom: "none" }}><span style={SS.detailLbl}>Memories</span><span style={SS.detailVal}>{photoCount} photo{photoCount !== 1 ? "s" : ""}</span></div>
         </div>
       </div>
-
-      {/* Spend by category */}
       {Object.keys(categoryTotals).length > 0 && (
         <div style={SS.section}>
           <div style={SS.sectionLabel}>SPEND BREAKDOWN</div>
@@ -1610,8 +1294,6 @@ function SummaryTab({ trip, settlements, myName }) {
           </div>
         </div>
       )}
-
-      {/* Settlement status */}
       {settlements.length > 0 && (
         <div style={SS.section}>
           <div style={SS.sectionLabel}>BALANCES</div>
@@ -1625,7 +1307,6 @@ function SummaryTab({ trip, settlements, myName }) {
           </div>
         </div>
       )}
-
       <div style={{ height: 20 }} />
     </div>
   );
@@ -1644,7 +1325,8 @@ const SS = {
   detailVal: { fontSize: 13, fontWeight: 700, color: P.textPrimary, maxWidth: 180, textAlign: "right" },
 };
 
-// Vibe definitions — short-form vibes adapt location input to specific place
+// ─── VIBES ────────────────────────────────────────────────────────────────────
+
 const VIBES = [
   { key: "trip",        label: "Trip",         emoji: "✈️", icon: Plane,           shortForm: false },
   { key: "road",        label: "Road Trip",    emoji: "🚗", icon: Car,             shortForm: false },
@@ -1666,26 +1348,20 @@ const VIBES = [
   { key: "meetup",      label: "Meetup",       emoji: "📍", icon: MapPin,          shortForm: true  },
 ];
 
+// ─── NEW TRIP MODAL ───────────────────────────────────────────────────────────
+
 function NewTripModal({ onClose, onSave, userId, userProfile }) {
-  const [step, setStep] = useState(1); // 1=vibe, 2=where, 3=who, 4=when, 5=confirm
+  const [step, setStep] = useState(1);
   const [answers, setAnswers] = useState({
-    vibe: null,
-    location: "",
-    who: [],
-    solo: false,
-    startDate: new Date().toISOString().split('T')[0], // default today
-    endDate: "",
-    time: "",
-    generatedName: "",
-    editedName: "",
-    emoji: "",
+    vibe: null, location: "", who: [], solo: false,
+    startDate: new Date().toISOString().split('T')[0],
+    endDate: "", time: "", generatedName: "", editedName: "", emoji: "",
   });
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const isShortForm = answers.vibe?.shortForm || false;
 
-  // Animate previous answers stacking at top
   const Receipt = () => {
     const items = [];
     if (step > 1 && answers.vibe) items.push({ label: "vibe", value: `${answers.vibe.emoji} ${answers.vibe.label}` });
@@ -1694,11 +1370,7 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
     if (step > 4 && answers.startDate) {
       const d = new Date(answers.startDate + 'T12:00:00');
       const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      const timeStr = answers.time ? (() => {
-        const [h, m] = answers.time.split(':').map(Number);
-        const ampm = h >= 12 ? 'pm' : 'am';
-        return ` · ${h % 12 || 12}:${String(m).padStart(2,'0')}${ampm}`;
-      })() : "";
+      const timeStr = answers.time ? (() => { const [h, m] = answers.time.split(':').map(Number); const ampm = h >= 12 ? 'pm' : 'am'; return ` · ${h % 12 || 12}:${String(m).padStart(2,'0')}${ampm}`; })() : "";
       items.push({ label: "when", value: `${dateStr}${timeStr}` });
     }
     if (!items.length) return null;
@@ -1716,7 +1388,6 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
 
   const goBack = () => setStep(s => Math.max(1, s - 1));
 
-  // Step 1 — What's the vibe?
   const StepVibe = () => (
     <div style={SN.stepWrap}>
       <Receipt />
@@ -1726,12 +1397,8 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
           const Icon = v.icon;
           const selected = answers.vibe?.key === v.key;
           return (
-            <button key={v.key}
-              style={{ ...SN.vibeTile, ...(selected ? SN.vibeTileOn : {}) }}
-              onClick={() => {
-                setAnswers(a => ({ ...a, vibe: v, emoji: v.emoji }));
-                setTimeout(() => setStep(2), 180);
-              }}>
+            <button key={v.key} style={{ ...SN.vibeTile, ...(selected ? SN.vibeTileOn : {}) }}
+              onClick={() => { setAnswers(a => ({ ...a, vibe: v, emoji: v.emoji })); setTimeout(() => setStep(2), 180); }}>
               <Icon size={26} color={selected ? P.terracotta : P.textSecondary} strokeWidth={1.5} />
               <span style={{ ...SN.vibeLabel, color: selected ? P.terracotta : P.textSecondary }}>{v.label}</span>
             </button>
@@ -1741,7 +1408,6 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
     </div>
   );
 
-  // Step 2 — Where to?
   const locationRef = useRef(null);
   const [locationInput, setLocationInput] = useState(answers.location || "");
   const StepWhere = () => (
@@ -1749,39 +1415,21 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
       <div style={{ flex: 1 }}>
         <Receipt />
         <div style={SN.question}>Where to?</div>
-        <div style={SN.subQuestion}>
-          {isShortForm ? "Name the spot" : "City or destination"}
-        </div>
-        <input
-          ref={locationRef}
-          style={{ ...S.input, fontSize: 20, padding: "20px", marginBottom: 12, minHeight: 64 }}
+        <div style={SN.subQuestion}>{isShortForm ? "Name the spot" : "City or destination"}</div>
+        <input ref={locationRef} style={{ ...S.input, fontSize: 20, padding: "20px", marginBottom: 12, minHeight: 64 }}
           placeholder={isShortForm ? "e.g. Barista, Ox Restaurant" : "e.g. Tokyo, Banff, Portland"}
-          defaultValue={locationInput}
-          onBlur={e => setLocationInput(e.target.value)}
-          autoFocus
-        />
+          defaultValue={locationInput} onBlur={e => setLocationInput(e.target.value)} autoFocus />
       </div>
-      <button
-        style={{ ...SN.nextBtn, marginTop: "auto" }}
-        onClick={() => {
-          const loc = locationRef.current?.value || locationInput;
-          if (!loc.trim()) return;
-          setAnswers(a => ({ ...a, location: loc }));
-          setStep(3);
-        }}>
-        Next →
-      </button>
+      <button style={{ ...SN.nextBtn, marginTop: "auto" }} onClick={() => {
+        const loc = locationRef.current?.value || locationInput;
+        if (!loc.trim()) return;
+        setAnswers(a => ({ ...a, location: loc })); setStep(3);
+      }}>Next →</button>
     </div>
   );
 
-  // Step 3 — Who's coming?
   const [emailInput, setEmailInput] = useState("");
-  const addEmail = () => {
-    if (emailInput.trim()) {
-      setAnswers(a => ({ ...a, who: [...a.who, emailInput.trim()] }));
-      setEmailInput("");
-    }
-  };
+  const addEmail = () => { if (emailInput.trim()) { setAnswers(a => ({ ...a, who: [...a.who, emailInput.trim()] })); setEmailInput(""); } };
 
   const StepWho = () => (
     <div style={{ ...SN.stepWrap, display: "flex", flexDirection: "column", minHeight: "70vh" }}>
@@ -1789,29 +1437,14 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
         <Receipt />
         <div style={SN.question}>Who's coming?</div>
         <div style={SN.whoRow}>
-          <button
-            style={{ ...SN.whoChip, ...(answers.solo ? SN.whoChipOn : {}) }}
-            onClick={() => setAnswers(a => ({ ...a, solo: true, who: [] }))}>
-            Just me
-          </button>
-          <button
-            style={{ ...SN.whoChip, ...(!answers.solo ? SN.whoChipOn : {}) }}
-            onClick={() => setAnswers(a => ({ ...a, solo: false }))}>
-            + Add people
-          </button>
+          <button style={{ ...SN.whoChip, ...(answers.solo ? SN.whoChipOn : {}) }} onClick={() => setAnswers(a => ({ ...a, solo: true, who: [] }))}>Just me</button>
+          <button style={{ ...SN.whoChip, ...(!answers.solo ? SN.whoChipOn : {}) }} onClick={() => setAnswers(a => ({ ...a, solo: false }))}>+ Add people</button>
         </div>
         {!answers.solo && (
           <div style={{ marginTop: 16 }}>
             <div style={SN.emailRow}>
-              <input
-                style={{ ...S.input, flex: 1, fontSize: 15 }}
-                placeholder="friend@email.com"
-                value={emailInput}
-                type="email"
-                autoComplete="off"
-                onChange={e => setEmailInput(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') addEmail(); }}
-              />
+              <input style={{ ...S.input, flex: 1, fontSize: 15 }} placeholder="friend@email.com" value={emailInput} type="email" autoComplete="off"
+                onChange={e => setEmailInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') addEmail(); }} />
               <button style={SN.addEmailBtn} onClick={addEmail}>Add</button>
             </div>
             {answers.who.length > 0 && (
@@ -1819,8 +1452,7 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
                 {answers.who.map((email, i) => (
                   <div key={i} style={SN.emailTag}>
                     <span>{email}</span>
-                    <button style={SN.removeEmail}
-                      onClick={() => setAnswers(a => ({ ...a, who: a.who.filter((_, j) => j !== i) }))}>✕</button>
+                    <button style={SN.removeEmail} onClick={() => setAnswers(a => ({ ...a, who: a.who.filter((_, j) => j !== i) }))}>✕</button>
                   </div>
                 ))}
               </div>
@@ -1828,52 +1460,33 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
           </div>
         )}
       </div>
-      <button style={{ ...SN.nextBtn, marginTop: "auto" }} onClick={() => setStep(4)}>
-        Next →
-      </button>
+      <button style={{ ...SN.nextBtn, marginTop: "auto" }} onClick={() => setStep(4)}>Next →</button>
     </div>
   );
 
-  // Step 4 — When?
   const StepWhen = () => (
     <div style={{ ...SN.stepWrap, display: "flex", flexDirection: "column", minHeight: "70vh" }}>
       <div style={{ flex: 1 }}>
         <Receipt />
         <div style={SN.question}>When?</div>
-      <div style={S.field}>
-        <div style={S.fieldLbl}>DATE</div>
-        <input style={{ ...S.input, colorScheme: "dark" }} type="date"
-          defaultValue={answers.startDate}
-          onChange={e => setAnswers(a => ({ ...a, startDate: e.target.value }))} />
-      </div>
-      {!isShortForm && (
         <div style={S.field}>
-          <div style={{ ...S.fieldLbl, display: "flex", justifyContent: "space-between" }}>
-            <span>END DATE</span>
-            <span style={{ color: P.textMuted }}>optional</span>
-          </div>
-          <input style={{ ...S.input, colorScheme: "dark" }} type="date"
-            defaultValue={answers.endDate}
-            min={answers.startDate}
-            onChange={e => setAnswers(a => ({ ...a, endDate: e.target.value }))} />
+          <div style={S.fieldLbl}>DATE</div>
+          <input style={{ ...S.input, colorScheme: "dark" }} type="date" defaultValue={answers.startDate} onChange={e => setAnswers(a => ({ ...a, startDate: e.target.value }))} />
         </div>
-      )}
-      {isShortForm && (
-        <div style={S.field}>
-          <div style={{ ...S.fieldLbl, display: "flex", justifyContent: "space-between" }}>
-            <span>TIME</span>
-            <span style={{ color: P.textMuted }}>optional</span>
+        {!isShortForm && (
+          <div style={S.field}>
+            <div style={{ ...S.fieldLbl, display: "flex", justifyContent: "space-between" }}><span>END DATE</span><span style={{ color: P.textMuted }}>optional</span></div>
+            <input style={{ ...S.input, colorScheme: "dark" }} type="date" defaultValue={answers.endDate} min={answers.startDate} onChange={e => setAnswers(a => ({ ...a, endDate: e.target.value }))} />
           </div>
-          <input style={{ ...S.input, colorScheme: "dark" }} type="time"
-            defaultValue={answers.time}
-            onChange={e => setAnswers(a => ({ ...a, time: e.target.value }))} />
-        </div>
-      )}
+        )}
+        {isShortForm && (
+          <div style={S.field}>
+            <div style={{ ...S.fieldLbl, display: "flex", justifyContent: "space-between" }}><span>TIME</span><span style={{ color: P.textMuted }}>optional</span></div>
+            <input style={{ ...S.input, colorScheme: "dark" }} type="time" defaultValue={answers.time} onChange={e => setAnswers(a => ({ ...a, time: e.target.value }))} />
+          </div>
+        )}
       </div>
-      <button
-        style={{ ...SN.nextBtn, marginTop: "auto", opacity: answers.startDate ? 1 : 0.4 }}
-        disabled={!answers.startDate}
-        onClick={handleGenerateName}>
+      <button style={{ ...SN.nextBtn, marginTop: "auto", opacity: answers.startDate ? 1 : 0.4 }} disabled={!answers.startDate} onClick={handleGenerateName}>
         {generating ? "Working on it..." : "Next →"}
       </button>
     </div>
@@ -1896,21 +1509,14 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
       const dateStr = formatDates(answers.startDate, answers.endDate);
       const timeStr = answers.time ? ` at ${answers.time}` : "";
       const promptText = `Generate a short, natural trip name (max 5 words) for: ${answers.vibe?.label} at ${answers.location}${timeStr}, ${dateStr}, ${whoStr}. Examples: "Coffee at Barista with Derek", "Tokyo October", "Banff Long Weekend". Only return the name, nothing else.`;
-      const res = await fetch("/api/parse-trip", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: promptText, mode: "name" }),
-      });
+      const res = await fetch("/api/parse-trip", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt: promptText, mode: "name" }) });
       const data = await res.json();
       const name = (data.content?.[0]?.text || "").trim().replace(/^"|"$/g, '');
       setAnswers(a => ({ ...a, generatedName: name, editedName: name }));
     } catch (e) {
       const fallback = `${answers.vibe?.label} at ${answers.location}`;
       setAnswers(a => ({ ...a, generatedName: fallback, editedName: fallback }));
-    } finally {
-      setGenerating(false);
-      setStep(5);
-    }
+    } finally { setGenerating(false); setStep(5); }
   };
 
   const formatTime12 = (t) => {
@@ -1918,8 +1524,7 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
     const [h, m] = t.split(':').map(Number);
     if (isNaN(h)) return t;
     const ampm = h >= 12 ? 'pm' : 'am';
-    const hr = h % 12 || 12;
-    return `${hr}:${String(m).padStart(2, '0')}${ampm}`;
+    return `${h % 12 || 12}:${String(m).padStart(2, '0')}${ampm}`;
   };
 
   const nameInputRef = useRef(null);
@@ -1931,46 +1536,23 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
     try {
       const dates = formatDates(answers.startDate, answers.endDate);
       const location = answers.location;
-
-      // Create trip (no tag/bg — uses global palette)
       const { data: tripData, error: tripError } = await supabase.from('trips').insert([{
-        name: finalName,
-        location,
-        city: !answers.vibe?.shortForm ? location : "",
-        emoji: answers.emoji || "✈️",
-        dates,
-        start_date: answers.startDate || null,
-        end_date: answers.endDate || null,
-        time: answers.time || null,
-        total_spent: 0,
-        settled: false,
-        solo: answers.solo || answers.who.length === 0,
-        user_id: userId,
+        name: finalName, location, city: !answers.vibe?.shortForm ? location : "",
+        emoji: answers.emoji || "✈️", dates,
+        start_date: answers.startDate || null, end_date: answers.endDate || null,
+        time: answers.time || null, total_spent: 0, settled: false,
+        solo: answers.solo || answers.who.length === 0, user_id: userId,
       }]).select();
       if (tripError) throw tripError;
       const trip = tripData[0];
-
-      // Add creator as member
-      await supabase.from('trip_members').insert([{
-        trip_id: trip.id, user_id: userId, role: 'owner', status: 'accepted'
-      }]);
-
-      // Add creator to members table (check first to avoid duplicate)
+      await supabase.from('trip_members').insert([{ trip_id: trip.id, user_id: userId, role: 'owner', status: 'accepted' }]);
       const creatorName = userProfile?.display_name || "Me";
-      const { data: existingMember } = await supabase.from('members')
-        .select('id').eq('trip_id', trip.id).eq('name', creatorName).single();
-      if (!existingMember) {
-        await supabase.from('members').insert([{ trip_id: trip.id, name: creatorName }]);
-      }
-
-      // Invite others
+      const { data: existingMember } = await supabase.from('members').select('id').eq('trip_id', trip.id).eq('name', creatorName).single();
+      if (!existingMember) { await supabase.from('members').insert([{ trip_id: trip.id, name: creatorName }]); }
       for (const email of answers.who) {
         const { data: existingUser } = await supabase.rpc('get_user_id_by_email', { email_input: email.toLowerCase() });
         const linkedUserId = existingUser?.[0]?.id || null;
-        await supabase.from('trip_members').insert([{
-          trip_id: trip.id, user_id: linkedUserId, invited_email: email.toLowerCase(),
-          role: 'member', status: linkedUserId ? 'accepted' : 'pending'
-        }]);
+        await supabase.from('trip_members').insert([{ trip_id: trip.id, user_id: linkedUserId, invited_email: email.toLowerCase(), role: 'member', status: linkedUserId ? 'accepted' : 'pending' }]);
         let displayName = email.split('@')[0];
         if (linkedUserId) {
           const { data: pd } = await supabase.from('profiles').select('display_name').eq('id', linkedUserId).single();
@@ -1978,199 +1560,87 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
         }
         await supabase.from('members').insert([{ trip_id: trip.id, name: displayName }]);
       }
-
-      // For short-form vibes with a specific place — auto-create itinerary item
       if (answers.vibe?.shortForm && answers.location) {
         const itinType = ['dinner', 'coffee', 'drinks'].includes(answers.vibe.key) ? 'restaurant' : 'activity';
-        // Use vibe's own icon key so itinerary item matches the trip vibe
-        const vibeIconKey = answers.vibe.emoji;
-        await supabase.from('itinerary').insert([{
-          trip_id: trip.id,
-          day: answers.startDate,
-          time: answers.time || "",
-          type: itinType,
-          title: answers.location,
-          detail: "",
-          icon: vibeIconKey,
-          visibility: "group",
-        }]);
+        await supabase.from('itinerary').insert([{ trip_id: trip.id, day: answers.startDate, time: answers.time || "", type: itinType, title: answers.location, detail: "", icon: answers.vibe.emoji, visibility: "group" }]);
       }
-
       onSave(trip);
-    } catch (e) {
-      console.error(e);
-      setSaving(false);
-    }
+    } catch (e) { console.error(e); setSaving(false); }
   };
-
-  const STEP_LABELS = ["", "vibe", "where", "who", "when", "confirm"];
 
   return (
     <div style={{ position: "absolute", inset: 0, zIndex: 100, background: P.phoneBg, display: "flex", flexDirection: "column", overflowY: "auto" }}>
-      {/* Header */}
       <div style={{ ...SN.header, paddingTop: 32, flexShrink: 0 }}>
-        {step > 1
-          ? <button style={SN.backBtn} onClick={goBack}>← Back</button>
-          : <div />}
+        {step > 1 ? <button style={SN.backBtn} onClick={goBack}>← Back</button> : <div />}
         <div style={SN.stepIndicator}>
-          {[1,2,3,4,5].map(n => (
-            <div key={n} style={{ ...SN.stepPip, ...(n <= step ? SN.stepPipOn : {}) }} />
-          ))}
+          {[1,2,3,4,5].map(n => (<div key={n} style={{ ...SN.stepPip, ...(n <= step ? SN.stepPipOn : {}) }} />))}
         </div>
         <button style={S.closeBtn} onClick={onClose}>✕</button>
       </div>
-      {/* Content */}
-      <div style={{ flex: 1, padding: "0 22px 40px", overflowY: "auto" }}>
-          {step === 1 && <StepVibe />}
-          {step === 2 && <StepWhere />}
-          {step === 3 && <StepWho />}
-          {step === 4 && <StepWhen />}
-          {step === 5 && (() => {
-            const IconComp = TRIP_ICONS[answers.emoji] || Plane;
-            const dateStr = formatDates(answers.startDate, answers.endDate);
-            const timeStr = formatTime12(answers.time);
-            return (
-              <div style={SN.stepWrap}>
-                <Receipt />
-                <div style={SN.question}>Looks good?</div>
-                <div style={SN.confirmCard}>
-                  <div style={SN.confirmIcon}>
-                    <IconComp size={28} color={P.terracotta} strokeWidth={1.5} />
-                  </div>
-                  <input
-                    ref={nameInputRef}
-                    key="name-input"
-                    style={SN.nameInput}
-                    defaultValue={answers.editedName}
-                    onBlur={e => setAnswers(a => ({ ...a, editedName: e.target.value }))}
-                  />
-                  <div style={SN.confirmMeta}>
-                    {answers.location}{dateStr ? ` · ${dateStr}` : ""}
-                    {timeStr ? ` · ${timeStr}` : ""}
-                  </div>
-                  <div style={SN.confirmPeople}>
-                    {answers.solo ? "Just you" : answers.who.length ? `You + ${answers.who.length} others` : "Just you"}
-                  </div>
-                </div>
-                <div style={{ fontSize: 12, color: P.textMuted, textAlign: "center", marginBottom: 16 }}>
-                  Tap the name to edit it
-                </div>
-                <button
-                  style={{ ...SN.nextBtn, background: saving ? P.surface2 : `linear-gradient(135deg, ${P.orange}, ${P.terracotta})` }}
-                  onClick={handleSave} disabled={saving}>
-                  {saving ? "Working on it..." : "Let's go ✓"}
-                </button>
+      <div style={{ flex: 1, padding: "0 22px 16px", overflowY: "auto" }}>
+        {step === 1 && <StepVibe />}
+        {step === 2 && <StepWhere />}
+        {step === 3 && <StepWho />}
+        {step === 4 && <StepWhen />}
+        {step === 5 && (() => {
+          const IconComp = TRIP_ICONS[answers.emoji] || Plane;
+          const dateStr = formatDates(answers.startDate, answers.endDate);
+          const timeStr = formatTime12(answers.time);
+          return (
+            <div style={SN.stepWrap}>
+              <Receipt />
+              <div style={SN.question}>Looks good?</div>
+              <div style={SN.confirmCard}>
+                <div style={SN.confirmIcon}><IconComp size={28} color={P.terracotta} strokeWidth={1.5} /></div>
+                <input ref={nameInputRef} key="name-input" style={SN.nameInput} defaultValue={answers.editedName} onBlur={e => setAnswers(a => ({ ...a, editedName: e.target.value }))} />
+                <div style={SN.confirmMeta}>{answers.location}{dateStr ? ` · ${dateStr}` : ""}{timeStr ? ` · ${timeStr}` : ""}</div>
+                <div style={SN.confirmPeople}>{answers.solo ? "Just you" : answers.who.length ? `You + ${answers.who.length} others` : "Just you"}</div>
               </div>
-            );
-          })()}
-        </div>
-        <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+              <div style={{ fontSize: 12, color: P.textMuted, textAlign: "center", marginBottom: 16 }}>Tap the name to edit it</div>
+              <button style={{ ...SN.nextBtn, background: saving ? P.surface2 : `linear-gradient(135deg, ${P.orange}, ${P.terracotta})` }} onClick={handleSave} disabled={saving}>
+                {saving ? "Working on it..." : "Let's go ✓"}
+              </button>
+            </div>
+          );
+        })()}
+      </div>
     </div>
   );
 }
 
-// New trip flow styles
 const SN = {
-  header: {
-    display: "flex", justifyContent: "space-between", alignItems: "center",
-    padding: "14px 22px 8px",
-  },
-  backBtn: {
-    background: "transparent", border: "none", color: P.slateBlue,
-    fontSize: 14, fontWeight: 700, cursor: "pointer", padding: 0,
-    fontFamily: "'DM Sans', sans-serif",
-  },
+  header: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 22px 8px" },
+  backBtn: { background: "transparent", border: "none", color: P.slateBlue, fontSize: 14, fontWeight: 700, cursor: "pointer", padding: 0, fontFamily: "'DM Sans', sans-serif" },
   stepIndicator: { display: "flex", gap: 6 },
   stepPip: { width: 6, height: 6, borderRadius: "50%", background: P.surface3 },
   stepPipOn: { background: P.terracotta },
-  stepPipCurrent: { background: P.slateBlue },
   stepWrap: { paddingBottom: 12 },
-  receipt: {
-    background: P.surface2, borderRadius: 14, padding: "12px 16px",
-    marginBottom: 24, border: `1px solid ${P.surface3}`,
-  },
-  receiptRow: {
-    display: "flex", justifyContent: "space-between",
-    alignItems: "center", paddingBottom: 6, marginBottom: 6,
-    borderBottom: `1px solid ${P.surface3}`,
-  },
+  receipt: { background: P.surface2, borderRadius: 14, padding: "12px 16px", marginBottom: 24, border: `1px solid ${P.surface3}` },
+  receiptRow: { display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: 6, marginBottom: 6, borderBottom: `1px solid ${P.surface3}` },
   receiptLabel: { fontSize: 10, fontWeight: 800, color: P.textMuted, letterSpacing: "2px" },
   receiptValue: { fontSize: 14, fontWeight: 700, color: P.textPrimary },
-  question: {
-    fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 900,
-    color: P.textPrimary, letterSpacing: "-0.8px", marginBottom: 4,
-  },
-  subQuestion: {
-    fontSize: 13, color: P.slateBlue, marginBottom: 18,
-    fontFamily: "'DM Sans', sans-serif",
-  },
-  vibeGrid: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginTop: 8 },
-  vibeTile: {
-    display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-    gap: 5, background: P.surface2, border: `1px solid ${P.surface3}`,
-    borderRadius: 14, padding: "10px 6px", cursor: "pointer",
-    minHeight: 82,
-  },
-  vibeTileOn: {
-    background: P.terracotta + "18",
-    border: `1px solid ${P.terracotta}70`,
-  },
+  question: { fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 900, color: P.textPrimary, letterSpacing: "-0.8px", marginBottom: 4 },
+  subQuestion: { fontSize: 13, color: P.slateBlue, marginBottom: 18, fontFamily: "'DM Sans', sans-serif" },
+  vibeGrid: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginTop: 6 },
+  vibeTile: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, background: P.surface2, border: `1px solid ${P.surface3}`, borderRadius: 14, padding: "8px 4px", cursor: "pointer", minHeight: 74 },
+  vibeTileOn: { background: P.terracotta + "18", border: `1px solid ${P.terracotta}70` },
   vibeLabel: { fontSize: 14, fontWeight: 700, fontFamily: "'DM Sans', sans-serif" },
-  nextBtn: {
-    width: "100%", background: `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`,
-    color: "#fff", border: "none", borderRadius: 16, padding: "16px",
-    fontSize: 16, fontWeight: 800, cursor: "pointer",
-    fontFamily: "'Syne', sans-serif", letterSpacing: "-0.3px",
-  },
+  nextBtn: { width: "100%", background: `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`, color: "#fff", border: "none", borderRadius: 16, padding: "16px", fontSize: 16, fontWeight: 800, cursor: "pointer", fontFamily: "'Syne', sans-serif", letterSpacing: "-0.3px" },
   whoRow: { display: "flex", gap: 10, marginTop: 16 },
-  whoChip: {
-    flex: 1, background: P.surface2, border: `1px solid ${P.surface3}`,
-    borderRadius: 14, padding: "14px", fontSize: 15, fontWeight: 700,
-    color: P.textMuted, cursor: "pointer", textAlign: "center",
-    fontFamily: "'DM Sans', sans-serif",
-  },
-  whoChipOn: {
-    background: P.terracotta + "18",
-    border: `1px solid ${P.terracotta}60`,
-    color: P.terracotta,
-  },
+  whoChip: { flex: 1, background: P.surface2, border: `1px solid ${P.surface3}`, borderRadius: 14, padding: "14px", fontSize: 15, fontWeight: 700, color: P.textMuted, cursor: "pointer", textAlign: "center", fontFamily: "'DM Sans', sans-serif" },
+  whoChipOn: { background: P.terracotta + "18", border: `1px solid ${P.terracotta}60`, color: P.terracotta },
   emailRow: { display: "flex", gap: 8 },
-  addEmailBtn: {
-    background: P.surface3, border: "none", color: P.textPrimary,
-    borderRadius: 12, padding: "0 18px", fontSize: 14, fontWeight: 700,
-    cursor: "pointer", flexShrink: 0,
-  },
-  emailTag: {
-    display: "flex", alignItems: "center", gap: 6,
-    background: P.surface2, border: `1px solid ${P.surface3}`,
-    borderRadius: 22, padding: "6px 12px", fontSize: 13, color: P.textSecondary,
-  },
-  removeEmail: {
-    background: "transparent", border: "none", color: P.textMuted,
-    cursor: "pointer", fontSize: 11, padding: 0, lineHeight: 1,
-  },
-  confirmCard: {
-    background: `linear-gradient(135deg, ${P.surface1}, ${P.surface2})`,
-    border: `1px solid ${P.surface3}`,
-    borderRadius: 20, padding: "24px", marginBottom: 16, textAlign: "center",
-  },
-  confirmIcon: {
-    width: 52, height: 52, borderRadius: 16,
-    background: P.terracotta + "20", border: `1px solid ${P.terracotta}30`,
-    display: "flex", alignItems: "center", justifyContent: "center",
-    margin: "0 auto 16px",
-  },
-  nameInput: {
-    background: "transparent", border: "none", borderBottom: `1px solid ${P.surface3}`,
-    color: P.textPrimary, fontSize: 22, fontWeight: 900, letterSpacing: "-0.8px",
-    width: "100%", textAlign: "center", outline: "none", marginBottom: 12,
-    fontFamily: "'Syne', sans-serif", padding: "4px 0",
-  },
+  addEmailBtn: { background: P.surface3, border: "none", color: P.textPrimary, borderRadius: 12, padding: "0 18px", fontSize: 14, fontWeight: 700, cursor: "pointer", flexShrink: 0 },
+  emailTag: { display: "flex", alignItems: "center", gap: 6, background: P.surface2, border: `1px solid ${P.surface3}`, borderRadius: 22, padding: "6px 12px", fontSize: 13, color: P.textSecondary },
+  removeEmail: { background: "transparent", border: "none", color: P.textMuted, cursor: "pointer", fontSize: 11, padding: 0, lineHeight: 1 },
+  confirmCard: { background: `linear-gradient(135deg, ${P.surface1}, ${P.surface2})`, border: `1px solid ${P.surface3}`, borderRadius: 20, padding: "24px", marginBottom: 16, textAlign: "center" },
+  confirmIcon: { width: 52, height: 52, borderRadius: 16, background: P.terracotta + "20", border: `1px solid ${P.terracotta}30`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" },
+  nameInput: { background: "transparent", border: "none", borderBottom: `1px solid ${P.surface3}`, color: P.textPrimary, fontSize: 22, fontWeight: 900, letterSpacing: "-0.8px", width: "100%", textAlign: "center", outline: "none", marginBottom: 12, fontFamily: "'Syne', sans-serif", padding: "4px 0" },
   confirmMeta: { fontSize: 13, color: P.textSecondary, marginBottom: 6 },
   confirmPeople: { fontSize: 13, color: P.slateBlue },
 };
 
-// ─── MODALS ───────────────────────────────────────────────────────────────────
+// ─── ADD EXPENSE MODAL (FIXED) ────────────────────────────────────────────────
 
 function AddExpenseModal({ onClose, trip, onAdd, user, profile, existingExpense }) {
   const [members, setMembers] = useState([]);
@@ -2189,7 +1659,12 @@ function AddExpenseModal({ onClose, trip, onAdd, user, profile, existingExpense 
       const userDisplay = profile?.display_name || user?.email?.split('@')[0] || 'Me';
       const names = [userDisplay, ...memberNames.filter(n => n !== userDisplay)];
       setMembers(names);
-      if (!existingExpense) setExp(e => ({ ...e, paidBy: userDisplay, splitWith: names }));
+      if (!existingExpense) {
+        setExp(e => ({ ...e, paidBy: userDisplay, splitWith: names }));
+      } else if (!exp.paidBy) {
+        // paidBy was empty (null user passed previously) — default to first member
+        setExp(e => ({ ...e, paidBy: names[0] || userDisplay }));
+      }
     });
   }, [trip.id]);
 
@@ -2219,67 +1694,97 @@ function AddExpenseModal({ onClose, trip, onAdd, user, profile, existingExpense 
     onClose();
   };
 
+  const stepTitles = ["", "What was it?", "Who's splitting?", "Looks good?"];
+
+  // Shared full-screen flex-column layout — same pattern as AddItinModal
+  const FS = { display: "flex", flexDirection: "column", flex: 1, padding: "0 22px 12px" };
+
   return (
-    <div style={S.overlay}>
-      <div style={S.sheet}>
-        <div style={S.sheetHandle} />
-        <div style={S.sheetHeader}>
-          <div style={S.sheetTitle}>
-            {step === 1 ? "What was it?" : step === 2 ? "Who's splitting?" : "Confirm"}
-          </div>
-          <button style={S.closeBtn} onClick={onClose}>✕</button>
-        </div>
-        <div style={S.stepRow}>
-          {[1,2,3].map(s => <div key={s} style={{ ...S.stepDot, ...(s <= step ? S.stepDotActive : {}) }} />)}
-        </div>
-        {step === 1 && (
-          <div style={S.sheetBody}>
-            <div style={S.field}>
+    <div style={{ position: "absolute", inset: 0, zIndex: 100, background: P.phoneBg, display: "flex", flexDirection: "column" }}>
+      {/* Header */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 22px 8px", flexShrink: 0 }}>
+        <div style={S.sheetTitle}>{stepTitles[step]}</div>
+        <button style={S.closeBtn} onClick={onClose}>✕</button>
+      </div>
+      {/* Step dots */}
+      <div style={{ display: "flex", gap: 6, justifyContent: "center", marginBottom: 14, flexShrink: 0 }}>
+        {[1,2,3].map(s => <div key={s} style={{ ...S.stepDot, ...(s <= step ? S.stepDotActive : {}) }} />)}
+      </div>
+
+      {/* ── Step 1: Category, Amount, Description, Paid By ── */}
+      {step === 1 && (
+        <div style={FS}>
+          <div style={{ flex: 1 }}>
+            {/* Category tiles — matches itinerary style */}
+            <div style={{ marginBottom: 12 }}>
+              <div style={S.fieldLbl}>CATEGORY</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}>
+                {CATS.map(c => {
+                  const m = CATEGORY_META[c];
+                  const CIcon = CAT_ICONS[c];
+                  const selected = exp.category === c;
+                  return (
+                    <button key={c} onClick={() => setExp(n => ({ ...n, category: c }))}
+                      style={{
+                        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                        gap: 4, padding: "8px 4px", borderRadius: 12, cursor: "pointer", minHeight: 50,
+                        background: selected ? m.bg : P.surface1,
+                        border: selected ? `1px solid ${m.color}` : `1px solid ${P.surface3}`,
+                      }}>
+                      <CIcon size={15} color={selected ? m.color : P.textMuted} strokeWidth={1.5} />
+                      <span style={{ fontSize: 9, fontWeight: 700, color: selected ? m.color : P.textMuted, textTransform: "capitalize", letterSpacing: "0.3px" }}>{c}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Amount — Venmo style */}
+            <div style={{ textAlign: "center", padding: "6px 0 8px", borderBottom: `1px solid ${P.surface3}`, marginBottom: 10 }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: P.textMuted, letterSpacing: "2px", marginBottom: 4 }}>AMOUNT</div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
+                <span style={{ fontSize: 22, fontWeight: 900, color: P.textMuted }}>$</span>
+                <input type="number" placeholder="0" value={exp.amount}
+                  onChange={e => setExp(n => ({ ...n, amount: e.target.value }))}
+                  style={{ background: "transparent", border: "none", outline: "none", fontSize: 34, fontWeight: 900, color: P.textPrimary, letterSpacing: "-1px", width: 130, textAlign: "center", fontFamily: "'Syne', sans-serif" }} />
+              </div>
+              {perPerson && <div style={{ fontSize: 11, color: P.slateBlue, marginTop: 2 }}>${perPerson}/person</div>}
+            </div>
+
+            {/* Description */}
+            <div style={{ marginBottom: 10 }}>
               <div style={S.fieldLbl}>DESCRIPTION</div>
-              <input style={S.input} placeholder="e.g. Dinner at Coco's"
+              <input style={{ ...S.input, padding: "12px 16px" }} placeholder="e.g. Dinner at Coco's"
                 value={exp.title} onChange={e => setExp(n => ({ ...n, title: e.target.value }))} />
             </div>
-            <div style={S.field}>
-              <div style={S.fieldLbl}>AMOUNT</div>
-              <div style={S.amountWrap}>
-                <span style={S.dollarSign}>$</span>
-                <input style={{ ...S.input, paddingLeft: 32, fontSize: 26, fontWeight: 800, letterSpacing: "-1px" }}
-                  type="number" placeholder="0.00"
-                  value={exp.amount} onChange={e => setExp(n => ({ ...n, amount: e.target.value }))} />
-              </div>
-            </div>
-            <div style={S.field}>
-              <div style={S.fieldLbl}>CATEGORY</div>
-              <div style={S.catRow}>
-                {["Food","Stay","Activity","Transport"].map(c => (
-                  <button key={c} onClick={() => setExp(n => ({ ...n, category: c }))}
-                    style={{ ...S.catBtn, ...(exp.category === c ? { background: CATEGORY_META[c]?.bg, color: CATEGORY_META[c]?.color, borderColor: CATEGORY_META[c]?.color } : { borderColor: P.surface3, background: P.surface1, color: P.textMuted }) }}>
-                    {c}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div style={S.field}>
+
+            {/* Paid by */}
+            <div>
               <div style={S.fieldLbl}>PAID BY</div>
-              <div style={S.paidRow}>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                 {members.map(m => (
                   <button key={m} onClick={() => setExp(n => ({ ...n, paidBy: m }))}
                     style={{ ...S.paidBtn, ...(exp.paidBy === m ? S.paidBtnActive : {}) }}>{m}</button>
                 ))}
               </div>
             </div>
-            <button style={{ ...S.primaryBtn, background: `linear-gradient(135deg, ${P.orange}, ${P.terracotta})` }}
-              onClick={() => members.length <= 1 ? setStep(3) : setStep(2)}>
-              {members.length <= 1 ? "Review" : "Next → Split"}
-            </button>
           </div>
-        )}
-        {step === 2 && (
-          <div style={S.sheetBody}>
-            <div style={S.splitInfo}>
-              <div style={S.splitAmt}>${exp.amount || "0"}</div>
-              <div style={S.splitLbl}>splitting {exp.splitWith.length} ways</div>
-              {perPerson && <div style={S.perPerson}>${perPerson} per person</div>}
+
+          <button style={{ ...S.primaryBtn, background: `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`, marginTop: "auto", marginTop: 14 }}
+            onClick={() => members.length <= 1 ? setStep(3) : setStep(2)}>
+            {members.length <= 1 ? "Review →" : "Next → Split"}
+          </button>
+        </div>
+      )}
+
+      {/* ── Step 2: Who's splitting ── */}
+      {step === 2 && (
+        <div style={FS}>
+          <div style={{ flex: 1 }}>
+            <div style={{ textAlign: "center", padding: "10px 0 16px", borderBottom: `1px solid ${P.surface3}`, marginBottom: 14 }}>
+              <div style={{ fontSize: 44, fontWeight: 900, color: P.textPrimary, letterSpacing: "-2px" }}>${exp.amount || "0"}</div>
+              <div style={{ fontSize: 13, color: P.textMuted, marginTop: 4 }}>splitting {exp.splitWith.length} ways</div>
+              {perPerson && <div style={{ fontSize: 15, color: P.terracotta, fontWeight: 700, marginTop: 4 }}>${perPerson}/person</div>}
             </div>
             <div style={S.splitGrid}>
               {members.map(m => (
@@ -2291,35 +1796,57 @@ function AddExpenseModal({ onClose, trip, onAdd, user, profile, existingExpense 
                 </button>
               ))}
             </div>
-            <div style={{ display: "flex", gap: 10 }}>
-              <button style={S.secondaryBtn} onClick={() => setStep(1)}>← Back</button>
-              <button style={{ ...S.primaryBtn, background: `linear-gradient(135deg, ${P.orange}, ${P.terracotta})` }}
-                onClick={() => setStep(3)}>Review</button>
-            </div>
           </div>
-        )}
-        {step === 3 && (
-          <div style={S.sheetBody}>
-            <div style={S.confirmCard}>
-              <div style={S.confirmRow}><span style={S.confirmLbl}>What</span><span style={S.confirmVal}>{exp.title || "—"}</span></div>
-              <div style={S.confirmRow}><span style={S.confirmLbl}>Amount</span><span style={S.confirmVal}>${exp.amount}</span></div>
-              <div style={S.confirmRow}><span style={S.confirmLbl}>Category</span><span style={S.confirmVal}>{exp.category}</span></div>
-              <div style={S.confirmRow}><span style={S.confirmLbl}>Paid by</span><span style={S.confirmVal}>{exp.paidBy}</span></div>
-              <div style={S.confirmRow}><span style={S.confirmLbl}>Split</span><span style={S.confirmVal}>{exp.splitWith.length} people · ${perPerson}/ea</span></div>
+          <div style={{ display: "flex", gap: 10, marginTop: "auto" }}>
+            <button style={S.secondaryBtn} onClick={() => setStep(1)}>← Back</button>
+            <button style={{ ...S.primaryBtn, background: `linear-gradient(135deg, ${P.orange}, ${P.terracotta})` }} onClick={() => setStep(3)}>Review →</button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Step 3: Confirm ── */}
+      {step === 3 && (
+        <div style={FS}>
+          <div style={{ flex: 1 }}>
+            <div style={{ background: P.surface2, borderRadius: 16, overflow: "hidden", border: `1px solid ${P.surface3}`, marginBottom: 12 }}>
+              {[
+                { label: "What", val: exp.title || "—" },
+                { label: "Amount", val: `$${exp.amount}` },
+                { label: "Category", val: exp.category },
+                { label: "Paid by", val: exp.paidBy },
+                { label: "Split", val: `${exp.splitWith.length} people · $${perPerson}/ea` },
+              ].map((row, i, arr) => (
+                <div key={row.label} style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", borderBottom: i < arr.length - 1 ? `1px solid ${P.surface3}` : "none" }}>
+                  <span style={{ fontSize: 13, color: P.textMuted }}>{row.label}</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: P.textPrimary }}>{row.val}</span>
+                </div>
+              ))}
             </div>
-            <div style={{ display: "flex", gap: 10 }}>
-              <button style={S.secondaryBtn} onClick={() => setStep(2)}>← Edit</button>
-              <button style={{ ...S.primaryBtn, background: `linear-gradient(135deg, ${P.orange}, ${P.terracotta})` }}
-                onClick={handleSubmit}>
-                {existingExpense ? "✓ Save Changes" : "✓ Add Expense"}
+            {existingExpense && (
+              <button style={{ ...S.primaryBtn, background: "transparent", color: P.danger, border: `1px solid ${P.danger}40` }}
+                onClick={async () => {
+                  if (!window.confirm("Delete this expense?")) return;
+                  await supabase.from('expenses').delete().eq('id', existingExpense.id);
+                  if (onAdd) onAdd();
+                  onClose();
+                }}>
+                Delete Expense
               </button>
-            </div>
+            )}
           </div>
-        )}
-      </div>
+          <div style={{ display: "flex", gap: 10, marginTop: "auto" }}>
+            <button style={S.secondaryBtn} onClick={() => setStep(existingExpense ? 1 : 2)}>← Edit</button>
+            <button style={{ ...S.primaryBtn, background: `linear-gradient(135deg, ${P.orange}, ${P.terracotta})` }} onClick={handleSubmit}>
+              {existingExpense ? "✓ Save Changes" : "✓ Add Expense"}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
+// ─── ADD ITIN MODAL ───────────────────────────────────────────────────────────
 
 function AddItinModal({ onClose, trip, onAdd }) {
   const [type, setType] = useState("activity");
@@ -2327,7 +1854,6 @@ function AddItinModal({ onClose, trip, onAdd }) {
   const [time, setTime] = useState("");
   const titleRef = useRef(null);
   const detailRef = useRef(null);
-  const meta = ITINERARY_COLORS[type];
 
   const handleAdd = async () => {
     const title = titleRef.current?.value || "";
@@ -2340,100 +1866,67 @@ function AddItinModal({ onClose, trip, onAdd }) {
     onClose();
   };
 
-  const formatDayDisplay = (d) => {
-    if (!d) return "Date";
-    const dt = new Date(d + 'T12:00:00');
-    return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  };
-
-  const formatTimeDisplay = (t) => {
-    if (!t) return "Time";
-    const [h, m] = t.split(':').map(Number);
-    const ampm = h >= 12 ? 'pm' : 'am';
-    return `${h % 12 || 12}:${String(m).padStart(2,'0')}${ampm}`;
-  };
-
   return (
-    <div style={S.overlay}>
-      <div style={{ ...S.sheet, maxHeight: "85%", overflowY: "auto" }}>
-        <div style={S.sheetHandle} />
-        <div style={S.sheetHeader}>
-          <div style={S.sheetTitle}>Add to Itinerary</div>
-          <button style={S.closeBtn} onClick={onClose}>✕</button>
+    <div style={{ position: "absolute", inset: 0, zIndex: 100, background: P.phoneBg, display: "flex", flexDirection: "column" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 22px 10px", flexShrink: 0 }}>
+        <div style={S.sheetTitle}>Add to Itinerary</div>
+        <button style={S.closeBtn} onClick={onClose}>✕</button>
+      </div>
+      <div style={{ flex: 1, padding: "0 22px 12px", display: "flex", flexDirection: "column" }}>
+        {/* Type tiles */}
+        <div style={{ marginBottom: 12 }}>
+          <div style={S.fieldLbl}>TYPE</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 6 }}>
+            {["flight","stay","activity","restaurant","transport"].map(t => {
+              const m = ITINERARY_COLORS[t];
+              const TIcon = ITIN_TYPE_ICONS[t];
+              const selected = type === t;
+              return (
+                <button key={t} onClick={() => setType(t)}
+                  style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, padding: "8px 4px", borderRadius: 12, cursor: "pointer", background: selected ? P.surface2 : P.surface1, border: selected ? `1px solid ${m.accent}` : `1px solid ${P.surface3}`, minHeight: 54 }}>
+                  <TIcon size={18} color={selected ? m.accent : P.textMuted} strokeWidth={1.5} />
+                  <span style={{ fontSize: 9, fontWeight: 700, color: selected ? m.accent : P.textMuted, textTransform: "capitalize", letterSpacing: "0.3px" }}>{t}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
-        <div style={S.sheetBody}>
-          <div style={S.field}>
-            <div style={S.fieldLbl}>TYPE</div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
-              {["flight","stay","activity","restaurant","transport"].map(t => {
-                const m = ITINERARY_COLORS[t];
-                const TIcon = ITIN_TYPE_ICONS[t];
-                const selected = type === t;
-                return (
-                  <button key={t} onClick={() => setType(t)}
-                    style={{
-                      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                      gap: 6, padding: "12px 4px", borderRadius: 14, cursor: "pointer",
-                      background: selected ? P.surface2 : P.surface1,
-                      border: selected ? `1px solid ${m.accent}` : `1px solid ${P.surface3}`,
-                      minHeight: 64,
-                    }}>
-                    <TIcon size={18} color={selected ? m.accent : P.textMuted} strokeWidth={1.5} />
-                    <span style={{ fontSize: 10, fontWeight: 700, color: selected ? m.accent : P.textMuted, textTransform: "capitalize", letterSpacing: "0.3px" }}>{t}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-          <div style={S.field}>
-            <div style={S.fieldLbl}>TITLE</div>
-            <input ref={titleRef} style={{ ...S.input, fontSize: 18, padding: "16px" }}
-              placeholder="e.g. Fairmont Lake Louise" defaultValue="" />
-          </div>
-          <div style={S.field}>
-            <div style={S.fieldLbl}>DETAILS / CONFIRMATION #</div>
-            <textarea ref={detailRef}
-              style={{ ...S.input, fontSize: 15, padding: "14px", resize: "none", lineHeight: 1.5, minHeight: 72 }}
-              placeholder="Confirmation code, address, notes..."
-              defaultValue="" rows={3} />
-          </div>
-          {/* Date and time side by side with icon buttons */}
-          <div style={{ display: "flex", gap: 10, marginBottom: 18 }}>
-            <div style={{ flex: 1 }}>
-              <div style={S.fieldLbl}>DATE</div>
-              <div style={{ position: "relative" }}>
-                <div style={{ ...S.input, display: "flex", alignItems: "center", gap: 10, cursor: "pointer", color: day ? P.textPrimary : P.textMuted }}>
-                  <Calendar size={18} color={day ? P.terracotta : P.textMuted} strokeWidth={1.5} />
-                  <span style={{ fontSize: 15, fontWeight: day ? 700 : 400 }}>{formatDayDisplay(day)}</span>
-                </div>
-                <input type="date" value={day} onChange={e => setDay(e.target.value)}
-                  style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer", width: "100%", height: "100%" }} />
-              </div>
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ ...S.fieldLbl, display: "flex", justifyContent: "space-between" }}>
-                <span>TIME</span>
-                <span style={{ color: P.textMuted }}>optional</span>
-              </div>
-              <div style={{ position: "relative" }}>
-                <div style={{ ...S.input, display: "flex", alignItems: "center", gap: 10, cursor: "pointer", color: time ? P.textPrimary : P.textMuted }}>
-                  <Clock size={18} color={time ? P.terracotta : P.textMuted} strokeWidth={1.5} />
-                  <span style={{ fontSize: 15, fontWeight: time ? 700 : 400 }}>{formatTimeDisplay(time)}</span>
-                </div>
-                <input type="time" value={time} onChange={e => setTime(e.target.value)}
-                  style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer", width: "100%", height: "100%" }} />
-              </div>
-            </div>
-          </div>
-          <button style={{ ...S.primaryBtn, background: `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`, color: "#fff" }}
-            onClick={handleAdd}>
-            Add to Itinerary
-          </button>
+        {/* Title — centered, no box, like expense amount */}
+        <div style={{ textAlign: "center", padding: "6px 0 10px", borderBottom: `1px solid ${P.surface3}`, marginBottom: 12 }}>
+          <div style={S.fieldLbl}>TITLE</div>
+          <input ref={titleRef} placeholder="e.g. Fairmont Lake Louise"
+            style={{ background: "transparent", border: "none", outline: "none", fontSize: 22, fontWeight: 900, color: P.textPrimary, letterSpacing: "-0.5px", width: "100%", textAlign: "center", fontFamily: "'Syne', sans-serif", padding: "4px 0" }} />
         </div>
+        {/* Details */}
+        <div style={{ marginBottom: 12 }}>
+          <div style={S.fieldLbl}>DETAILS / CONFIRMATION #</div>
+          <input ref={detailRef} style={{ ...S.input, fontSize: 14, padding: "12px 16px" }} placeholder="Confirmation code, address, notes..." defaultValue="" />
+        </div>
+        {/* Date + Time — bigger */}
+        <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ ...S.fieldLbl, display: "flex", alignItems: "center", gap: 6 }}>
+              <Calendar size={12} color={P.textMuted} /> DATE
+            </div>
+            <input type="date" value={day} onChange={e => setDay(e.target.value)} style={{ ...S.input, colorScheme: "dark", fontSize: 15, padding: "13px 12px" }} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ ...S.fieldLbl, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}><Clock size={12} color={P.textMuted} /> TIME</div>
+              <span style={{ color: P.textMuted }}>optional</span>
+            </div>
+            <input type="time" value={time} onChange={e => setTime(e.target.value)} style={{ ...S.input, colorScheme: "dark", fontSize: 15, padding: "13px 12px" }} />
+          </div>
+        </div>
+        <button style={{ ...S.primaryBtn, background: `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`, color: "#fff", marginTop: "auto" }} onClick={handleAdd}>
+          Add to Itinerary
+        </button>
       </div>
     </div>
   );
 }
+
+// ─── EDIT ITIN MODAL (FIXED) ──────────────────────────────────────────────────
 
 function EditItinModal({ item, onClose, onSave }) {
   const [type, setType] = useState(item.type || "activity");
@@ -2456,72 +1949,69 @@ function EditItinModal({ item, onClose, onSave }) {
   };
 
   return (
-    <div style={S.overlay}>
-      <div style={S.sheet}>
-        <div style={S.sheetHandle} />
-        <div style={S.sheetHeader}>
-          <div style={S.sheetTitle}>Edit Item</div>
-          <button style={S.closeBtn} onClick={onClose}>✕</button>
+    <div style={{ position: "absolute", inset: 0, zIndex: 100, background: P.phoneBg, display: "flex", flexDirection: "column" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 22px 10px", flexShrink: 0 }}>
+        <div style={S.sheetTitle}>Edit Item</div>
+        <button style={S.closeBtn} onClick={onClose}>✕</button>
+      </div>
+      <div style={{ flex: 1, padding: "0 22px 12px", display: "flex", flexDirection: "column" }}>
+        {/* Type tiles */}
+        <div style={{ marginBottom: 12 }}>
+          <div style={S.fieldLbl}>TYPE</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 6 }}>
+            {["flight","stay","activity","restaurant","transport"].map(t => {
+              const m = ITINERARY_COLORS[t];
+              const TIcon = ITIN_TYPE_ICONS[t];
+              const selected = type === t;
+              return (
+                <button key={t} onClick={() => setType(t)}
+                  style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, padding: "8px 4px", borderRadius: 12, cursor: "pointer", background: selected ? P.surface2 : P.surface1, border: selected ? `1px solid ${m.accent}` : `1px solid ${P.surface3}`, minHeight: 54 }}>
+                  <TIcon size={18} color={selected ? m.accent : P.textMuted} strokeWidth={1.5} />
+                  <span style={{ fontSize: 9, fontWeight: 700, color: selected ? m.accent : P.textMuted, textTransform: "capitalize", letterSpacing: "0.3px" }}>{t}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
-        <div style={S.sheetBody}>
-          <div style={S.field}>
-            <div style={S.fieldLbl}>TYPE</div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
-              {["flight","stay","activity","restaurant","transport"].map(t => {
-                const m = ITINERARY_COLORS[t];
-                const TIcon = ITIN_TYPE_ICONS[t];
-                const selected = type === t;
-                return (
-                  <button key={t} onClick={() => setType(t)}
-                    style={{
-                      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                      gap: 6, padding: "12px 4px", borderRadius: 14, cursor: "pointer",
-                      background: selected ? P.surface2 : P.surface1,
-                      border: selected ? `1px solid ${m.accent}` : `1px solid ${P.surface3}`,
-                      minHeight: 64,
-                    }}>
-                    <TIcon size={18} color={selected ? m.accent : P.textMuted} strokeWidth={1.5} />
-                    <span style={{ fontSize: 10, fontWeight: 700, color: selected ? m.accent : P.textMuted, textTransform: "capitalize", letterSpacing: "0.3px" }}>{t}</span>
-                  </button>
-                );
-              })}
+        {/* Title — centered, no box */}
+        <div style={{ textAlign: "center", padding: "6px 0 10px", borderBottom: `1px solid ${P.surface3}`, marginBottom: 12 }}>
+          <div style={S.fieldLbl}>TITLE</div>
+          <input ref={titleRef} defaultValue={item.title}
+            style={{ background: "transparent", border: "none", outline: "none", fontSize: 22, fontWeight: 900, color: P.textPrimary, letterSpacing: "-0.5px", width: "100%", textAlign: "center", fontFamily: "'Syne', sans-serif", padding: "4px 0" }} />
+        </div>
+        {/* Details */}
+        <div style={{ marginBottom: 12 }}>
+          <div style={S.fieldLbl}>DETAILS / CONFIRMATION #</div>
+          <input ref={detailRef} style={{ ...S.input, fontSize: 14, padding: "12px 16px" }} defaultValue={item.detail || ""} />
+        </div>
+        {/* Date + Time — bigger */}
+        <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ ...S.fieldLbl, display: "flex", alignItems: "center", gap: 6 }}>
+              <Calendar size={12} color={P.textMuted} /> DATE
             </div>
+            <input type="date" value={day} onChange={e => setDay(e.target.value)} style={{ ...S.input, colorScheme: "dark", fontSize: 15, padding: "13px 12px" }} />
           </div>
-          <div style={S.field}>
-            <div style={S.fieldLbl}>TITLE</div>
-            <input ref={titleRef} style={{ ...S.input, fontSize: 18, padding: "16px" }}
-              defaultValue={item.title} />
-          </div>
-          <div style={S.field}>
-            <div style={S.fieldLbl}>DETAILS / CONFIRMATION #</div>
-            <textarea ref={detailRef}
-              style={{ ...S.input, fontSize: 16, padding: "16px", resize: "none", lineHeight: 1.5, minHeight: 80 }}
-              defaultValue={item.detail || ""} rows={3} />
-          </div>
-          <div style={S.field}>
-            <div style={S.fieldLbl}>DATE</div>
-            <input style={{ ...S.input, colorScheme: "dark" }} type="date"
-              value={day} onChange={e => setDay(e.target.value)} />
-          </div>
-          <div style={S.field}>
-            <div style={{ ...S.fieldLbl, display: "flex", justifyContent: "space-between" }}>
-              <span>TIME</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ ...S.fieldLbl, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}><Clock size={12} color={P.textMuted} /> TIME</div>
               <span style={{ color: P.textMuted }}>optional</span>
             </div>
-            <input style={{ ...S.input, colorScheme: "dark" }} type="time"
-              value={time} onChange={e => setTime(e.target.value)} />
+            <input type="time" value={time} onChange={e => setTime(e.target.value)} style={{ ...S.input, colorScheme: "dark", fontSize: 15, padding: "13px 12px" }} />
           </div>
-          <button style={{ ...S.primaryBtn, background: loading ? P.surface2 : `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`, color: "#fff", marginTop: 8 }}
-            onClick={handleSave} disabled={loading}>
-            {loading ? "Saving..." : "Save Changes"}
-          </button>
         </div>
+        <button style={{ ...S.primaryBtn, background: loading ? P.surface2 : `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`, color: "#fff", marginTop: "auto" }}
+          onClick={handleSave} disabled={loading}>
+          {loading ? "Saving..." : "Save Changes"}
+        </button>
       </div>
     </div>
   );
 }
 
-function SettleModal({ settlements, myName, onClose }) {
+// ─── SETTLE MODAL ─────────────────────────────────────────────────────────────
+
+function SettleModal({ settlements, myName, trip, onClose }) {
   const [marked, setMarked] = useState([]);
   const toggle = (i) => setMarked(m => m.includes(i) ? m.filter(x => x !== i) : [...m, i]);
   const mine = settlements.filter(s => s.from === myName);
@@ -2544,11 +2034,11 @@ function SettleModal({ settlements, myName, onClose }) {
                   <div style={S.settleAmt}>${s.amount}</div>
                 </div>
                 <div style={{ display: "flex", gap: 8 }}>
-                  <button style={S.payBtn}>Venmo</button>
-                  <button style={S.payBtn}>Zelle</button>
-                  <button onClick={() => toggle(`m${i}`)} style={{ ...S.markBtn, ...(marked.includes(`m${i}`) ? S.markBtnDone : {}) }}>
-                    {marked.includes(`m${i}`) ? "✓" : "Mark"}
-                  </button>
+                  <a href={`venmo://paycharge?txn=pay&recipients=${encodeURIComponent(s.to)}&amount=${s.amount}&note=${encodeURIComponent(trip?.name || 'Trip')}`}
+                    style={{ ...S.payBtn, textDecoration: "none", display: "flex", alignItems: "center" }}>Venmo</a>
+                  <a href={`https://enroll.zellepay.com/pay-with-zelle`} target="_blank" rel="noopener noreferrer"
+                    style={{ ...S.payBtn, textDecoration: "none", display: "flex", alignItems: "center" }}>Zelle</a>
+                  <button onClick={() => toggle(`m${i}`)} style={{ ...S.markBtn, ...(marked.includes(`m${i}`) ? S.markBtnDone : {}) }}>{marked.includes(`m${i}`) ? "✓" : "Mark"}</button>
                 </div>
               </div>
             ))}
@@ -2561,9 +2051,7 @@ function SettleModal({ settlements, myName, onClose }) {
                   <div style={S.settlePeople}><span style={{ color: P.orange }}>{s.from}</span> → <span style={{ color: P.terracotta }}>{s.to}</span></div>
                   <div style={S.settleAmt}>${s.amount}</div>
                 </div>
-                <button onClick={() => toggle(`o${i}`)} style={{ ...S.markBtn, ...(marked.includes(`o${i}`) ? S.markBtnDone : {}) }}>
-                  {marked.includes(`o${i}`) ? "✓ Done" : "Confirm"}
-                </button>
+                <button onClick={() => toggle(`o${i}`)} style={{ ...S.markBtn, ...(marked.includes(`o${i}`) ? S.markBtnDone : {}) }}>{marked.includes(`o${i}`) ? "✓ Done" : "Confirm"}</button>
               </div>
             ))}
           </div>
@@ -2572,6 +2060,8 @@ function SettleModal({ settlements, myName, onClose }) {
     </div>
   );
 }
+
+// ─── SHARE MODAL ──────────────────────────────────────────────────────────────
 
 function ShareModal({ trip, onClose }) {
   const options = [
@@ -2623,8 +2113,7 @@ function SettingsScreen({ user, profile, onBack, onProfileUpdate }) {
 
   const handleSaveName = async () => {
     setSaving(true);
-    const { data, error } = await supabase.from('profiles').update({ display_name: displayName })
-      .eq('id', user.id).select().single();
+    const { data, error } = await supabase.from('profiles').update({ display_name: displayName }).eq('id', user.id).select().single();
     if (!error) { onProfileUpdate(data); setSaved(true); setTimeout(() => setSaved(false), 2000); }
     setSaving(false);
   };
@@ -2645,7 +2134,7 @@ function SettingsScreen({ user, profile, onBack, onProfileUpdate }) {
   return (
     <div style={S.screen}>
       <div style={{ padding: "52px 24px 0", display: "flex", alignItems: "center", gap: 14, marginBottom: 32 }}>
-        <button style={S.backBtn} onClick={onBack}>←</button>
+        <button style={SA.backBtn} onClick={onBack}>← Back</button>
         <div style={{ fontSize: 24, fontWeight: 900, color: P.textPrimary, letterSpacing: "-0.8px" }}>Settings</div>
       </div>
       <div style={{ padding: "0 24px 40px" }}>
@@ -2725,47 +2214,35 @@ function EditTripModal({ trip, onClose, onSave }) {
         <div style={S.sheetBody}>
           <div style={S.field}>
             <div style={S.fieldLbl}>TRIP NAME</div>
-            <input style={S.input} placeholder="e.g. Tokyo 2025" value={form.name}
-              onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+            <input style={S.input} placeholder="e.g. Tokyo 2025" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
           </div>
           <div style={{ display: "flex", gap: 10 }}>
             <div style={{ ...S.field, flex: 1 }}>
               <div style={S.fieldLbl}>CITY</div>
-              <input style={S.input} placeholder="e.g. Tokyo" value={form.city}
-                onChange={e => setForm(f => ({ ...f, city: e.target.value }))} />
+              <input style={S.input} placeholder="e.g. Tokyo" value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} />
             </div>
             <div style={{ ...S.field, flex: 1 }}>
               <div style={S.fieldLbl}>COUNTRY</div>
-              <input style={S.input} placeholder="e.g. Japan" value={form.country}
-                onChange={e => setForm(f => ({ ...f, country: e.target.value }))} />
+              <input style={S.input} placeholder="e.g. Japan" value={form.country} onChange={e => setForm(f => ({ ...f, country: e.target.value }))} />
             </div>
           </div>
           <div style={S.field}>
             <div style={S.fieldLbl}>DATES</div>
-            <input style={S.input} placeholder="e.g. Jun 1–10, 2025" value={form.dates}
-              onChange={e => setForm(f => ({ ...f, dates: e.target.value }))} />
+            <input style={S.input} placeholder="e.g. Jun 1–10, 2025" value={form.dates} onChange={e => setForm(f => ({ ...f, dates: e.target.value }))} />
           </div>
           <div style={S.field}>
             <div style={S.fieldLbl}>ICON</div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {TRIP_ICON_LIST.map(({ key, Icon, label }) => (
                 <button key={key} onClick={() => setForm(f => ({ ...f, emoji: key }))}
-                  style={{
-                    background: form.emoji === key ? P.surface2 : "transparent",
-                    border: form.emoji === key ? `1px solid ${P.terracotta}` : `1px solid ${P.surface3}`,
-                    borderRadius: 12, padding: "8px 12px", cursor: "pointer",
-                    display: "flex", flexDirection: "column", alignItems: "center", gap: 4, minWidth: 56
-                  }}>
+                  style={{ background: form.emoji === key ? P.surface2 : "transparent", border: form.emoji === key ? `1px solid ${P.terracotta}` : `1px solid ${P.surface3}`, borderRadius: 12, padding: "8px 12px", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, minWidth: 56 }}>
                   <Icon size={20} color={form.emoji === key ? P.terracotta : P.textMuted} strokeWidth={1.5} />
-                  <span style={{ fontSize: 9, color: form.emoji === key ? P.terracotta : P.textMuted, fontWeight: 700, letterSpacing: "0.5px" }}>
-                    {label}
-                  </span>
+                  <span style={{ fontSize: 9, color: form.emoji === key ? P.terracotta : P.textMuted, fontWeight: 700, letterSpacing: "0.5px" }}>{label}</span>
                 </button>
               ))}
             </div>
           </div>
-          <button style={{ ...S.primaryBtn, background: loading ? P.surface2 : `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`, marginTop: 8 }}
-            onClick={handleSave} disabled={loading}>
+          <button style={{ ...S.primaryBtn, background: loading ? P.surface2 : `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`, marginTop: 8 }} onClick={handleSave} disabled={loading}>
             {loading ? "Saving..." : "Save Changes"}
           </button>
         </div>
@@ -2777,88 +2254,28 @@ function EditTripModal({ trip, onClose, onSave }) {
 // ─── STYLES ───────────────────────────────────────────────────────────────────
 
 const S = {
-  root: {
-    minHeight: "100vh",
-    background: P.outerBg,
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "flex-start",
-    padding: "32px 16px",
-    fontFamily: "'Syne', 'DM Sans', 'Helvetica Neue', sans-serif",
-  },
-  phone: {
-    width: 430,
-    maxWidth: "100%",
-    background: P.phoneBg,
-    borderRadius: 36,
-    overflow: "hidden",
-    boxShadow: `0 40px 100px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.05)`,
-    minHeight: 750,
-    height: 750,
-    position: "relative",
-    display: "flex",
-    flexDirection: "column",
-  },
+  root: { minHeight: "100vh", background: P.outerBg, display: "flex", justifyContent: "center", alignItems: "flex-start", padding: "32px 16px", fontFamily: "'Syne', 'DM Sans', 'Helvetica Neue', sans-serif" },
+  phone: { width: 430, maxWidth: "100%", background: P.phoneBg, borderRadius: 36, overflow: "hidden", boxShadow: `0 40px 100px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.05)`, minHeight: 750, height: 750, position: "relative", display: "flex", flexDirection: "column" },
   screen: { flex: 1, overflowY: "auto" },
-
-  // Profile
-  profileHero: {
-    padding: "52px 28px 32px",
-    textAlign: "center",
-    background: `linear-gradient(180deg, ${P.surface1} 0%, ${P.phoneBg} 100%)`,
-    borderBottom: `1px solid ${P.surface3}`,
-  },
-  profileAvatar: {
-    width: 84, height: 84, borderRadius: "50%",
-    background: `linear-gradient(135deg, ${P.terracotta}, ${P.orange})`,
-    color: "#fff",
-    fontSize: 26, fontWeight: 900,
-    display: "flex", alignItems: "center", justifyContent: "center",
-    margin: "0 auto 16px", letterSpacing: "-1px",
-  },
+  profileHero: { padding: "52px 28px 32px", textAlign: "center", background: `linear-gradient(180deg, ${P.surface1} 0%, ${P.phoneBg} 100%)`, borderBottom: `1px solid ${P.surface3}` },
+  profileAvatar: { width: 84, height: 84, borderRadius: "50%", background: `linear-gradient(135deg, ${P.terracotta}, ${P.orange})`, color: "#fff", fontSize: 26, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", letterSpacing: "-1px" },
   profileName: { fontSize: 30, fontWeight: 900, color: P.textPrimary, letterSpacing: "-1.2px", marginBottom: 6 },
   profileSub: { fontSize: 13, color: P.textMuted, letterSpacing: "1px", marginBottom: 24 },
-  profileStats: {
-    display: "flex", justifyContent: "center", alignItems: "center",
-    background: P.surface1, borderRadius: 18, padding: "18px 0", border: `1px solid ${P.surface3}`,
-  },
+  profileStats: { display: "flex", justifyContent: "center", alignItems: "center", background: P.surface1, borderRadius: 18, padding: "18px 0", border: `1px solid ${P.surface3}` },
   statItem: { flex: 1, textAlign: "center" },
   statNum: { fontSize: 26, fontWeight: 900, color: P.textPrimary, letterSpacing: "-1px" },
   statLbl: { fontSize: 11, color: P.textMuted, letterSpacing: "1px", marginTop: 3 },
   statDiv: { width: 1, height: 34, background: P.surface3 },
-
-  // Section
   sectionRow: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, marginTop: 32 },
   sectionLabel: { fontSize: 11, fontWeight: 700, color: P.textMuted, letterSpacing: "2.5px" },
-  newBtn: {
-    background: `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`,
-    color: "#fff", border: "none", borderRadius: 22,
-    padding: "9px 18px", fontSize: 14, fontWeight: 800, cursor: "pointer",
-  },
-  ghostBtn: {
-    background: "transparent", border: `1px solid ${P.surface3}`,
-    color: P.slateBlue, borderRadius: 22,
-    padding: "9px 18px", fontSize: 13, fontWeight: 700, cursor: "pointer",
-  },
-
-  // Trip card
-  tripCard: {
-    borderRadius: 24, padding: "22px", marginBottom: 14, cursor: "pointer",
-    border: `1px solid rgba(255,255,255,0.06)`, position: "relative",
-  },
-  tcIconWrap: { width: 52, height: 52, borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center" },
-  tcTop: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
-  tcEditBtn: { position: "absolute", top: 14, right: 54, background: "rgba(255,255,255,0.08)", border: "none", color: P.textSecondary, borderRadius: 10, padding: "7px 13px", fontSize: 13, fontWeight: 700, cursor: "pointer", zIndex: 10 },
-  tcDeleteBtn: { position: "absolute", top: 14, right: 14, background: "rgba(255,255,255,0.08)", border: "none", color: P.textSecondary, borderRadius: 10, padding: "7px 13px", fontSize: 13, fontWeight: 700, cursor: "pointer", zIndex: 10 },
-  soloBadge: { background: P.surface2, color: P.textMuted, fontSize: 10, fontWeight: 800, letterSpacing: "1.5px", padding: "4px 10px", borderRadius: 8 },
+  newBtn: { background: `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`, color: "#fff", border: "none", borderRadius: 22, padding: "9px 18px", fontSize: 14, fontWeight: 800, cursor: "pointer" },
+  ghostBtn: { background: "transparent", border: `1px solid ${P.surface3}`, color: P.slateBlue, borderRadius: 22, padding: "9px 18px", fontSize: 13, fontWeight: 700, cursor: "pointer" },
+  tripCard: { borderRadius: 20, padding: "16px 18px", marginBottom: 10, cursor: "pointer", background: P.surface1, border: `1px solid ${P.surface3}`, borderLeft: `3px solid ${P.terracotta}`, position: "relative" },
+  tcIconWrap: { width: 44, height: 44, borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center" },
   settledBadge: { background: P.successBg, color: P.success, fontSize: 10, fontWeight: 800, letterSpacing: "1.5px", padding: "4px 10px", borderRadius: 8 },
-  tcName: { fontSize: 26, fontWeight: 900, color: P.textPrimary, letterSpacing: "-0.8px", marginBottom: 6 },
-  tcLocation: { fontSize: 14, color: P.textSecondary, marginBottom: 18 },
-  tcBottom: { display: "flex", justifyContent: "space-between", alignItems: "center" },
+  tcName: { fontSize: 22, fontWeight: 900, color: P.textPrimary, letterSpacing: "-0.8px", marginBottom: 2 },
+  tcLocation: { fontSize: 13, color: P.textSecondary, marginBottom: 1 },
   tcTotal: { fontSize: 22, fontWeight: 900, letterSpacing: "-1px" },
-  tcViewBtn: { display: "flex", alignItems: "center", gap: 4, fontSize: 13, fontWeight: 700, border: "1px solid", borderRadius: 22, padding: "7px 14px" },
-
-  // Trip shell
   tripShell: { flex: 1, display: "flex", flexDirection: "column", height: "100%", position: "relative" },
   tripHeader: { padding: "28px 22px 22px", display: "flex", alignItems: "center", gap: 14 },
   backBtn: { background: "rgba(255,255,255,0.08)", border: "none", color: P.textPrimary, fontSize: 20, cursor: "pointer", borderRadius: 12, width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
@@ -2867,8 +2284,6 @@ const S = {
   thName: { fontSize: 19, fontWeight: 900, color: P.textPrimary, letterSpacing: "-0.5px" },
   thSub: { fontSize: 12, color: P.textSecondary, marginTop: 2 },
   shareHeaderBtn: { background: "transparent", border: "none", fontSize: 13, fontWeight: 800, cursor: "pointer", letterSpacing: "0.3px", flexShrink: 0 },
-
-  // Tab
   tabContent: { flex: 1, overflow: "hidden", position: "relative", display: "flex", flexDirection: "column", minHeight: 0 },
   tabScroll: { height: "100%", overflowY: "auto", padding: "0 20px" },
   tabTopRow: { display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 24, paddingBottom: 18 },
@@ -2878,24 +2293,7 @@ const S = {
   tabBtn: { flex: 1, background: "transparent", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "4px 0", position: "relative" },
   tabLabel: { fontSize: 11, fontWeight: 700, color: P.textMuted, letterSpacing: "0.3px" },
   tabDot: { width: 4, height: 4, borderRadius: "50%", position: "absolute", bottom: -4 },
-
-  // Itinerary
   dayBlock: { marginBottom: 22 },
-  dayLabel: { fontSize: 12, fontWeight: 800, color: P.textMuted, letterSpacing: "2px", marginBottom: 10 },
-  iRow: { display: "flex", gap: 12, padding: "14px", borderRadius: 16, border: "1px solid", marginBottom: 10 },
-  iTime: { fontSize: 12, color: P.textMuted, width: 48, flexShrink: 0, paddingTop: 2, fontWeight: 600 },
-  iLine: { display: "flex", flexDirection: "column", alignItems: "center", width: 12, flexShrink: 0 },
-  iDot: { width: 9, height: 9, borderRadius: "50%", flexShrink: 0, marginTop: 3 },
-  iConnector: { flex: 1, width: 1, background: P.surface3, marginTop: 4 },
-  iBody: { flex: 1 },
-  iTitle: { fontSize: 15, fontWeight: 700, color: P.textPrimary, marginBottom: 4, display: "flex", alignItems: "center", gap: 6 },
-  iDetail: { fontSize: 13, color: P.textMuted, marginBottom: 4 },
-  iType: { fontSize: 11, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase" },
-  iActionBtn: { border: "none", fontSize: 12, cursor: "pointer", padding: "5px 9px", borderRadius: 8 },
-  rowEditBtn: { background: P.surface2, border: "none", color: P.textSecondary, borderRadius: 10, padding: "8px 12px", fontSize: 13, fontWeight: 700, cursor: "pointer", marginLeft: 4, flexShrink: 0 },
-  rowDeleteBtn: { background: P.dangerBg, border: "none", color: P.danger, borderRadius: 10, padding: "8px 12px", fontSize: 13, fontWeight: 700, cursor: "pointer", marginLeft: 4, flexShrink: 0 },
-
-  // Expenses
   expSummary: { display: "flex", background: P.surface1, borderRadius: 18, marginBottom: 14, border: `1px solid ${P.surface3}` },
   expSumItem: { flex: 1, padding: "18px 0", textAlign: "center" },
   expSumDiv: { width: 1, background: P.surface3, margin: "12px 0" },
@@ -2906,16 +2304,6 @@ const S = {
   filterRow: { display: "flex", gap: 8, marginBottom: 16, overflowX: "auto", paddingBottom: 2 },
   chip: { background: P.surface1, border: `1px solid ${P.surface3}`, color: P.textMuted, borderRadius: 22, padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" },
   chipActive: {},
-  expRow: { display: "flex", alignItems: "center", gap: 14, padding: "16px 0", borderBottom: `1px solid ${P.surface1}` },
-  expIcon: { width: 44, height: 44, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800, flexShrink: 0 },
-  expBody: { flex: 1 },
-  expTitle: { fontSize: 16, fontWeight: 700, color: P.textPrimary, marginBottom: 4 },
-  expMeta: { fontSize: 13, color: P.textMuted },
-  expRight: { display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 },
-  expAmt: { fontSize: 17, fontWeight: 900, color: P.textPrimary, letterSpacing: "-0.5px" },
-  receiptBadge: { fontSize: 13 },
-
-  // Uploads
   sensitiveNote: { background: P.surface1, border: `1px solid ${P.surface3}`, borderRadius: 14, padding: "12px 16px", fontSize: 13, color: P.slateBlue, marginBottom: 16 },
   photoGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 },
   photoCard: { borderRadius: 18, height: 140, display: "flex", alignItems: "flex-end", position: "relative", overflow: "hidden", cursor: "pointer", transition: "opacity 0.2s" },
@@ -2930,8 +2318,6 @@ const S = {
   uploadIcon: { fontSize: 28, marginBottom: 8 },
   uploadText: { fontSize: 15, fontWeight: 700, color: P.textMuted, marginBottom: 4 },
   uploadSub: { fontSize: 13, color: P.textMuted },
-
-  // Members
   memberRow: { display: "flex", alignItems: "center", gap: 14, padding: "16px 0", borderBottom: `1px solid ${P.surface1}` },
   memberAvatar: { width: 48, height: 48, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, fontWeight: 900, flexShrink: 0 },
   memberInfo: { flex: 1 },
@@ -2939,9 +2325,7 @@ const S = {
   youTag: { background: P.surface2, color: P.lightBlue, fontSize: 10, fontWeight: 800, borderRadius: 6, padding: "2px 8px", letterSpacing: "1px" },
   memberMeta: { fontSize: 13, color: P.textMuted, marginTop: 3 },
   memberRight: {},
-  evenBadge: { background: P.surface2, color: P.textMuted, fontSize: 12, fontWeight: 700, borderRadius: 8, padding: "5px 10px" },
-
-  // Modals
+  evenBadge: { background: P.surface2, color: P.textMuted, fontSize: 12, fontWeight: 700, borderRadius: 8, padding: "5px 10px", border: "1px solid transparent" },
   overlay: { position: "absolute", top: 0, bottom: 0, left: 0, right: 0, display: "flex", alignItems: "flex-end", zIndex: 100, background: "rgba(0,0,0,0.4)" },
   sheet: { background: P.surface1, borderRadius: "24px 24px 0 0", width: "100%", maxHeight: "88%", overflowY: "auto", paddingBottom: 24, boxShadow: `0 -20px 60px rgba(0,0,0,0.8), 0 -1px 0 rgba(255,255,255,0.06)` },
   sheetHandle: { width: 40, height: 5, background: P.surface3, borderRadius: 10, margin: "14px auto 0" },
@@ -2949,55 +2333,21 @@ const S = {
   sheetTitle: { fontSize: 20, fontWeight: 900, color: P.textPrimary, letterSpacing: "-0.5px" },
   closeBtn: { background: P.surface2, border: "none", color: P.textSecondary, width: 34, height: 34, borderRadius: "50%", cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center" },
   sheetBody: { padding: "4px 22px 22px" },
-  stepRow: { display: "flex", gap: 6, justifyContent: "center", marginBottom: 18 },
   stepDot: { width: 7, height: 7, borderRadius: "50%", background: P.surface3 },
   stepDotActive: { background: P.terracotta },
-
-  // Forms
   field: { marginBottom: 18 },
   fieldLbl: { fontSize: 10, fontWeight: 800, color: P.textMuted, letterSpacing: "2.5px", marginBottom: 10 },
   input: { background: P.phoneBg, border: `1px solid ${P.surface3}`, borderRadius: 14, padding: "14px 16px", color: P.textPrimary, fontSize: 16, width: "100%", boxSizing: "border-box", outline: "none", fontFamily: "inherit" },
-  amountWrap: { position: "relative" },
-  dollarSign: { position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", color: P.textMuted, fontSize: 16, fontWeight: 700 },
-  catRow: { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 },
-  catBtn: {
-    background: P.surface1, border: `1px solid ${P.surface3}`,
-    color: P.textMuted, borderRadius: 14, padding: "12px 8px",
-    fontSize: 13, fontWeight: 700, cursor: "pointer",
-    display: "flex", flexDirection: "column", alignItems: "center",
-    justifyContent: "center", minHeight: 56, gap: 4,
-  },
-  paidRow: { display: "flex", flexWrap: "wrap", gap: 8 },
-  paidBtn: {
-    background: P.surface1, border: `1px solid ${P.surface3}`,
-    color: P.textMuted, borderRadius: 14, padding: "10px 16px",
-    fontSize: 13, fontWeight: 700, cursor: "pointer",
-  },
+  paidBtn: { background: P.surface1, border: `1px solid ${P.surface3}`, color: P.textMuted, borderRadius: 14, padding: "10px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer" },
   paidBtnActive: { background: P.surface2, border: `1px solid ${P.lightBlue}`, color: P.lightBlue },
-
-  // Split
-  splitInfo: { textAlign: "center", padding: "18px 0 22px", borderBottom: `1px solid ${P.surface3}`, marginBottom: 18 },
-  splitAmt: { fontSize: 44, fontWeight: 900, color: P.textPrimary, letterSpacing: "-2px" },
-  splitLbl: { fontSize: 13, color: P.textMuted, marginTop: 4 },
-  perPerson: { fontSize: 15, color: P.terracotta, fontWeight: 700, marginTop: 6 },
   splitGrid: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 22 },
   splitMember: { background: P.surface2, border: `1px solid ${P.surface3}`, borderRadius: 14, padding: "14px 8px", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, position: "relative" },
   splitMemberOn: { border: `1px solid ${P.terracotta}`, background: "#1e1810" },
   splitAvatar: { width: 40, height: 40, borderRadius: "50%", background: P.surface3, color: P.textMuted, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 800 },
   splitName: { fontSize: 12, color: P.textSecondary, fontWeight: 600 },
   splitCheck: { position: "absolute", top: 6, right: 6, fontSize: 10, color: P.terracotta, fontWeight: 800 },
-
-  // Confirm
-  confirmCard: { background: P.surface2, borderRadius: 18, padding: "18px", marginBottom: 22, border: `1px solid ${P.surface3}` },
-  confirmRow: { display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: `1px solid ${P.surface3}` },
-  confirmLbl: { fontSize: 13, color: P.textMuted },
-  confirmVal: { fontSize: 14, fontWeight: 700, color: P.textPrimary },
-
-  // Buttons
   primaryBtn: { background: P.surface2, color: P.textPrimary, border: "none", borderRadius: 16, padding: "16px", width: "100%", fontSize: 16, fontWeight: 800, cursor: "pointer", letterSpacing: "-0.3px" },
   secondaryBtn: { background: P.surface2, color: P.textMuted, border: `1px solid ${P.surface3}`, borderRadius: 16, padding: "16px", flex: 1, fontSize: 15, fontWeight: 700, cursor: "pointer" },
-
-  // Settle
   settleSection: { marginBottom: 22 },
   settleRow: { background: P.surface2, borderRadius: 16, padding: "16px", marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "center", transition: "opacity 0.2s", border: `1px solid ${P.surface3}` },
   settlePeople: { fontSize: 16, fontWeight: 700, marginBottom: 4 },
@@ -3005,28 +2355,14 @@ const S = {
   payBtn: { background: P.surface1, border: `1px solid ${P.surface3}`, color: P.textSecondary, borderRadius: 10, padding: "8px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer" },
   markBtn: { background: P.surface2, border: "none", color: P.textMuted, borderRadius: 10, padding: "8px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer" },
   markBtnDone: { background: P.successBg, color: P.success },
-
-  // Share
   shareSubtitle: { fontSize: 14, color: P.slateBlue, marginBottom: 18 },
   shareOption: { display: "flex", alignItems: "center", gap: 14, background: P.surface2, border: `1px solid ${P.surface3}`, borderRadius: 18, padding: "16px", marginBottom: 12 },
   shareOptTitle: { fontSize: 15, fontWeight: 800, marginBottom: 3 },
   shareOptSub: { fontSize: 13, color: P.textMuted },
   copyBtn: { background: "transparent", border: "1px solid", borderRadius: 22, padding: "8px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer", flexShrink: 0 },
   shareNote: { background: P.surface1, border: `1px solid ${P.surface3}`, borderRadius: 14, padding: "12px 16px", fontSize: 13, color: P.slateBlue, marginTop: 8 },
-
-  // Settings
   settingsSection: { marginBottom: 30 },
   settingsSectionLabel: { fontSize: 11, fontWeight: 800, color: P.textMuted, letterSpacing: "2.5px", marginBottom: 14 },
   settingsCard: { background: P.surface1, border: `1px solid ${P.surface3}`, borderRadius: 18, padding: "18px" },
-
-  // New trip prompt
-  promptWrap: { position: "relative", marginBottom: 14 },
-  promptInput: { background: P.phoneBg, border: `1px solid ${P.surface3}`, borderRadius: 16, padding: "16px 52px 16px 16px", color: P.textPrimary, fontSize: 16, width: "100%", boxSizing: "border-box", outline: "none", fontFamily: "inherit", resize: "none", lineHeight: 1.6 },
-  micBtn: { position: "absolute", right: 12, top: 12, background: P.surface2, border: "none", borderRadius: 10, width: 38, height: 38, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" },
-  micBtnActive: { background: P.dangerBg, border: `1px solid ${P.danger}40` },
-  listeningBadge: { display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: P.danger, fontWeight: 700, marginBottom: 14 },
-  listeningDot: { width: 9, height: 9, borderRadius: "50%", background: P.danger },
-  examplesLabel: { fontSize: 10, fontWeight: 800, color: P.textMuted, letterSpacing: "2.5px", marginBottom: 10 },
-  exampleChip: { background: P.surface2, border: `1px solid ${P.surface3}`, borderRadius: 12, padding: "11px 14px", color: P.textMuted, fontSize: 13, textAlign: "left", cursor: "pointer", fontFamily: "inherit" },
-  previewCard: { borderRadius: 20, padding: "22px", marginBottom: 22, border: `1px solid rgba(255,255,255,0.05)` },
+  rowDeleteBtn: { background: P.dangerBg, border: "none", color: P.danger, borderRadius: 10, padding: "8px 12px", fontSize: 13, fontWeight: 700, cursor: "pointer", marginLeft: 4, flexShrink: 0 },
 };
