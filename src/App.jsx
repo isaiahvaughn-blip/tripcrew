@@ -3,8 +3,8 @@ import React, { useState, useEffect, useRef } from "react";
 import {
   Plane, Mountain, Bike, Umbrella, Map, Snowflake, Car, Anchor, Tent, Theater,
   UtensilsCrossed, Hotel, Zap, Train, Calendar, DollarSign, Image, Users,
-  MapPin, ChevronRight, Mic, MicOff, Sparkles, Loader, BarChart2, Trophy, Clock,
-  Coffee, Wine, Music, ShoppingBag, Dumbbell, PartyPopper, House, Sunset, Sailboat, Camera
+  MapPin, ChevronRight, Sparkles, BarChart2, Trophy, Clock,
+  Coffee, Wine, Music, ShoppingBag, Dumbbell, PartyPopper, House, Sunset, Camera, Download
 } from "lucide-react";
 
 const fontLink = document.createElement('link');
@@ -33,17 +33,23 @@ const P = {
 
 const ITINERARY_COLORS = {
   flight:     { accent: P.lightBlue },
-  stay:       { accent: "#6bbf8a" },
-  activity:   { accent: P.terracotta },
-  restaurant: { accent: "#e4a0b0" },
   transport:  { accent: "#a090d0" },
+  stay:       { accent: "#6bbf8a" },
+  restaurant: { accent: "#e4a0b0" },
+  drinks:     { accent: P.orange },
+  activity:   { accent: P.terracotta },
+  shopping:   { accent: "#d4a0e0" },
+  other:      { accent: P.slateBlue },
 };
 
 const CATEGORY_META = {
-  Stay:      { color: "#6bbf8a", bg: "#142a1e" },
-  Food:      { color: "#e4a576", bg: "#2a1c10" },
-  Activity:  { color: "#b8d4e0", bg: "#162840" },
-  Transport: { color: "#a090d0", bg: "#1e1e2a" },
+  Dining:   { color: "#e4a0b0", bg: "#2a1520" },
+  Drinks:   { color: P.orange,  bg: "#2a1c10" },
+  Stay:     { color: "#6bbf8a", bg: "#142a1e" },
+  Activity: { color: P.lightBlue, bg: "#162840" },
+  Shopping: { color: "#d4a0e0", bg: "#1e1a2a" },
+  Travel:   { color: "#a090d0", bg: "#1a1e2a" },
+  Other:    { color: P.slateBlue, bg: "#162030" },
 };
 
 const TRIP_ICONS = {
@@ -79,14 +85,18 @@ const TRIP_ICON_LIST = [
 ];
 
 const ITIN_TYPE_ICONS = {
-  flight: Plane, stay: Hotel, activity: Zap,
-  restaurant: UtensilsCrossed, transport: Train,
+  flight: Plane, transport: Train, stay: Hotel,
+  restaurant: UtensilsCrossed, drinks: Wine,
+  activity: Zap, shopping: ShoppingBag, other: MapPin,
 };
 
+const ITIN_TYPES = ["flight","transport","stay","restaurant","drinks","activity","shopping","other"];
 
-
-const CAT_ICONS = { Stay: Hotel, Food: UtensilsCrossed, Activity: Zap, Transport: Train };
-const CATS = ["Food","Stay","Activity","Transport"];
+const CAT_ICONS = {
+  Dining: UtensilsCrossed, Drinks: Wine, Stay: Hotel,
+  Activity: Zap, Shopping: ShoppingBag, Travel: Train, Other: MapPin,
+};
+const CATS = ["Dining","Drinks","Stay","Activity","Shopping","Travel","Other"];
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -181,6 +191,7 @@ export default function App() {
             itinRefresh={itinRefresh} modal={modal} setModal={setModal}
             user={user} profile={profile}
             onItinRefresh={() => setItinRefresh(r => r + 1)}
+            onTripUpdate={(updated) => setActiveTrip(updated)}
           />
         )}
       </div>
@@ -471,12 +482,17 @@ function ProfileScreen({ onOpen, user, onSignOut, onSettings, profile, onProfile
   return (
     <div style={S.screen}>
       <div style={S.profileHero}>
-        <div style={{ position: "relative", display: "inline-block", marginBottom: 16 }} onClick={() => setShowAvatarEdit(true)}>
-          <div style={S.profileAvatar}>{renderAvatarContent(profile, user)}</div>
-          <div style={SP.avatarEditBadge}>✎</div>
+        {/* Horizontal: avatar left, name+year right */}
+        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
+          <div style={{ position: "relative", flexShrink: 0, cursor: "pointer" }} onClick={() => setShowAvatarEdit(true)}>
+            <div style={{ ...S.profileAvatar, width: 60, height: 60, fontSize: 20 }}>{renderAvatarContent(profile, user)}</div>
+            <div style={SP.avatarEditBadge}>✎</div>
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ ...S.profileName, fontSize: 22, marginBottom: 2 }}>{profile?.display_name || user.email}</div>
+            <div style={S.profileSub}>member since {profile?.created_at ? new Date(profile.created_at).getFullYear() : "—"}</div>
+          </div>
         </div>
-        <div style={S.profileName}>{profile?.display_name || user.email}</div>
-        <div style={S.profileSub}>member since {profile?.created_at ? new Date(profile.created_at).getFullYear() : "—"}</div>
 
         {/* Stats row — customizable */}
         <div style={{ position: "relative" }}>
@@ -773,8 +789,22 @@ function TripCard({ trip, onOpen, onDelete, onEdit, selecting, selected, onLongP
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
           {trip.settled && <span style={S.settledBadge}>SETTLED</span>}
-          {trip.total_spent > 0 && <div style={{ ...S.tcTotal, color: P.terracotta }}>${trip.total_spent.toLocaleString()}</div>}
           <ChevronRight size={18} color={P.terracotta + "80"} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── CONFIRMATION MODAL ───────────────────────────────────────────────────────
+function ConfirmModal({ message, onConfirm, onCancel, confirmLabel = "Confirm", danger = false }) {
+  return (
+    <div style={{ position: "absolute", inset: 0, zIndex: 500, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", padding: "0 32px" }}>
+      <div style={{ background: P.surface1, border: `1px solid ${P.surface3}`, borderRadius: 20, padding: "24px 22px", width: "100%" }}>
+        <div style={{ fontSize: 15, color: P.textPrimary, fontWeight: 600, marginBottom: 20, lineHeight: 1.5, textAlign: "center" }}>{message}</div>
+        <div style={{ display: "flex", gap: 10 }}>
+          <button style={{ ...S.secondaryBtn, flex: 1 }} onClick={onCancel}>Cancel</button>
+          <button style={{ ...S.primaryBtn, flex: 1, background: danger ? P.danger : `linear-gradient(135deg, ${P.orange}, ${P.terracotta})` }} onClick={onConfirm}>{confirmLabel}</button>
         </div>
       </div>
     </div>
@@ -811,22 +841,18 @@ function calcSettlements(expenses) {
 
 // ─── TRIP SHELL ───────────────────────────────────────────────────────────────
 
-function TripShell({ trip, activeTab, setActiveTab, onBack, onModal, itinRefresh, modal, setModal, user, profile, onItinRefresh }) {
+function TripShell({ trip, activeTab, setActiveTab, onBack, onModal, itinRefresh, modal, setModal, user, profile, onItinRefresh, onTripUpdate }) {
   const [expenses, setExpenses] = useState([]);
+  const [editingTrip, setEditingTrip] = useState(false);
   const myName = profile?.display_name || user?.email?.split('@')[0] || 'Me';
   const IconComp = TRIP_ICONS[trip.emoji] || Plane;
   const settlements = calcSettlements(expenses);
+  const nameFontSize = (trip.name?.length || 0) > 22 ? 15 : (trip.name?.length || 0) > 16 ? 17 : 19;
 
-  // Fetch expenses at shell level so Summary + Members always have data
   useEffect(() => {
-    const fetchExpenses = async () => {
-      const { data } = await supabase.from('expenses').select('*').eq('trip_id', trip.id).order('created_at', { ascending: false });
-      setExpenses(data || []);
-    };
-    fetchExpenses();
-    const sub = supabase.channel(`shell-expenses:${trip.id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, fetchExpenses)
-      .subscribe();
+    const fetch = async () => { const { data } = await supabase.from('expenses').select('*').eq('trip_id', trip.id).order('created_at', { ascending: false }); setExpenses(data || []); };
+    fetch();
+    const sub = supabase.channel(`shell-expenses:${trip.id}`).on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, fetch).subscribe();
     return () => sub.unsubscribe();
   }, [trip.id, itinRefresh]);
 
@@ -840,18 +866,28 @@ function TripShell({ trip, activeTab, setActiveTab, onBack, onModal, itinRefresh
 
   return (
     <div style={S.tripShell}>
-      <div style={{ ...S.tripHeader, background: P.surface1 }}>
-        <button style={S.backBtn} onClick={() => { setModal(null); onBack(); }}>←</button>
-        <div style={S.thMid}>
+      {editingTrip && (
+        <EditTripModal trip={trip} onClose={() => setEditingTrip(false)}
+          onSave={(updated) => { onTripUpdate?.(updated); setEditingTrip(false); }} />
+      )}
+      {/* Header — 3 rows */}
+      <div style={{ background: P.surface1, borderBottom: `1px solid ${P.surface3}`, flexShrink: 0 }}>
+        {/* Row 1: back · icon · share */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 18px 6px" }}>
+          <button style={S.backBtn} onClick={() => { setModal(null); onBack(); }}>←</button>
           <div style={{ ...S.thIconWrap, background: P.terracotta + "20" }}>
-            <IconComp size={22} color={P.terracotta} strokeWidth={1.5} />
+            <IconComp size={20} color={P.terracotta} strokeWidth={1.5} />
           </div>
-          <div>
-            <div style={S.thName}>{trip.name}</div>
-            <div style={S.thSub}>{trip.location} · {trip.dates}</div>
-          </div>
+          <button style={{ ...S.shareHeaderBtn, color: P.terracotta }} onClick={() => onModal("share")}>↗ Share</button>
         </div>
-        <button style={{ ...S.shareHeaderBtn, color: P.terracotta }} onClick={() => onModal("share")}>↗ Share</button>
+        {/* Row 2: trip name — tappable */}
+        <div style={{ textAlign: "center", padding: "0 56px", cursor: "pointer" }} onClick={() => setEditingTrip(true)}>
+          <div style={{ fontSize: nameFontSize, fontWeight: 900, color: P.textPrimary, letterSpacing: "-0.5px", whiteSpace: "nowrap", overflow: "hidden" }}>{trip.name}</div>
+        </div>
+        {/* Row 3: location · dates */}
+        <div style={{ textAlign: "center", fontSize: 12, color: P.textSecondary, padding: "3px 22px 12px", lineHeight: 1.4 }}>
+          {trip.location}{trip.dates ? ` · ${trip.dates}` : ""}
+        </div>
       </div>
 
       <div style={{ ...S.tabContent, position: "relative" }}>
@@ -859,7 +895,7 @@ function TripShell({ trip, activeTab, setActiveTab, onBack, onModal, itinRefresh
         {activeTab === "expenses"  && <ExpensesTab  trip={trip} onModal={onModal} expRefresh={itinRefresh} profile={profile} user={user} expenses={expenses} settlements={settlements} myName={myName} />}
         {activeTab === "uploads"   && <UploadsTab trip={trip} user={user} profile={profile} />}
         {activeTab === "members"   && <MembersTab trip={trip} profile={profile} expenses={expenses} />}
-        {activeTab === "summary"   && <SummaryTab trip={trip} settlements={settlements} myName={myName} />}
+        {activeTab === "summary"   && <SummaryTab trip={trip} settlements={settlements} myName={myName} expenses={expenses} />}
         {modal === "addExpense"    && <AddExpenseModal trip={trip} user={user} profile={profile} onClose={() => setModal(null)} onAdd={onItinRefresh} />}
         {modal === "addItinerary"  && <AddItinModal trip={trip} onClose={() => setModal(null)} onAdd={() => { setModal(null); onItinRefresh(); setTimeout(onItinRefresh, 100); }} />}
         {modal === "settle"        && <SettleModal settlements={settlements} myName={myName} trip={trip} onClose={() => setModal(null)} />}
@@ -895,13 +931,14 @@ function ItineraryTab({ trip, onModal, refreshKey }) {
   const [editingItem, setEditingItem] = useState(null);
   const [selectedIds, setSelectedIds] = useState([]);
   const [selecting, setSelecting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const longPressTimers = useRef({});
 
   const handleDeleteSelected = async () => {
     if (!selectedIds.length) return;
     for (const id of selectedIds) { await supabase.from('itinerary').delete().eq('id', id); }
     setItems(prev => prev.filter(i => !selectedIds.includes(i.id)));
-    setSelectedIds([]); setSelecting(false);
+    setSelectedIds([]); setSelecting(false); setConfirmDelete(false);
   };
 
   const handleLongPressStart = (id) => { longPressTimers.current[id] = setTimeout(() => { setSelecting(true); setSelectedIds([id]); }, 500); };
@@ -927,13 +964,14 @@ function ItineraryTab({ trip, onModal, refreshKey }) {
 
   return (
     <div style={S.tabScroll}>
+      {confirmDelete && <ConfirmModal message={`Delete ${selectedIds.length} item${selectedIds.length > 1 ? 's' : ''}?`} onConfirm={handleDeleteSelected} onCancel={() => setConfirmDelete(false)} confirmLabel="Delete" danger />}
       <div style={S.tabTopRow}>
         <div style={S.tabTitle}>Itinerary</div>
         {selecting
           ? <div style={{ display: "flex", gap: 8 }}>
               <button style={{ ...S.actionBtn, color: P.slateBlue }} onClick={cancelSelection}>Cancel</button>
               {selectedIds.length > 0 && (
-                <button style={{ ...S.actionBtn, borderColor: P.danger + "60", color: P.danger }} onClick={handleDeleteSelected}>Delete ({selectedIds.length})</button>
+                <button style={{ ...S.actionBtn, borderColor: P.danger + "60", color: P.danger }} onClick={() => setConfirmDelete(true)}>Delete ({selectedIds.length})</button>
               )}
             </div>
           : <button style={S.newBtn} onClick={() => onModal("addItinerary")}>+ Add</button>
@@ -1027,7 +1065,7 @@ function ExpensesTab({ trip, onModal, expRefresh, profile, user, expenses, settl
   const [filter, setFilter] = useState("All");
   const [editingExpense, setEditingExpense] = useState(null);
   const [memberCount, setMemberCount] = useState(0);
-  const cats = ["All", "Stay", "Food", "Activity", "Transport"];
+  const cats = ["All","Dining","Drinks","Stay","Activity","Shopping","Travel","Other"];
 
   useEffect(() => {
     supabase.from('members').select('id').eq('trip_id', trip.id).then(({ data }) => setMemberCount(data?.length || 0));
@@ -1041,7 +1079,12 @@ function ExpensesTab({ trip, onModal, expRefresh, profile, user, expenses, settl
     <div style={S.tabScroll}>
       <div style={S.tabTopRow}>
         <div style={S.tabTitle}>Expenses</div>
-        <button style={S.newBtn} onClick={() => onModal("addExpense")}>+ Add</button>
+        <div style={{ display: "flex", gap: 8 }}>
+          {settlements.length > 0 && (
+            <button style={{ ...S.actionBtn, borderColor: P.lightBlue+"60", color: P.lightBlue }} onClick={() => onModal("settle")}>⚖️ Settle</button>
+          )}
+          <button style={S.newBtn} onClick={() => onModal("addExpense")}>+ Add</button>
+        </div>
       </div>
       <div style={S.expSummary}>
         <div style={S.expSumItem}><div style={S.expSumVal}>${total.toLocaleString()}</div><div style={S.expSumLbl}>total spent</div></div>
@@ -1053,29 +1096,15 @@ function ExpensesTab({ trip, onModal, expRefresh, profile, user, expenses, settl
           <div style={S.expSumLbl}>you owe</div>
         </div>
       </div>
-      {settlements.length > 0 && (
-        <button style={S.settleCta} onClick={() => onModal("settle")}>
-          <span>⚖️ Settle Up — {settlements.filter(s => s.from === myName).length} transfers pending</span>
-          <span style={S.settleArrow}>→</span>
-        </button>
-      )}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 6, marginBottom: 16 }}>
+      <div style={{ display: "flex", gap: 6, overflowX: "auto", marginBottom: 16, paddingBottom: 4 }}>
         {cats.map(c => {
           const meta = CATEGORY_META[c];
           const CIcon = CAT_ICONS[c] || DollarSign;
           const selected = filter === c;
           return (
             <button key={c} onClick={() => setFilter(c)}
-              style={{
-                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                gap: 4, padding: "8px 4px", borderRadius: 12, cursor: "pointer", minHeight: 50,
-                background: selected ? (c === "All" ? P.terracotta + "18" : meta?.bg || P.surface2) : P.surface1,
-                border: selected ? `1px solid ${c === "All" ? P.terracotta : meta?.color || P.terracotta}` : `1px solid ${P.surface3}`,
-              }}>
-              {c === "All"
-                ? <DollarSign size={15} color={selected ? P.terracotta : P.textMuted} strokeWidth={1.5} />
-                : <CIcon size={15} color={selected ? meta?.color : P.textMuted} strokeWidth={1.5} />
-              }
+              style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, padding: "8px 10px", borderRadius: 12, cursor: "pointer", minHeight: 50, minWidth: 56, flexShrink: 0, background: selected ? (c === "All" ? P.terracotta+"18" : meta?.bg || P.surface2) : P.surface1, border: selected ? `1px solid ${c === "All" ? P.terracotta : meta?.color || P.terracotta}` : `1px solid ${P.surface3}` }}>
+              {c === "All" ? <DollarSign size={15} color={selected ? P.terracotta : P.textMuted} strokeWidth={1.5} /> : <CIcon size={15} color={selected ? meta?.color : P.textMuted} strokeWidth={1.5} />}
               <span style={{ fontSize: 9, fontWeight: 700, color: selected ? (c === "All" ? P.terracotta : meta?.color) : P.textMuted, textTransform: "capitalize", letterSpacing: "0.3px" }}>{c}</span>
             </button>
           );
@@ -1141,6 +1170,9 @@ function UploadsTab({ trip, user, profile }) {
 
   const handleUpload = async (file) => {
     if (!file) return;
+    const validExts = ['jpg','jpeg','png','gif','webp','heic','heif'];
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (!validExts.includes(ext)) { alert('Please upload an image file (jpg, png, gif, webp, heic)'); return; }
     setUploading(true);
     try {
       const ext = file.name.split('.').pop();
@@ -1160,8 +1192,9 @@ function UploadsTab({ trip, user, profile }) {
     if (!error) setPhotos(p => p.map(ph => ph.id === photo.id ? { ...ph, sensitive: !ph.sensitive } : ph));
   };
 
+  const [confirmDeletePhotos, setConfirmDeletePhotos] = useState(false);
+
   const handleDeleteSelected = async () => {
-    if (!window.confirm(`Remove ${selectedIds.length} photo${selectedIds.length > 1 ? 's' : ''}?`)) return;
     for (const id of selectedIds) {
       const ph = photos.find(p => p.id === id);
       if (ph) {
@@ -1170,7 +1203,7 @@ function UploadsTab({ trip, user, profile }) {
       }
     }
     setPhotos(p => p.filter(ph => !selectedIds.includes(ph.id)));
-    setSelectedIds([]); setSelecting(false);
+    setSelectedIds([]); setSelecting(false); setConfirmDeletePhotos(false);
   };
 
   const handleMarkSensitiveSelected = async () => {
@@ -1199,6 +1232,7 @@ function UploadsTab({ trip, user, profile }) {
 
   return (
     <div style={S.tabScroll}>
+      {confirmDeletePhotos && <ConfirmModal message={`Remove ${selectedIds.length} photo${selectedIds.length > 1 ? 's' : ''}?`} onConfirm={handleDeleteSelected} onCancel={() => setConfirmDeletePhotos(false)} confirmLabel="Remove" danger />}
       <div style={S.tabTopRow}>
         <div style={S.tabTitle}>Memories</div>
         {selecting
@@ -1206,7 +1240,7 @@ function UploadsTab({ trip, user, profile }) {
               <button style={{ ...S.actionBtn, color: P.slateBlue }} onClick={() => { setSelecting(false); setSelectedIds([]); }}>Cancel</button>
               {selectedIds.length > 0 && <>
                 <button style={{ ...S.actionBtn, borderColor: P.terracotta + "60", color: P.terracotta }} onClick={handleMarkSensitiveSelected}>🔒</button>
-                <button style={{ ...S.actionBtn, borderColor: P.danger + "60", color: P.danger }} onClick={handleDeleteSelected}>Remove</button>
+                <button style={{ ...S.actionBtn, borderColor: P.danger + "60", color: P.danger }} onClick={() => setConfirmDeletePhotos(true)}>Remove</button>
               </>}
             </div>
           : <button style={S.newBtn} onClick={() => fileInputRef.current?.click()} disabled={uploading}>
@@ -1278,6 +1312,10 @@ function UploadsTab({ trip, user, profile }) {
               <button onClick={e => { e.stopPropagation(); toggleSensitive(previewPhoto); setPreviewPhoto(p => ({ ...p, sensitive: !p.sensitive })); }}
                 style={{ background: previewPhoto.sensitive ? "#2a1810" : P.surface2, border: "none", color: previewPhoto.sensitive ? P.terracotta : P.textMuted, borderRadius: 10, padding: "7px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                 {previewPhoto.sensitive ? "🔒 Sensitive" : "Mark 🔒"}
+              </button>
+              <button onClick={e => { e.stopPropagation(); const a = document.createElement('a'); a.href = previewPhoto.url; a.download = previewPhoto.caption || 'photo'; a.target = '_blank'; a.click(); }}
+                style={{ background: P.surface2, border: "none", color: P.lightBlue, borderRadius: 10, padding: "7px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+                <Download size={12} /> Save
               </button>
               <button style={S.closeBtn} onClick={() => setPreviewPhoto(null)}>✕</button>
             </div>
@@ -1407,17 +1445,14 @@ function MembersTab({ trip, profile, expenses }) {
               <span style={{ fontSize: isEmoji ? 22 : 16, fontWeight: isEmoji ? 400 : 900, letterSpacing: "-0.5px" }}>{content}</span>
             </div>
             <div style={S.memberInfo}>
-              <div style={S.memberName}>
-                {m.name}
-                {myName && m.name === myName ? <span style={S.youTag}>you</span> : ""}
-              </div>
+              <div style={S.memberName}>{m.name}</div>
             </div>
             <div style={S.memberRight}>
               <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                <div style={{ ...S.evenBadge, color: balance.color, borderColor: balance.color + "30" }}>{balance.text}</div>
+                <div style={{ background: P.surface2, border: `1px solid ${balance.color}30`, borderRadius: 10, padding: "6px 12px", fontSize: 12, fontWeight: 700, color: balance.color, minWidth: 80, textAlign: "center" }}>{balance.text}</div>
                 {m.name !== myName && (
                   <button style={S.rowDeleteBtn} onClick={async () => {
-                    if (!window.confirm(`Remove ${m.name}?`)) return;
+                    if (!window.confirm(`Remove ${m.name} from this trip?`)) return;
                     const { error } = await supabase.from('members').delete().eq('id', m.id);
                     if (!error) setMembers(prev => prev.filter(mb => mb.id !== m.id));
                   }}>✕</button>
@@ -1434,15 +1469,13 @@ function MembersTab({ trip, profile, expenses }) {
 
 // ─── SUMMARY TAB ─────────────────────────────────────────────────────────────
 
-function SummaryTab({ trip, settlements, myName }) {
+function SummaryTab({ trip, settlements, myName, expenses }) {
   const [members, setMembers] = useState([]);
-  const [expenses, setExpenses] = useState([]);
   const [itinCount, setItinCount] = useState(0);
   const [photoCount, setPhotoCount] = useState(0);
 
   useEffect(() => {
     supabase.from('members').select('*').eq('trip_id', trip.id).then(({ data }) => setMembers(data || []));
-    supabase.from('expenses').select('*').eq('trip_id', trip.id).then(({ data }) => setExpenses(data || []));
     supabase.from('itinerary').select('id').eq('trip_id', trip.id).then(({ data }) => setItinCount(data?.length || 0));
     supabase.from('photos').select('id').eq('trip_id', trip.id).then(({ data }) => setPhotoCount(data?.length || 0));
   }, [trip.id]);
@@ -1475,7 +1508,7 @@ function SummaryTab({ trip, settlements, myName }) {
           <div style={SS.detailCard}>
             {Object.entries(categoryTotals).map(([cat, amt], i, arr) => {
               const pct = total > 0 ? Math.round((amt / total) * 100) : 0;
-              const meta = { Stay: P.success, Food: P.terracotta, Activity: P.lightBlue, Transport: "#a090d0" };
+              const meta = { Stay: P.success, Dining: "#e4a0b0", Drinks: P.orange, Activity: P.lightBlue, Shopping: "#d4a0e0", Travel: "#a090d0", Other: P.slateBlue };
               return (
                 <div key={cat} style={{ ...SS.detailRow, ...(i === arr.length - 1 ? { borderBottom: "none" } : {}) }}>
                   <span style={SS.detailLbl}>{cat}</span>
@@ -1708,7 +1741,7 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
       const promptText = `Generate a short, natural trip name (max 5 words) for: ${answers.vibe?.label} at ${answers.location}${timeStr}, ${dateStr}, ${whoStr}. Examples: "Coffee at Barista with Derek", "Tokyo October", "Banff Long Weekend". Only return the name, nothing else.`;
       const res = await fetch("/api/parse-trip", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt: promptText, mode: "name" }) });
       const data = await res.json();
-      const name = (data.content?.[0]?.text || "").trim().replace(/^"|"$/g, '');
+      const name = (data.content?.[0]?.text || "").trim().replace(/^"|"$/g, '').slice(0, 30);
       setAnswers(a => ({ ...a, generatedName: name, editedName: name }));
     } catch (e) {
       const fallback = `${answers.vibe?.label} at ${answers.location}`;
@@ -1789,7 +1822,7 @@ function NewTripModal({ onClose, onSave, userId, userProfile }) {
               <div style={SN.question}>Looks good?</div>
               <div style={SN.confirmCard}>
                 <div style={SN.confirmIcon}><IconComp size={28} color={P.terracotta} strokeWidth={1.5} /></div>
-                <input ref={nameInputRef} key="name-input" style={SN.nameInput} defaultValue={answers.editedName} onBlur={e => setAnswers(a => ({ ...a, editedName: e.target.value }))} />
+                <input ref={nameInputRef} key="name-input" style={SN.nameInput} defaultValue={answers.editedName} maxLength={30} onBlur={e => setAnswers(a => ({ ...a, editedName: e.target.value }))} />
                 <div style={SN.confirmMeta}>{answers.location}{dateStr ? ` · ${dateStr}` : ""}{timeStr ? ` · ${timeStr}` : ""}</div>
                 <div style={SN.confirmPeople}>{answers.solo ? "Just you" : answers.who.length ? `You + ${answers.who.length} others` : "Just you"}</div>
               </div>
@@ -1854,12 +1887,19 @@ function AddExpenseModal({ onClose, trip, onAdd, user, profile, existingExpense 
     supabase.from('members').select('name').eq('trip_id', trip.id).then(({ data }) => {
       const memberNames = data ? data.map(m => m.name) : [];
       const userDisplay = profile?.display_name || user?.email?.split('@')[0] || 'Me';
-      const names = [userDisplay, ...memberNames.filter(n => n !== userDisplay)];
+      // Deduplicate case-insensitively, keep unique names only
+      const seen = new Set([userDisplay.toLowerCase()]);
+      const others = memberNames.filter(n => {
+        const lc = n.toLowerCase();
+        if (seen.has(lc)) return false;
+        seen.add(lc);
+        return true;
+      });
+      const names = [userDisplay, ...others];
       setMembers(names);
       if (!existingExpense) {
         setExp(e => ({ ...e, paidBy: userDisplay, splitWith: names }));
       } else if (!exp.paidBy) {
-        // paidBy was empty (null user passed previously) — default to first member
         setExp(e => ({ ...e, paidBy: names[0] || userDisplay }));
       }
     });
@@ -1912,22 +1952,17 @@ function AddExpenseModal({ onClose, trip, onAdd, user, profile, existingExpense 
       {step === 1 && (
         <div style={FS}>
           <div style={{ flex: 1 }}>
-            {/* Category tiles — matches itinerary style */}
+            {/* Category — horizontal scroll */}
             <div style={{ marginBottom: 12 }}>
               <div style={S.fieldLbl}>CATEGORY</div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}>
+              <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 4 }}>
                 {CATS.map(c => {
                   const m = CATEGORY_META[c];
                   const CIcon = CAT_ICONS[c];
                   const selected = exp.category === c;
                   return (
                     <button key={c} onClick={() => setExp(n => ({ ...n, category: c }))}
-                      style={{
-                        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                        gap: 4, padding: "8px 4px", borderRadius: 12, cursor: "pointer", minHeight: 50,
-                        background: selected ? m.bg : P.surface1,
-                        border: selected ? `1px solid ${m.color}` : `1px solid ${P.surface3}`,
-                      }}>
+                      style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, padding: "8px 10px", borderRadius: 12, cursor: "pointer", minHeight: 50, minWidth: 58, flexShrink: 0, background: selected ? m.bg : P.surface1, border: selected ? `1px solid ${m.color}` : `1px solid ${P.surface3}` }}>
                       <CIcon size={15} color={selected ? m.color : P.textMuted} strokeWidth={1.5} />
                       <span style={{ fontSize: 9, fontWeight: 700, color: selected ? m.color : P.textMuted, textTransform: "capitalize", letterSpacing: "0.3px" }}>{c}</span>
                     </button>
@@ -1967,8 +2002,11 @@ function AddExpenseModal({ onClose, trip, onAdd, user, profile, existingExpense 
             </div>
           </div>
 
-          <button style={{ ...S.primaryBtn, background: `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`, marginTop: "auto", marginTop: 14 }}
-            onClick={() => members.length <= 1 ? setStep(3) : setStep(2)}>
+          <button style={{ ...S.primaryBtn, background: `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`, marginTop: "auto", paddingTop: 14 }}
+            onClick={() => {
+              if (!exp.amount || parseFloat(exp.amount) <= 0) return;
+              members.length <= 1 ? setStep(3) : setStep(2);
+            }}>
             {members.length <= 1 ? "Review →" : "Next → Split"}
           </button>
         </div>
@@ -2070,17 +2108,17 @@ function AddItinModal({ onClose, trip, onAdd }) {
         <button style={S.closeBtn} onClick={onClose}>✕</button>
       </div>
       <div style={{ flex: 1, padding: "0 22px 12px", display: "flex", flexDirection: "column" }}>
-        {/* Type tiles */}
+        {/* Type — horizontal scroll */}
         <div style={{ marginBottom: 12 }}>
           <div style={S.fieldLbl}>TYPE</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 6 }}>
-            {["flight","stay","activity","restaurant","transport"].map(t => {
+          <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 4 }}>
+            {["flight","transport","stay","restaurant","drinks","activity","shopping","other"].map(t => {
               const m = ITINERARY_COLORS[t];
               const TIcon = ITIN_TYPE_ICONS[t];
               const selected = type === t;
               return (
                 <button key={t} onClick={() => setType(t)}
-                  style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, padding: "8px 4px", borderRadius: 12, cursor: "pointer", background: selected ? P.surface2 : P.surface1, border: selected ? `1px solid ${m.accent}` : `1px solid ${P.surface3}`, minHeight: 54 }}>
+                  style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, padding: "8px 10px", borderRadius: 12, cursor: "pointer", background: selected ? P.surface2 : P.surface1, border: selected ? `1px solid ${m.accent}` : `1px solid ${P.surface3}`, minHeight: 54, minWidth: 58, flexShrink: 0 }}>
                   <TIcon size={18} color={selected ? m.accent : P.textMuted} strokeWidth={1.5} />
                   <span style={{ fontSize: 9, fontWeight: 700, color: selected ? m.accent : P.textMuted, textTransform: "capitalize", letterSpacing: "0.3px" }}>{t}</span>
                 </button>
@@ -2099,21 +2137,19 @@ function AddItinModal({ onClose, trip, onAdd }) {
           <div style={S.fieldLbl}>DETAILS / CONFIRMATION #</div>
           <input ref={detailRef} style={{ ...S.input, fontSize: 14, padding: "12px 16px" }} placeholder="Confirmation code, address, notes..." defaultValue="" />
         </div>
-        {/* Date + Time — bigger */}
-        <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ ...S.fieldLbl, display: "flex", alignItems: "center", gap: 6 }}>
-              <Calendar size={12} color={P.textMuted} /> DATE
-            </div>
-            <input type="date" value={day} onChange={e => setDay(e.target.value)} style={{ ...S.input, colorScheme: "dark", fontSize: 15, padding: "13px 12px" }} />
+        {/* Date full width, Time below */}
+        <div style={{ marginBottom: 10 }}>
+          <div style={{ ...S.fieldLbl, display: "flex", alignItems: "center", gap: 6 }}>
+            <Calendar size={12} color={P.textMuted} /> DATE
           </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ ...S.fieldLbl, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}><Clock size={12} color={P.textMuted} /> TIME</div>
-              <span style={{ color: P.textMuted }}>optional</span>
-            </div>
-            <input type="time" value={time} onChange={e => setTime(e.target.value)} style={{ ...S.input, colorScheme: "dark", fontSize: 15, padding: "13px 12px" }} />
+          <input type="date" value={day} onChange={e => setDay(e.target.value)} style={{ ...S.input, colorScheme: "dark", fontSize: 15, padding: "13px 12px" }} />
+        </div>
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ ...S.fieldLbl, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}><Clock size={12} color={P.textMuted} /> TIME</div>
+            <span style={{ color: P.textMuted }}>optional</span>
           </div>
+          <input type="time" value={time} onChange={e => setTime(e.target.value)} style={{ ...S.input, colorScheme: "dark", fontSize: 15, padding: "13px 12px", width: "50%", boxSizing: "border-box" }} />
         </div>
         <button style={{ ...S.primaryBtn, background: `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`, color: "#fff", marginTop: "auto" }} onClick={handleAdd}>
           Add to Itinerary
@@ -2152,17 +2188,17 @@ function EditItinModal({ item, onClose, onSave }) {
         <button style={S.closeBtn} onClick={onClose}>✕</button>
       </div>
       <div style={{ flex: 1, padding: "0 22px 12px", display: "flex", flexDirection: "column" }}>
-        {/* Type tiles */}
+        {/* Type — horizontal scroll */}
         <div style={{ marginBottom: 12 }}>
           <div style={S.fieldLbl}>TYPE</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 6 }}>
-            {["flight","stay","activity","restaurant","transport"].map(t => {
+          <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 4 }}>
+            {["flight","transport","stay","restaurant","drinks","activity","shopping","other"].map(t => {
               const m = ITINERARY_COLORS[t];
               const TIcon = ITIN_TYPE_ICONS[t];
               const selected = type === t;
               return (
                 <button key={t} onClick={() => setType(t)}
-                  style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, padding: "8px 4px", borderRadius: 12, cursor: "pointer", background: selected ? P.surface2 : P.surface1, border: selected ? `1px solid ${m.accent}` : `1px solid ${P.surface3}`, minHeight: 54 }}>
+                  style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, padding: "8px 10px", borderRadius: 12, cursor: "pointer", background: selected ? P.surface2 : P.surface1, border: selected ? `1px solid ${m.accent}` : `1px solid ${P.surface3}`, minHeight: 54, minWidth: 58, flexShrink: 0 }}>
                   <TIcon size={18} color={selected ? m.accent : P.textMuted} strokeWidth={1.5} />
                   <span style={{ fontSize: 9, fontWeight: 700, color: selected ? m.accent : P.textMuted, textTransform: "capitalize", letterSpacing: "0.3px" }}>{t}</span>
                 </button>
@@ -2181,21 +2217,19 @@ function EditItinModal({ item, onClose, onSave }) {
           <div style={S.fieldLbl}>DETAILS / CONFIRMATION #</div>
           <input ref={detailRef} style={{ ...S.input, fontSize: 14, padding: "12px 16px" }} defaultValue={item.detail || ""} />
         </div>
-        {/* Date + Time — bigger */}
-        <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ ...S.fieldLbl, display: "flex", alignItems: "center", gap: 6 }}>
-              <Calendar size={12} color={P.textMuted} /> DATE
-            </div>
-            <input type="date" value={day} onChange={e => setDay(e.target.value)} style={{ ...S.input, colorScheme: "dark", fontSize: 15, padding: "13px 12px" }} />
+        {/* Date full width, Time below at half width */}
+        <div style={{ marginBottom: 10 }}>
+          <div style={{ ...S.fieldLbl, display: "flex", alignItems: "center", gap: 6 }}>
+            <Calendar size={12} color={P.textMuted} /> DATE
           </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ ...S.fieldLbl, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}><Clock size={12} color={P.textMuted} /> TIME</div>
-              <span style={{ color: P.textMuted }}>optional</span>
-            </div>
-            <input type="time" value={time} onChange={e => setTime(e.target.value)} style={{ ...S.input, colorScheme: "dark", fontSize: 15, padding: "13px 12px" }} />
+          <input type="date" value={day} onChange={e => setDay(e.target.value)} style={{ ...S.input, colorScheme: "dark", fontSize: 15, padding: "13px 12px" }} />
+        </div>
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ ...S.fieldLbl, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}><Clock size={12} color={P.textMuted} /> TIME</div>
+            <span style={{ color: P.textMuted }}>optional</span>
           </div>
+          <input type="time" value={time} onChange={e => setTime(e.target.value)} style={{ ...S.input, colorScheme: "dark", fontSize: 15, padding: "13px 12px", width: "50%", boxSizing: "border-box" }} />
         </div>
         <button style={{ ...S.primaryBtn, background: loading ? P.surface2 : `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`, color: "#fff", marginTop: "auto" }}
           onClick={handleSave} disabled={loading}>
@@ -2411,7 +2445,7 @@ function EditTripModal({ trip, onClose, onSave }) {
         <div style={S.sheetBody}>
           <div style={S.field}>
             <div style={S.fieldLbl}>TRIP NAME</div>
-            <input style={S.input} placeholder="e.g. Tokyo 2025" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+            <input style={S.input} placeholder="e.g. Tokyo 2025" value={form.name} maxLength={30} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
           </div>
           <div style={{ display: "flex", gap: 10 }}>
             <div style={{ ...S.field, flex: 1 }}>
