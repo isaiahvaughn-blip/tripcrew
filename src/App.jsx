@@ -1884,25 +1884,46 @@ function AddExpenseModal({ onClose, trip, onAdd, user, profile, existingExpense 
   });
 
   useEffect(() => {
-    supabase.from('members').select('name').eq('trip_id', trip.id).then(({ data }) => {
-      const memberNames = data ? data.map(m => m.name) : [];
-      const userDisplay = profile?.display_name || user?.email?.split('@')[0] || 'Me';
-      // Deduplicate case-insensitively, keep unique names only
-      const seen = new Set([userDisplay.toLowerCase()]);
-      const others = memberNames.filter(n => {
-        const lc = n.toLowerCase();
-        if (seen.has(lc)) return false;
-        seen.add(lc);
-        return true;
-      });
-      const names = [userDisplay, ...others];
-      setMembers(names);
-      if (!existingExpense) {
-        setExp(e => ({ ...e, paidBy: userDisplay, splitWith: names }));
-      } else if (!exp.paidBy) {
-        setExp(e => ({ ...e, paidBy: names[0] || userDisplay }));
+    const fetchMembers = async () => {
+      // Join trip_members → profiles to get real display names
+      const { data: tmRows } = await supabase
+        .from('trip_members').select('user_id, invited_email').eq('trip_id', trip.id);
+
+      const names = [];
+      const seen = new Set();
+
+      for (const row of (tmRows || [])) {
+        let displayName = null;
+        if (row.user_id) {
+          const { data: prof } = await supabase
+            .from('profiles').select('display_name').eq('id', row.user_id).single();
+          displayName = prof?.display_name;
+        }
+        // Fall back to email prefix if no display name set
+        if (!displayName && row.invited_email) {
+          displayName = row.invited_email.split('@')[0];
+        }
+        if (displayName && !seen.has(displayName.toLowerCase())) {
+          seen.add(displayName.toLowerCase());
+          names.push(displayName);
+        }
       }
-    });
+
+      // Put current user first
+      const userDisplay = profile?.display_name || user?.email?.split('@')[0] || 'Me';
+      const sorted = [
+        userDisplay,
+        ...names.filter(n => n.toLowerCase() !== userDisplay.toLowerCase())
+      ];
+
+      setMembers(sorted);
+      if (!existingExpense) {
+        setExp(e => ({ ...e, paidBy: userDisplay, splitWith: sorted }));
+      } else if (!exp.paidBy) {
+        setExp(e => ({ ...e, paidBy: sorted[0] || userDisplay }));
+      }
+    };
+    fetchMembers();
   }, [trip.id]);
 
   const perPerson = exp.amount && exp.splitWith.length
