@@ -1362,23 +1362,28 @@ function MembersTab({ trip, profile, expenses }) {
 
   useEffect(() => {
     const fetchMembers = async () => {
-      const { data, error } = await supabase.from('members').select('*').eq('trip_id', trip.id);
-      if (error) { console.error(error); return; }
-      setMembers(data || []);
-
-      // Join trip_members → profiles to get avatars
+      // Get members table for trip membership list
+      const { data: memberRows } = await supabase.from('members').select('*').eq('trip_id', trip.id);
+      
+      // Get trip_members → profiles for real display names
       const { data: tmRows } = await supabase
         .from('trip_members').select('user_id, invited_email').eq('trip_id', trip.id);
-      if (!tmRows?.length) return;
-      const userIds = tmRows.map(r => r.user_id).filter(Boolean);
-      if (!userIds.length) return;
-      const { data: profileRows } = await supabase
-        .from('profiles').select('id, display_name, avatar').in('id', userIds);
-      if (!profileRows) return;
-      // Map by display_name so we can match against members.name
-      const byName = {};
-      profileRows.forEach(p => { if (p.display_name) byName[p.display_name] = p; });
-      setMemberProfiles(byName);
+      
+      // Build name map: invited_email prefix → real display name
+      const nameMap = {};
+      for (const row of (tmRows || [])) {
+        if (row.user_id) {
+          const { data: prof } = await supabase
+            .from('profiles').select('display_name, avatar').eq('id', row.user_id).single();
+          if (prof?.display_name && row.invited_email) {
+            const prefix = row.invited_email.split('@')[0].toLowerCase();
+            nameMap[prefix] = { display_name: prof.display_name, avatar: prof.avatar, user_id: row.user_id };
+            nameMap[prof.display_name.toLowerCase()] = { display_name: prof.display_name, avatar: prof.avatar, user_id: row.user_id };
+          }
+        }
+      }
+      setMemberProfiles(nameMap);
+      setMembers(memberRows || []);
     };
     fetchMembers();
   }, [trip.id]);
@@ -1386,20 +1391,26 @@ function MembersTab({ trip, profile, expenses }) {
   const avatarColors = [P.terracotta, P.lightBlue, P.orange, P.slateBlue, P.success];
 
   // Derive avatar display from profile avatar field or fall back to initials
-  const getAvatarContent = (memberName, idx) => {
-    const p = memberProfiles[memberName];
+  const getAvatarContent = (memberName) => {
+    const p = memberProfiles[memberName.toLowerCase()];
     if (p?.avatar) {
       const av = p.avatar;
       if (av.startsWith('emoji:')) return { content: av.slice(6), isEmoji: true };
-      if (av.startsWith('initials:')) return { content: av.slice(9).slice(0, 3).toUpperCase(), isEmoji: false };
-      if (av.startsWith('name:')) return { content: av.slice(5).slice(0, 3).toUpperCase(), isEmoji: false };
+      if (av.startsWith('initials:')) return { content: av.slice(9).slice(0,3).toUpperCase(), isEmoji: false };
+      if (av.startsWith('name:')) return { content: av.slice(5).slice(0,3).toUpperCase(), isEmoji: false };
     }
     // Fallback: initials from name
     const parts = memberName.trim().split(/\s+/);
     const initials = parts.length >= 2
-      ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-      : memberName.slice(0, 2).toUpperCase();
+      ? (parts[0][0] + parts[parts.length-1][0]).toUpperCase()
+      : memberName.slice(0,2).toUpperCase();
     return { content: initials, isEmoji: false };
+  };
+
+  // Get real display name from profile map if available
+  const getDisplayName = (memberName) => {
+    const p = memberProfiles[memberName.toLowerCase()];
+    return p?.display_name || memberName;
   };
 
   return (
@@ -1436,7 +1447,8 @@ function MembersTab({ trip, profile, expenses }) {
         </div>
       )}
       {members.map((m, i) => {
-        const { content, isEmoji } = getAvatarContent(m.name, i);
+        const { content, isEmoji } = getAvatarContent(m.name);
+        const displayName = getDisplayName(m.name);
         const color = avatarColors[i % avatarColors.length];
         const balance = getBalanceLabel(m.name);
         return (
@@ -1445,7 +1457,7 @@ function MembersTab({ trip, profile, expenses }) {
               <span style={{ fontSize: isEmoji ? 22 : 16, fontWeight: isEmoji ? 400 : 900, letterSpacing: "-0.5px" }}>{content}</span>
             </div>
             <div style={S.memberInfo}>
-              <div style={S.memberName}>{m.name}</div>
+              <div style={S.memberName}>{displayName}</div>
             </div>
             <div style={S.memberRight}>
               <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -2158,19 +2170,23 @@ function AddItinModal({ onClose, trip, onAdd }) {
           <div style={S.fieldLbl}>DETAILS / CONFIRMATION #</div>
           <input ref={detailRef} style={{ ...S.input, fontSize: 14, padding: "12px 16px" }} placeholder="Confirmation code, address, notes..." defaultValue="" />
         </div>
-        {/* Date full width, Time below */}
-        <div style={{ marginBottom: 10 }}>
-          <div style={{ ...S.fieldLbl, display: "flex", alignItems: "center", gap: 6 }}>
-            <Calendar size={12} color={P.textMuted} /> DATE
+        {/* Date + Time — side by side, flat style */}
+        <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ ...S.fieldLbl, display: "flex", alignItems: "center", gap: 6 }}>
+              <Calendar size={12} color={P.textMuted} /> DATE
+            </div>
+            <input type="date" value={day} onChange={e => setDay(e.target.value)}
+              style={{ ...S.input, colorScheme: "dark", fontSize: 14, padding: "12px 10px", WebkitAppearance: "none" }} />
           </div>
-          <input type="date" value={day} onChange={e => setDay(e.target.value)} style={{ ...S.input, colorScheme: "dark", fontSize: 15, padding: "13px 12px" }} />
-        </div>
-        <div style={{ marginBottom: 14 }}>
-          <div style={{ ...S.fieldLbl, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}><Clock size={12} color={P.textMuted} /> TIME</div>
-            <span style={{ color: P.textMuted }}>optional</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ ...S.fieldLbl, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}><Clock size={12} color={P.textMuted} /> TIME</div>
+              <span style={{ color: P.textMuted }}>opt</span>
+            </div>
+            <input type="time" value={time} onChange={e => setTime(e.target.value)}
+              style={{ ...S.input, colorScheme: "dark", fontSize: 14, padding: "12px 10px", WebkitAppearance: "none" }} />
           </div>
-          <input type="time" value={time} onChange={e => setTime(e.target.value)} style={{ ...S.input, colorScheme: "dark", fontSize: 15, padding: "13px 12px", width: "50%", boxSizing: "border-box" }} />
         </div>
         <button style={{ ...S.primaryBtn, background: `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`, color: "#fff", marginTop: "auto" }} onClick={handleAdd}>
           Add to Itinerary
@@ -2238,19 +2254,23 @@ function EditItinModal({ item, onClose, onSave }) {
           <div style={S.fieldLbl}>DETAILS / CONFIRMATION #</div>
           <input ref={detailRef} style={{ ...S.input, fontSize: 14, padding: "12px 16px" }} defaultValue={item.detail || ""} />
         </div>
-        {/* Date full width, Time below at half width */}
-        <div style={{ marginBottom: 10 }}>
-          <div style={{ ...S.fieldLbl, display: "flex", alignItems: "center", gap: 6 }}>
-            <Calendar size={12} color={P.textMuted} /> DATE
+        {/* Date + Time — side by side, flat style */}
+        <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ ...S.fieldLbl, display: "flex", alignItems: "center", gap: 6 }}>
+              <Calendar size={12} color={P.textMuted} /> DATE
+            </div>
+            <input type="date" value={day} onChange={e => setDay(e.target.value)}
+              style={{ ...S.input, colorScheme: "dark", fontSize: 14, padding: "12px 10px", WebkitAppearance: "none" }} />
           </div>
-          <input type="date" value={day} onChange={e => setDay(e.target.value)} style={{ ...S.input, colorScheme: "dark", fontSize: 15, padding: "13px 12px" }} />
-        </div>
-        <div style={{ marginBottom: 14 }}>
-          <div style={{ ...S.fieldLbl, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}><Clock size={12} color={P.textMuted} /> TIME</div>
-            <span style={{ color: P.textMuted }}>optional</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ ...S.fieldLbl, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}><Clock size={12} color={P.textMuted} /> TIME</div>
+              <span style={{ color: P.textMuted }}>opt</span>
+            </div>
+            <input type="time" value={time} onChange={e => setTime(e.target.value)}
+              style={{ ...S.input, colorScheme: "dark", fontSize: 14, padding: "12px 10px", WebkitAppearance: "none" }} />
           </div>
-          <input type="time" value={time} onChange={e => setTime(e.target.value)} style={{ ...S.input, colorScheme: "dark", fontSize: 15, padding: "13px 12px", width: "50%", boxSizing: "border-box" }} />
         </div>
         <button style={{ ...S.primaryBtn, background: loading ? P.surface2 : `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`, color: "#fff", marginTop: "auto" }}
           onClick={handleSave} disabled={loading}>
