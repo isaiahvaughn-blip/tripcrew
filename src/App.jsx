@@ -1901,44 +1901,29 @@ function AddExpenseModal({ onClose, trip, onAdd, user, profile, existingExpense 
 
   useEffect(() => {
     const fetchMembers = async () => {
-      // Get all trip_members with linked profiles in one query
-      const { data: tmRows } = await supabase
-        .from('trip_members')
-        .select('user_id, invited_email')
-        .eq('trip_id', trip.id);
+      // Primary source: members table (already cleaned up with correct display names)
+      const { data: memberRows } = await supabase
+        .from('members').select('name').eq('trip_id', trip.id);
 
-      if (!tmRows?.length) return;
-
-      const userIds = tmRows.map(r => r.user_id).filter(Boolean);
-      const { data: profileRows } = await supabase
-        .from('profiles')
-        .select('id, display_name')
-        .in('id', userIds);
-
-      // Map user_id → display_name
-      const profileMap = {};
-      (profileRows || []).forEach(p => { profileMap[p.id] = p.display_name; });
-
-      // Build final names list — use display_name if available, else email prefix
-      const seen = new Set();
-      const names = [];
-      for (const row of tmRows) {
-        const name = (row.user_id && profileMap[row.user_id])
-          || (row.invited_email ? row.invited_email.split('@')[0] : null);
-        if (name && !seen.has(name.toLowerCase())) {
-          seen.add(name.toLowerCase());
-          names.push(name);
-        }
-      }
-
-      // Put current user first
       const userDisplay = profile?.display_name || user?.email?.split('@')[0] || 'Me';
-      const sorted = [
-        userDisplay,
-        ...names.filter(n => n.toLowerCase() !== userDisplay.toLowerCase())
-      ];
 
+      // Deduplicate case-insensitively, put current user first
+      const seen = new Set([userDisplay.toLowerCase()]);
+      const others = (memberRows || [])
+        .map(m => m.name)
+        .filter(n => {
+          const lc = n.toLowerCase();
+          // Skip email-style names (contain @ or look like email prefixes with dots+numbers)
+          if (n.includes('@')) return false;
+          if (/^[a-z]+\.[a-z]+\d+$/i.test(n)) return false;
+          if (seen.has(lc)) return false;
+          seen.add(lc);
+          return true;
+        });
+
+      const sorted = [userDisplay, ...others];
       setMembers(sorted);
+
       if (!existingExpense) {
         setExp(e => ({ ...e, paidBy: userDisplay, splitWith: sorted }));
       } else if (!exp.paidBy) {
@@ -1976,18 +1961,18 @@ function AddExpenseModal({ onClose, trip, onAdd, user, profile, existingExpense 
 
   const stepTitles = ["", "What was it?", "Who's splitting?", "Looks good?"];
 
-  // Shared full-screen flex-column layout — same pattern as AddItinModal
+  // Shared full-screen flex-column layout
   const FS = { display: "flex", flexDirection: "column", flex: 1, padding: "0 22px 12px" };
 
   return (
-    <div style={{ position: "absolute", inset: 0, zIndex: 100, background: P.phoneBg, display: "flex", flexDirection: "column" }}>
+    <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 100, background: P.phoneBg, display: "flex", flexDirection: "column" }}>
       {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 22px 8px", flexShrink: 0 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 22px 6px", flexShrink: 0 }}>
         <div style={S.sheetTitle}>{stepTitles[step]}</div>
         <button style={S.closeBtn} onClick={onClose}>✕</button>
       </div>
       {/* Step dots */}
-      <div style={{ display: "flex", gap: 6, justifyContent: "center", marginBottom: 14, flexShrink: 0 }}>
+      <div style={{ display: "flex", gap: 6, justifyContent: "center", marginBottom: 10, flexShrink: 0 }}>
         {[1,2,3].map(s => <div key={s} style={{ ...S.stepDot, ...(s <= step ? S.stepDotActive : {}) }} />)}
       </div>
 
@@ -1996,7 +1981,7 @@ function AddExpenseModal({ onClose, trip, onAdd, user, profile, existingExpense 
         <div style={FS}>
           <div style={{ flex: 1 }}>
             {/* Category — horizontal scroll */}
-            <div style={{ marginBottom: 12 }}>
+            <div style={{ marginBottom: 8 }}>
               <div style={S.fieldLbl}>CATEGORY</div>
               <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 4 }}>
                 {CATS.map(c => {
@@ -2015,26 +2000,26 @@ function AddExpenseModal({ onClose, trip, onAdd, user, profile, existingExpense 
             </div>
 
             {/* Amount — Venmo style */}
-            <div style={{ textAlign: "center", padding: "6px 0 8px", borderBottom: `1px solid ${P.surface3}`, marginBottom: 10 }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: P.textMuted, letterSpacing: "2px", marginBottom: 4 }}>AMOUNT</div>
+            <div style={{ textAlign: "center", padding: "4px 0 6px", borderBottom: `1px solid ${P.surface3}`, marginBottom: 8 }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: P.textMuted, letterSpacing: "2px", marginBottom: 2 }}>AMOUNT</div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
                 <span style={{ fontSize: 22, fontWeight: 900, color: P.textMuted }}>$</span>
                 <input type="number" placeholder="0" value={exp.amount}
                   onChange={e => setExp(n => ({ ...n, amount: e.target.value }))}
                   style={{ background: "transparent", border: "none", outline: "none", fontSize: 34, fontWeight: 900, color: P.textPrimary, letterSpacing: "-1px", width: 130, textAlign: "center", fontFamily: "'Syne', sans-serif" }} />
               </div>
-              {perPerson && <div style={{ fontSize: 11, color: P.slateBlue, marginTop: 2 }}>${perPerson}/person</div>}
+              {perPerson && <div style={{ fontSize: 11, color: P.slateBlue, marginTop: 1 }}>${perPerson}/person</div>}
             </div>
 
             {/* Description */}
-            <div style={{ marginBottom: 10 }}>
+            <div style={{ marginBottom: 8 }}>
               <div style={S.fieldLbl}>DESCRIPTION</div>
-              <input style={{ ...S.input, padding: "12px 16px" }} placeholder="e.g. Dinner at Coco's"
+              <input style={{ ...S.input, padding: "11px 16px" }} placeholder="e.g. Dinner at Coco's"
                 value={exp.title} onChange={e => setExp(n => ({ ...n, title: e.target.value }))} />
             </div>
 
             {/* Paid by */}
-            <div>
+            <div style={{ marginBottom: 8 }}>
               <div style={S.fieldLbl}>PAID BY</div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                 {members.map(m => (
@@ -2045,7 +2030,7 @@ function AddExpenseModal({ onClose, trip, onAdd, user, profile, existingExpense 
             </div>
           </div>
 
-          <button style={{ ...S.primaryBtn, background: `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`, marginTop: "auto", paddingTop: 14 }}
+          <button style={{ ...S.primaryBtn, background: `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`, marginTop: "auto" }}
             onClick={() => {
               if (!exp.amount || parseFloat(exp.amount) <= 0) return;
               members.length <= 1 ? setStep(3) : setStep(2);
@@ -2153,34 +2138,33 @@ function formatTimeDisplay(t) {
 }
 
 function DateTimePicker({ day, time, onDayChange, onTimeChange }) {
-  const dateInputRef = useRef(null);
-  const timeInputRef = useRef(null);
-
   return (
     <div style={{ display: "flex", gap: 16, marginBottom: 14 }}>
       {/* Date */}
       <div style={{ flex: 1, textAlign: "center" }}>
         <div style={S.fieldLbl}>DATE</div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, minHeight: 52 }}>
+        <div style={{ minHeight: 52, display: "flex", alignItems: "center", justifyContent: "center" }}>
           {day ? (
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span
-                style={{ fontSize: 15, fontWeight: 700, color: P.terracotta, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}
-                onClick={() => dateInputRef.current?.showPicker?.() || dateInputRef.current?.click()}>
-                {formatDateDisplay(day)}
-              </span>
-              <button onClick={() => onDayChange("")} style={{ background: "none", border: "none", color: P.textMuted, cursor: "pointer", fontSize: 12, padding: 0, lineHeight: 1 }}>✕</button>
+              <div style={{ position: "relative" }}>
+                <span style={{ fontSize: 15, fontWeight: 700, color: P.terracotta, fontFamily: "'DM Sans', sans-serif" }}>
+                  {formatDateDisplay(day)}
+                </span>
+                <input type="date" value={day} onChange={e => onDayChange(e.target.value)}
+                  style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer", width: "100%", height: "100%" }} />
+              </div>
+              <button onClick={() => onDayChange("")}
+                style={{ background: "none", border: "none", color: P.textMuted, cursor: "pointer", fontSize: 13, padding: "0 0 0 2px", lineHeight: 1, zIndex: 1, position: "relative" }}>✕</button>
             </div>
           ) : (
-            <button onClick={() => dateInputRef.current?.showPicker?.() || dateInputRef.current?.click()}
-              style={{ background: "none", border: "none", cursor: "pointer", padding: 8, borderRadius: 12, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+            <div style={{ position: "relative", display: "inline-flex", flexDirection: "column", alignItems: "center", gap: 4, padding: 8 }}>
               <Calendar size={32} color={P.slateBlue} strokeWidth={1.5} />
               <span style={{ fontSize: 10, color: P.textMuted, fontWeight: 600 }}>tap to set</span>
-            </button>
+              <input type="date" value={day} onChange={e => onDayChange(e.target.value)}
+                style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer", width: "100%", height: "100%", fontSize: 16 }} />
+            </div>
           )}
         </div>
-        <input ref={dateInputRef} type="date" value={day} onChange={e => onDayChange(e.target.value)}
-          style={{ position: "absolute", opacity: 0, pointerEvents: "none", width: 0, height: 0 }} />
       </div>
 
       {/* Divider */}
@@ -2189,26 +2173,28 @@ function DateTimePicker({ day, time, onDayChange, onTimeChange }) {
       {/* Time */}
       <div style={{ flex: 1, textAlign: "center" }}>
         <div style={S.fieldLbl}>TIME <span style={{ color: P.textMuted, fontWeight: 600, letterSpacing: 0 }}>(optional)</span></div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, minHeight: 52 }}>
+        <div style={{ minHeight: 52, display: "flex", alignItems: "center", justifyContent: "center" }}>
           {time ? (
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span
-                style={{ fontSize: 15, fontWeight: 700, color: P.terracotta, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}
-                onClick={() => timeInputRef.current?.showPicker?.() || timeInputRef.current?.click()}>
-                {formatTimeDisplay(time)}
-              </span>
-              <button onClick={() => onTimeChange("")} style={{ background: "none", border: "none", color: P.textMuted, cursor: "pointer", fontSize: 12, padding: 0, lineHeight: 1 }}>✕</button>
+              <div style={{ position: "relative" }}>
+                <span style={{ fontSize: 15, fontWeight: 700, color: P.terracotta, fontFamily: "'DM Sans', sans-serif" }}>
+                  {formatTimeDisplay(time)}
+                </span>
+                <input type="time" value={time} onChange={e => onTimeChange(e.target.value)}
+                  style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer", width: "100%", height: "100%" }} />
+              </div>
+              <button onClick={() => onTimeChange("")}
+                style={{ background: "none", border: "none", color: P.textMuted, cursor: "pointer", fontSize: 13, padding: "0 0 0 2px", lineHeight: 1, zIndex: 1, position: "relative" }}>✕</button>
             </div>
           ) : (
-            <button onClick={() => timeInputRef.current?.showPicker?.() || timeInputRef.current?.click()}
-              style={{ background: "none", border: "none", cursor: "pointer", padding: 8, borderRadius: 12, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+            <div style={{ position: "relative", display: "inline-flex", flexDirection: "column", alignItems: "center", gap: 4, padding: 8 }}>
               <Clock size={32} color={P.slateBlue} strokeWidth={1.5} />
               <span style={{ fontSize: 10, color: P.textMuted, fontWeight: 600 }}>tap to set</span>
-            </button>
+              <input type="time" value={time} onChange={e => onTimeChange(e.target.value)}
+                style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer", width: "100%", height: "100%", fontSize: 16 }} />
+            </div>
           )}
         </div>
-        <input ref={timeInputRef} type="time" value={time} onChange={e => onTimeChange(e.target.value)}
-          style={{ position: "absolute", opacity: 0, pointerEvents: "none", width: 0, height: 0 }} />
       </div>
     </div>
   );
