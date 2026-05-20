@@ -1362,28 +1362,32 @@ function MembersTab({ trip, profile, expenses }) {
 
   useEffect(() => {
     const fetchMembers = async () => {
-      // Get members table for trip membership list
-      const { data: memberRows } = await supabase.from('members').select('*').eq('trip_id', trip.id);
-      
-      // Get trip_members → profiles for real display names
-      const { data: tmRows } = await supabase
-        .from('trip_members').select('user_id, invited_email').eq('trip_id', trip.id);
-      
-      // Build name map: invited_email prefix → real display name
-      const nameMap = {};
-      for (const row of (tmRows || [])) {
-        if (row.user_id) {
-          const { data: prof } = await supabase
-            .from('profiles').select('display_name, avatar').eq('id', row.user_id).single();
-          if (prof?.display_name && row.invited_email) {
-            const prefix = row.invited_email.split('@')[0].toLowerCase();
-            nameMap[prefix] = { display_name: prof.display_name, avatar: prof.avatar, user_id: row.user_id };
-            nameMap[prof.display_name.toLowerCase()] = { display_name: prof.display_name, avatar: prof.avatar, user_id: row.user_id };
-          }
-        }
-      }
-      setMemberProfiles(nameMap);
+      const [{ data: memberRows }, { data: tmRows }] = await Promise.all([
+        supabase.from('members').select('*').eq('trip_id', trip.id),
+        supabase.from('trip_members').select('user_id, invited_email').eq('trip_id', trip.id),
+      ]);
+
       setMembers(memberRows || []);
+
+      const userIds = (tmRows || []).map(r => r.user_id).filter(Boolean);
+      if (!userIds.length) return;
+
+      const { data: profileRows } = await supabase
+        .from('profiles').select('id, display_name, avatar').in('id', userIds);
+
+      // Build nameMap keyed by lowercase display_name and email prefix
+      const nameMap = {};
+      (profileRows || []).forEach(p => {
+        const entry = { display_name: p.display_name, avatar: p.avatar };
+        if (p.display_name) nameMap[p.display_name.toLowerCase()] = entry;
+        // Also map email prefix → profile for fallback matching
+        const tm = (tmRows || []).find(r => r.user_id === p.id);
+        if (tm?.invited_email) {
+          nameMap[tm.invited_email.split('@')[0].toLowerCase()] = entry;
+        }
+      });
+
+      setMemberProfiles(nameMap);
     };
     fetchMembers();
   }, [trip.id]);
@@ -1897,27 +1901,33 @@ function AddExpenseModal({ onClose, trip, onAdd, user, profile, existingExpense 
 
   useEffect(() => {
     const fetchMembers = async () => {
-      // Join trip_members → profiles to get real display names
+      // Get all trip_members with linked profiles in one query
       const { data: tmRows } = await supabase
-        .from('trip_members').select('user_id, invited_email').eq('trip_id', trip.id);
+        .from('trip_members')
+        .select('user_id, invited_email')
+        .eq('trip_id', trip.id);
 
-      const names = [];
+      if (!tmRows?.length) return;
+
+      const userIds = tmRows.map(r => r.user_id).filter(Boolean);
+      const { data: profileRows } = await supabase
+        .from('profiles')
+        .select('id, display_name')
+        .in('id', userIds);
+
+      // Map user_id → display_name
+      const profileMap = {};
+      (profileRows || []).forEach(p => { profileMap[p.id] = p.display_name; });
+
+      // Build final names list — use display_name if available, else email prefix
       const seen = new Set();
-
-      for (const row of (tmRows || [])) {
-        let displayName = null;
-        if (row.user_id) {
-          const { data: prof } = await supabase
-            .from('profiles').select('display_name').eq('id', row.user_id).single();
-          displayName = prof?.display_name;
-        }
-        // Fall back to email prefix if no display name set
-        if (!displayName && row.invited_email) {
-          displayName = row.invited_email.split('@')[0];
-        }
-        if (displayName && !seen.has(displayName.toLowerCase())) {
-          seen.add(displayName.toLowerCase());
-          names.push(displayName);
+      const names = [];
+      for (const row of tmRows) {
+        const name = (row.user_id && profileMap[row.user_id])
+          || (row.invited_email ? row.invited_email.split('@')[0] : null);
+        if (name && !seen.has(name.toLowerCase())) {
+          seen.add(name.toLowerCase());
+          names.push(name);
         }
       }
 
@@ -2114,6 +2124,96 @@ function AddExpenseModal({ onClose, trip, onAdd, user, profile, existingExpense 
   );
 }
 
+// ─── DATE TIME PICKER HELPER ─────────────────────────────────────────────────
+
+const TYPE_PLACEHOLDERS = {
+  flight:     "e.g. PDX to LAX",
+  transport:  "e.g. Dollar Car Rental",
+  stay:       "e.g. Fairmont Lake Louise",
+  restaurant: "e.g. Nobu Houston",
+  drinks:     "e.g. Teardrop Cocktail Lounge",
+  activity:   "e.g. Museum of Fine Arts",
+  shopping:   "e.g. Galleria Mall",
+  other:      "e.g. Scenic overlook",
+};
+
+function formatDateDisplay(d) {
+  if (!d) return null;
+  const dt = new Date(d + 'T12:00:00');
+  if (isNaN(dt)) return null;
+  return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function formatTimeDisplay(t) {
+  if (!t) return null;
+  const [h, m] = t.split(':').map(Number);
+  if (isNaN(h)) return null;
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${ampm}`;
+}
+
+function DateTimePicker({ day, time, onDayChange, onTimeChange }) {
+  const dateInputRef = useRef(null);
+  const timeInputRef = useRef(null);
+
+  return (
+    <div style={{ display: "flex", gap: 16, marginBottom: 14 }}>
+      {/* Date */}
+      <div style={{ flex: 1, textAlign: "center" }}>
+        <div style={S.fieldLbl}>DATE</div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, minHeight: 52 }}>
+          {day ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span
+                style={{ fontSize: 15, fontWeight: 700, color: P.terracotta, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}
+                onClick={() => dateInputRef.current?.showPicker?.() || dateInputRef.current?.click()}>
+                {formatDateDisplay(day)}
+              </span>
+              <button onClick={() => onDayChange("")} style={{ background: "none", border: "none", color: P.textMuted, cursor: "pointer", fontSize: 12, padding: 0, lineHeight: 1 }}>✕</button>
+            </div>
+          ) : (
+            <button onClick={() => dateInputRef.current?.showPicker?.() || dateInputRef.current?.click()}
+              style={{ background: "none", border: "none", cursor: "pointer", padding: 8, borderRadius: 12, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+              <Calendar size={32} color={P.slateBlue} strokeWidth={1.5} />
+              <span style={{ fontSize: 10, color: P.textMuted, fontWeight: 600 }}>tap to set</span>
+            </button>
+          )}
+        </div>
+        <input ref={dateInputRef} type="date" value={day} onChange={e => onDayChange(e.target.value)}
+          style={{ position: "absolute", opacity: 0, pointerEvents: "none", width: 0, height: 0 }} />
+      </div>
+
+      {/* Divider */}
+      <div style={{ width: 1, background: P.surface3, margin: "16px 0" }} />
+
+      {/* Time */}
+      <div style={{ flex: 1, textAlign: "center" }}>
+        <div style={S.fieldLbl}>TIME <span style={{ color: P.textMuted, fontWeight: 600, letterSpacing: 0 }}>(optional)</span></div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, minHeight: 52 }}>
+          {time ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span
+                style={{ fontSize: 15, fontWeight: 700, color: P.terracotta, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}
+                onClick={() => timeInputRef.current?.showPicker?.() || timeInputRef.current?.click()}>
+                {formatTimeDisplay(time)}
+              </span>
+              <button onClick={() => onTimeChange("")} style={{ background: "none", border: "none", color: P.textMuted, cursor: "pointer", fontSize: 12, padding: 0, lineHeight: 1 }}>✕</button>
+            </div>
+          ) : (
+            <button onClick={() => timeInputRef.current?.showPicker?.() || timeInputRef.current?.click()}
+              style={{ background: "none", border: "none", cursor: "pointer", padding: 8, borderRadius: 12, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+              <Clock size={32} color={P.slateBlue} strokeWidth={1.5} />
+              <span style={{ fontSize: 10, color: P.textMuted, fontWeight: 600 }}>tap to set</span>
+            </button>
+          )}
+        </div>
+        <input ref={timeInputRef} type="time" value={time} onChange={e => onTimeChange(e.target.value)}
+          style={{ position: "absolute", opacity: 0, pointerEvents: "none", width: 0, height: 0 }} />
+      </div>
+    </div>
+  );
+}
+
 // ─── ADD ITIN MODAL ───────────────────────────────────────────────────────────
 
 function AddItinModal({ onClose, trip, onAdd }) {
@@ -2159,10 +2259,10 @@ function AddItinModal({ onClose, trip, onAdd }) {
             })}
           </div>
         </div>
-        {/* Title — centered, no box, like expense amount */}
+        {/* Title — centered, no box, dynamic placeholder */}
         <div style={{ textAlign: "center", padding: "6px 0 10px", borderBottom: `1px solid ${P.surface3}`, marginBottom: 12 }}>
           <div style={S.fieldLbl}>TITLE</div>
-          <input ref={titleRef} placeholder="e.g. Fairmont Lake Louise"
+          <input ref={titleRef} placeholder={TYPE_PLACEHOLDERS[type] || "e.g. Add a title"}
             style={{ background: "transparent", border: "none", outline: "none", fontSize: 22, fontWeight: 900, color: P.textPrimary, letterSpacing: "-0.5px", width: "100%", textAlign: "center", fontFamily: "'Syne', sans-serif", padding: "4px 0" }} />
         </div>
         {/* Details */}
@@ -2170,24 +2270,8 @@ function AddItinModal({ onClose, trip, onAdd }) {
           <div style={S.fieldLbl}>DETAILS / CONFIRMATION #</div>
           <input ref={detailRef} style={{ ...S.input, fontSize: 14, padding: "12px 16px" }} placeholder="Confirmation code, address, notes..." defaultValue="" />
         </div>
-        {/* Date + Time — side by side, flat style */}
-        <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ ...S.fieldLbl, display: "flex", alignItems: "center", gap: 6 }}>
-              <Calendar size={12} color={P.textMuted} /> DATE
-            </div>
-            <input type="date" value={day} onChange={e => setDay(e.target.value)}
-              style={{ ...S.input, colorScheme: "dark", fontSize: 14, padding: "12px 10px", WebkitAppearance: "none" }} />
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ ...S.fieldLbl, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}><Clock size={12} color={P.textMuted} /> TIME</div>
-              <span style={{ color: P.textMuted }}>opt</span>
-            </div>
-            <input type="time" value={time} onChange={e => setTime(e.target.value)}
-              style={{ ...S.input, colorScheme: "dark", fontSize: 14, padding: "12px 10px", WebkitAppearance: "none" }} />
-          </div>
-        </div>
+        {/* Date + Time — icon pickers */}
+        <DateTimePicker day={day} time={time} onDayChange={setDay} onTimeChange={setTime} />
         <button style={{ ...S.primaryBtn, background: `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`, color: "#fff", marginTop: "auto" }} onClick={handleAdd}>
           Add to Itinerary
         </button>
@@ -2196,7 +2280,7 @@ function AddItinModal({ onClose, trip, onAdd }) {
   );
 }
 
-// ─── EDIT ITIN MODAL (FIXED) ──────────────────────────────────────────────────
+// ─── EDIT ITIN MODAL ──────────────────────────────────────────────────────────
 
 function EditItinModal({ item, onClose, onSave }) {
   const [type, setType] = useState(item.type || "activity");
@@ -2243,10 +2327,11 @@ function EditItinModal({ item, onClose, onSave }) {
             })}
           </div>
         </div>
-        {/* Title — centered, no box */}
+        {/* Title — centered, no box, dynamic placeholder */}
         <div style={{ textAlign: "center", padding: "6px 0 10px", borderBottom: `1px solid ${P.surface3}`, marginBottom: 12 }}>
           <div style={S.fieldLbl}>TITLE</div>
           <input ref={titleRef} defaultValue={item.title}
+            placeholder={TYPE_PLACEHOLDERS[type] || "e.g. Add a title"}
             style={{ background: "transparent", border: "none", outline: "none", fontSize: 22, fontWeight: 900, color: P.textPrimary, letterSpacing: "-0.5px", width: "100%", textAlign: "center", fontFamily: "'Syne', sans-serif", padding: "4px 0" }} />
         </div>
         {/* Details */}
@@ -2254,24 +2339,8 @@ function EditItinModal({ item, onClose, onSave }) {
           <div style={S.fieldLbl}>DETAILS / CONFIRMATION #</div>
           <input ref={detailRef} style={{ ...S.input, fontSize: 14, padding: "12px 16px" }} defaultValue={item.detail || ""} />
         </div>
-        {/* Date + Time — side by side, flat style */}
-        <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ ...S.fieldLbl, display: "flex", alignItems: "center", gap: 6 }}>
-              <Calendar size={12} color={P.textMuted} /> DATE
-            </div>
-            <input type="date" value={day} onChange={e => setDay(e.target.value)}
-              style={{ ...S.input, colorScheme: "dark", fontSize: 14, padding: "12px 10px", WebkitAppearance: "none" }} />
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ ...S.fieldLbl, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}><Clock size={12} color={P.textMuted} /> TIME</div>
-              <span style={{ color: P.textMuted }}>opt</span>
-            </div>
-            <input type="time" value={time} onChange={e => setTime(e.target.value)}
-              style={{ ...S.input, colorScheme: "dark", fontSize: 14, padding: "12px 10px", WebkitAppearance: "none" }} />
-          </div>
-        </div>
+        {/* Date + Time — icon pickers */}
+        <DateTimePicker day={day} time={time} onDayChange={setDay} onTimeChange={setTime} />
         <button style={{ ...S.primaryBtn, background: loading ? P.surface2 : `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`, color: "#fff", marginTop: "auto" }}
           onClick={handleSave} disabled={loading}>
           {loading ? "Saving..." : "Save Changes"}
