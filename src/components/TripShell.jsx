@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../supabase";
-import { Calendar, DollarSign, Image, Users, BarChart2 } from "lucide-react";
+import { Calendar, DollarSign, Image, Users, BarChart2, Plane } from "lucide-react";
 import { P, S, TRIP_ICONS } from "../constants";
 import { calcSettlements } from "../utils";
-import { Plane } from "lucide-react";
 import ItineraryTab, { AddItinModal } from "./ItineraryTab";
 import ExpensesTab, { AddExpenseModal } from "./ExpensesTab";
 import UploadsTab from "./UploadsTab";
@@ -12,27 +11,51 @@ import SummaryTab from "./SummaryTab";
 import SettleModal from "./SettleModal";
 import ShareModal from "./ShareModal";
 import EditTripModal from "./EditTripModal";
-import NewTripModal from "./NewTripModal";
 
 export default function TripShell({ trip, activeTab, setActiveTab, onBack, onModal, itinRefresh, modal, setModal, user, profile, onItinRefresh, onTripUpdate }) {
-  const [expenses, setExpenses] = useState([]);
-  const [editingTrip, setEditingTrip] = useState(false);
+  const [expenses,   setExpenses]   = useState([]);
+  const [profileMap, setProfileMap] = useState({}); // { uuid: displayName }
+  const [editingTrip,    setEditingTrip]    = useState(false);
   const [editingExpense, setEditingExpense] = useState(null);
-  const myName = profile?.display_name || user?.email?.split("@")[0] || "Me";
-  const IconComp = TRIP_ICONS[trip.emoji] || Plane;
-  const settlements = calcSettlements(expenses);
+
+  const IconComp  = TRIP_ICONS[trip.emoji] || Plane;
+  const myName    = profile?.display_name || user?.email?.split("@")[0] || "Me";
   const nameFontSize = (trip.name?.length || 0) > 22 ? 15 : (trip.name?.length || 0) > 16 ? 17 : 19;
 
+  // ── Fetch expenses + build profileMap for UUID resolution ─────────────────
   useEffect(() => {
-    const fetch = async () => {
-      const { data } = await supabase.from("expenses").select("*").eq("trip_id", trip.id).order("created_at", { ascending: false });
+    const fetchAll = async () => {
+      // Get all trip members with user_ids
+      const { data: tmRows } = await supabase
+        .from("trip_members").select("user_id").eq("trip_id", trip.id);
+      const userIds = (tmRows || []).map(r => r.user_id).filter(Boolean);
+
+      // Build profileMap: { uuid: displayName }
+      if (userIds.length) {
+        const { data: profiles } = await supabase
+          .from("profiles").select("id, display_name").in("id", userIds);
+        const map = {};
+        (profiles || []).forEach(p => { if (p.id && p.display_name) map[p.id] = p.display_name; });
+        setProfileMap(map);
+      }
+
+      // Fetch expenses
+      const { data } = await supabase
+        .from("expenses").select("*").eq("trip_id", trip.id)
+        .order("created_at", { ascending: false });
       setExpenses(data || []);
     };
-    fetch();
+    fetchAll();
+
     const sub = supabase.channel(`shell-expenses:${trip.id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "expenses" }, fetch).subscribe();
+      .on("postgres_changes", { event: "*", schema: "public", table: "expenses" }, fetchAll)
+      .subscribe();
     return () => sub.unsubscribe();
   }, [trip.id, itinRefresh]);
+
+  // Only calculate once profileMap is populated — prevents UUID leaking into settlement names
+  const profileMapReady = Object.keys(profileMap).length > 0;
+  const settlements = profileMapReady ? calcSettlements(expenses, profileMap) : [];
 
   const tabs = [
     { id: "itinerary", label: "Itinerary", Icon: Calendar },
@@ -69,15 +92,22 @@ export default function TripShell({ trip, activeTab, setActiveTab, onBack, onMod
       {/* Tab content */}
       <div style={{ ...S.tabContent, position: "relative" }}>
         {activeTab === "itinerary" && <ItineraryTab trip={trip} onModal={onModal} refreshKey={itinRefresh} />}
-        {activeTab === "expenses"  && <ExpensesTab  trip={trip} onModal={onModal} profile={profile} user={user} expenses={expenses} settlements={settlements} myName={myName} onEditExpense={setEditingExpense} />}
+        {activeTab === "expenses"  && <ExpensesTab  trip={trip} onModal={onModal} profile={profile} user={user} expenses={expenses} settlements={settlements} myName={myName} profileMap={profileMap} onEditExpense={setEditingExpense} />}
         {activeTab === "uploads"   && <UploadsTab   trip={trip} user={user} profile={profile} />}
         {activeTab === "members"   && <MembersTab   trip={trip} profile={profile} expenses={expenses} />}
         {activeTab === "summary"   && <SummaryTab   trip={trip} settlements={settlements} myName={myName} expenses={expenses} />}
-        {modal === "addExpense"    && <AddExpenseModal trip={trip} user={user} profile={profile} onClose={() => setModal(null)} onAdd={onItinRefresh} />}
-        {modal === "addItinerary"  && <AddItinModal trip={trip} onClose={() => setModal(null)} onAdd={() => { setModal(null); onItinRefresh(); setTimeout(onItinRefresh, 100); }} />}
-        {modal === "settle"        && <SettleModal settlements={settlements} myName={myName} trip={trip} onClose={() => setModal(null)} />}
-        {modal === "share"         && <ShareModal trip={trip} onClose={() => setModal(null)} />}
-        {editingExpense && <AddExpenseModal trip={trip} user={user} profile={profile} existingExpense={editingExpense} onClose={() => setEditingExpense(null)} onAdd={() => { setEditingExpense(null); onItinRefresh(); }} />}
+
+        {/* Modals rendered at shell level for correct containing block */}
+        {modal === "addExpense"   && <AddExpenseModal trip={trip} user={user} profile={profile} profileMap={profileMap} onClose={() => setModal(null)} onAdd={onItinRefresh} />}
+        {modal === "addItinerary" && <AddItinModal    trip={trip} onClose={() => setModal(null)} onAdd={() => { setModal(null); onItinRefresh(); }} />}
+        {modal === "settle"       && <SettleModal     settlements={settlements} myName={myName} myUserId={user?.id} trip={trip} profileMap={profileMap} onClose={() => setModal(null)} />}
+        {modal === "share"        && <ShareModal      trip={trip} onClose={() => setModal(null)} />}
+        {editingExpense && (
+          <AddExpenseModal trip={trip} user={user} profile={profile} profileMap={profileMap}
+            existingExpense={editingExpense}
+            onClose={() => setEditingExpense(null)}
+            onAdd={() => { setEditingExpense(null); onItinRefresh(); }} />
+        )}
       </div>
 
       {/* Tab bar */}

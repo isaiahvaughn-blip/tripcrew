@@ -1,10 +1,19 @@
 import { VIBES, METRIC_DEFS } from "./constants";
 
-export function calcSettlements(expenses) {
+// ─── RESOLVE MEMBER IDS TO DISPLAY NAMES ─────────────────────────────────────
+// profileMap: { uuid: displayName }
+// entry: uuid string or plain display name (for guests)
+export function resolveName(entry, profileMap) {
+  if (!entry) return "";
+  return profileMap[entry] || entry;
+}
+
+// ─── CALC SETTLEMENTS (works on resolved display names) ───────────────────────
+export function calcSettlements(expenses, profileMap = {}) {
   const balances = {};
   expenses.forEach(exp => {
-    const paidBy = exp.paid_by;
-    const splitWith = exp.split_with || [];
+    const paidBy    = resolveName(exp.paid_by, profileMap);
+    const splitWith = (exp.split_with || []).map(e => resolveName(e, profileMap));
     if (!splitWith.length) return;
     const share = exp.amount / splitWith.length;
     if (!balances[paidBy]) balances[paidBy] = 0;
@@ -57,7 +66,6 @@ export function computeMetric(key, { trips, itinItems, expenses, photos, members
     default: {
       if (key.startsWith("v_")) {
         const vibeKey = key.slice(2);
-        const def = METRIC_DEFS.find(m => m.key === key);
         return trips.filter(t => {
           const vibe = VIBES.find(v => v.key === vibeKey);
           return vibe && t.emoji === vibe.emoji;
