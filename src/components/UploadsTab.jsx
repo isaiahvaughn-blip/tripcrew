@@ -1,0 +1,192 @@
+import { useState, useEffect, useRef } from "react";
+import { supabase } from "../supabase";
+import { Download } from "lucide-react";
+import { P, S } from "../constants";
+import ConfirmModal from "./ConfirmModal";
+
+function UploadsTab({ trip, user, profile }) {
+  const [photos, setPhotos] = useState([]);
+  const [uploading, setUploading] = useState(false);
+  const [previewPhoto, setPreviewPhoto] = useState(null);
+  const [selecting, setSelecting] = useState(false);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const fileInputRef = useRef(null);
+  const longPressTimers = useRef({});
+
+  useEffect(() => {
+    fetchPhotos();
+    const subscription = supabase.channel(`photos:${trip.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'photos' }, () => fetchPhotos())
+      .subscribe();
+    return () => subscription.unsubscribe();
+  }, [trip.id]);
+
+  const fetchPhotos = async () => {
+    const { data, error } = await supabase.from('photos').select('*').eq('trip_id', trip.id).order('created_at', { ascending: false });
+    if (error) console.error(error);
+    else setPhotos(data || []);
+  };
+
+  const handleUpload = async (file) => {
+    if (!file) return;
+    const validExts = ['jpg','jpeg','png','gif','webp','heic','heif'];
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (!validExts.includes(ext)) { alert('Please upload an image file (jpg, png, gif, webp, heic)'); return; }
+    setUploading(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const path = `${trip.id}/${Date.now()}.${ext}`;
+      const { error: uploadError } = await supabase.storage.from('trip-photos').upload(path, file);
+      if (uploadError) throw uploadError;
+      const { data: { publicUrl } } = supabase.storage.from('trip-photos').getPublicUrl(path);
+      const uploader = profile?.display_name || user?.email?.split('@')[0] || 'Me';
+      const { error: dbError } = await supabase.from('photos').insert([{ trip_id: trip.id, user_id: user?.id, storage_path: path, url: publicUrl, caption: file.name.split('.')[0], uploader, sensitive: false }]);
+      if (dbError) throw dbError;
+      await fetchPhotos();
+    } catch (e) { console.error(e); } finally { setUploading(false); }
+  };
+
+  const toggleSensitive = async (photo) => {
+    const { error } = await supabase.from('photos').update({ sensitive: !photo.sensitive }).eq('id', photo.id);
+    if (!error) setPhotos(p => p.map(ph => ph.id === photo.id ? { ...ph, sensitive: !ph.sensitive } : ph));
+  };
+
+  const [confirmDeletePhotos, setConfirmDeletePhotos] = useState(false);
+
+  const handleDeleteSelected = async () => {
+    for (const id of selectedIds) {
+      const ph = photos.find(p => p.id === id);
+      if (ph) {
+        await supabase.storage.from('trip-photos').remove([ph.storage_path]);
+        await supabase.from('photos').delete().eq('id', id);
+      }
+    }
+    setPhotos(p => p.filter(ph => !selectedIds.includes(ph.id)));
+    setSelectedIds([]); setSelecting(false); setConfirmDeletePhotos(false);
+  };
+
+  const handleMarkSensitiveSelected = async () => {
+    for (const id of selectedIds) {
+      const ph = photos.find(p => p.id === id);
+      if (ph) await supabase.from('photos').update({ sensitive: !ph.sensitive }).eq('id', id);
+    }
+    await fetchPhotos();
+    setSelectedIds([]); setSelecting(false);
+  };
+
+  const handleLongPressStart = (id) => {
+    longPressTimers.current[id] = setTimeout(() => { setSelecting(true); setSelectedIds([id]); }, 500);
+  };
+  const handleLongPressEnd = (id) => { clearTimeout(longPressTimers.current[id]); };
+
+  const handleTap = (ph) => {
+    if (selecting) {
+      setSelectedIds(prev => prev.includes(ph.id) ? prev.filter(x => x !== ph.id) : [...prev, ph.id]);
+    } else {
+      setPreviewPhoto(ph);
+    }
+  };
+
+  const handleDrop = (e) => { e.preventDefault(); const file = e.dataTransfer.files[0]; if (file) handleUpload(file); };
+
+  return (
+    <div style={S.tabScroll}>
+      {confirmDeletePhotos && <ConfirmModal message={`Remove ${selectedIds.length} photo${selectedIds.length > 1 ? 's' : ''}?`} onConfirm={handleDeleteSelected} onCancel={() => setConfirmDeletePhotos(false)} confirmLabel="Remove" danger />}
+      <div style={S.tabTopRow}>
+        <div style={S.tabTitle}>Memories</div>
+        {selecting
+          ? <div style={{ display: "flex", gap: 8 }}>
+              <button style={{ ...S.actionBtn, color: P.slateBlue }} onClick={() => { setSelecting(false); setSelectedIds([]); }}>Cancel</button>
+              {selectedIds.length > 0 && <>
+                <button style={{ ...S.actionBtn, borderColor: P.terracotta + "60", color: P.terracotta }} onClick={handleMarkSensitiveSelected}>🔒</button>
+                <button style={{ ...S.actionBtn, borderColor: P.danger + "60", color: P.danger }} onClick={() => setConfirmDeletePhotos(true)}>Remove</button>
+              </>}
+            </div>
+          : <button style={S.newBtn} onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+              {uploading ? "Uploading..." : "+ Upload"}
+            </button>
+        }
+      </div>
+      <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={e => handleUpload(e.target.files[0])} />
+
+      <div style={{ fontSize: 12, color: P.textMuted, marginBottom: 14, fontFamily: "'DM Sans', sans-serif" }}>
+        Tap to preview · Hold to select · 🔒 = sensitive
+      </div>
+
+      {photos.length === 0 && !uploading && (
+        <div style={{ ...S.uploadDrop, marginBottom: 16 }} onDrop={handleDrop} onDragOver={e => e.preventDefault()} onClick={() => fileInputRef.current?.click()}>
+          <div style={S.uploadIcon}>📎</div>
+          <div style={S.uploadText}>Drop your first photo here</div>
+          <div style={S.uploadSub}>Tap to browse or drag and drop</div>
+        </div>
+      )}
+
+      {photos.length > 0 && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 4, marginBottom: 16 }}>
+          {photos.map(ph => {
+            const isSelected = selectedIds.includes(ph.id);
+            return (
+              <div key={ph.id}
+                style={{ position: "relative", aspectRatio: "1", borderRadius: 10, overflow: "hidden", cursor: "pointer", opacity: ph.sensitive ? 0.5 : 1, outline: isSelected ? `2px solid ${P.terracotta}` : "none", transition: "opacity 0.15s" }}
+                onClick={() => handleTap(ph)}
+                onTouchStart={() => handleLongPressStart(ph.id)} onTouchEnd={() => handleLongPressEnd(ph.id)}
+                onMouseDown={() => handleLongPressStart(ph.id)} onMouseUp={() => handleLongPressEnd(ph.id)} onMouseLeave={() => handleLongPressEnd(ph.id)}>
+                <img src={ph.url} alt={ph.caption} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                {ph.sensitive && <div style={{ position: "absolute", top: 4, right: 4, fontSize: 10 }}>🔒</div>}
+                {isSelected && (
+                  <div style={{ position: "absolute", inset: 0, background: P.terracotta + "30", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <div style={{ width: 20, height: 20, borderRadius: "50%", background: P.terracotta, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <span style={{ fontSize: 11, color: "#fff", fontWeight: 800 }}>✓</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {photos.length > 0 && !selecting && (
+        <div style={{ ...S.uploadDrop, marginBottom: 16 }} onDrop={handleDrop} onDragOver={e => e.preventDefault()} onClick={() => fileInputRef.current?.click()}>
+          <div style={S.uploadIcon}>📎</div>
+          <div style={S.uploadText}>Add more</div>
+          <div style={S.uploadSub}>Photos, receipts, anything</div>
+        </div>
+      )}
+
+      <div style={{ height: 20 }} />
+
+      {previewPhoto && (
+        <div style={{ position: "absolute", inset: 0, zIndex: 200, background: "rgba(0,0,0,0.95)", display: "flex", flexDirection: "column" }}
+          onClick={() => setPreviewPhoto(null)}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 20px 12px", flexShrink: 0 }}>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: P.textPrimary }}>{previewPhoto.caption}</div>
+              <div style={{ fontSize: 12, color: P.textMuted, marginTop: 2 }}>by {previewPhoto.uploader}</div>
+            </div>
+            <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+              <button onClick={e => { e.stopPropagation(); toggleSensitive(previewPhoto); setPreviewPhoto(p => ({ ...p, sensitive: !p.sensitive })); }}
+                style={{ background: previewPhoto.sensitive ? "#2a1810" : P.surface2, border: "none", color: previewPhoto.sensitive ? P.terracotta : P.textMuted, borderRadius: 10, padding: "7px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                {previewPhoto.sensitive ? "🔒 Sensitive" : "Mark 🔒"}
+              </button>
+              <button onClick={e => { e.stopPropagation(); const a = document.createElement('a'); a.href = previewPhoto.url; a.download = previewPhoto.caption || 'photo'; a.target = '_blank'; a.click(); }}
+                style={{ background: P.surface2, border: "none", color: P.lightBlue, borderRadius: 10, padding: "7px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+                <Download size={12} /> Save
+              </button>
+              <button style={S.closeBtn} onClick={() => setPreviewPhoto(null)}>✕</button>
+            </div>
+          </div>
+          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 12px" }}>
+            <img src={previewPhoto.url} alt={previewPhoto.caption}
+              style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain", borderRadius: 12 }}
+              onClick={e => e.stopPropagation()} />
+          </div>
+          <div style={{ height: 32 }} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+export default UploadsTab;
