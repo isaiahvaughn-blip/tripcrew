@@ -32,8 +32,8 @@ export function AddItinModal({ onClose, trip, onAdd }) {
         <div style={{ fontSize: 22, fontWeight: 900, color: P.textPrimary, letterSpacing: "-0.5px", fontFamily: "'Syne', sans-serif" }}>Add to Itinerary</div>
         <button style={S.closeBtn} onClick={onClose}>✕</button>
       </div>
-      <div style={{ flex: 1, padding: "0 22px", display: "flex", flexDirection: "column", minHeight: 0 }}>
-        <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ flex: 1, padding: "0 22px", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+  <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 14, overflow: "hidden" }}>
 
           {/* TYPE */}
           <div>
@@ -111,8 +111,8 @@ export function EditItinModal({ item, onClose, onSave }) {
         <div style={{ fontSize: 22, fontWeight: 900, color: P.textPrimary, letterSpacing: "-0.5px", fontFamily: "'Syne', sans-serif" }}>Edit Item</div>
         <button style={S.closeBtn} onClick={onClose}>✕</button>
       </div>
-      <div style={{ flex: 1, padding: "0 22px", display: "flex", flexDirection: "column", minHeight: 0 }}>
-        <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ flex: 1, padding: "0 22px", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+  <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 14, overflow: "hidden" }}>
 
           {/* TYPE */}
           <div>
