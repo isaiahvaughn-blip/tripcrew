@@ -30,10 +30,7 @@ serve(async (req) => {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="light dark">
-  <meta name="supported-color-schemes" content="light dark">
   <style>
-    /* Reset */
     body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
     table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
     img { -ms-interpolation-mode: bicubic; border: 0; outline: none; text-decoration: none; }
@@ -65,6 +62,7 @@ serve(async (req) => {
       color: #e4a576 !important;
       letter-spacing: -2px;
       font-style: italic;
+      font-family: Georgia, 'Times New Roman', serif;
       margin: 0 0 4px 0;
       line-height: 1;
     }
@@ -137,7 +135,6 @@ serve(async (req) => {
       text-decoration: none;
     }
 
-    /* Mobile */
     @media only screen and (max-width: 480px) {
       .container {
         padding: 32px 20px !important;
