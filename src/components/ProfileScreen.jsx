@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { supabase } from "../supabase";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Plane, Coffee, PartyPopper } from "lucide-react";
 import { P, S, TRIP_ICONS, TRIP_ICON_LIST, METRIC_DEFS, DEFAULT_METRICS } from "../constants";
 import { computeMetric, renderAvatarContent } from "../utils";
 import NewTripModal from "./NewTripModal";
@@ -171,7 +171,11 @@ function TripCard({ trip, onOpen, onDelete, onEdit, selecting, selected, onLongP
 function EmptyTripsState({ onNew }) {
   return (
     <div style={{ background: P.surface1, border: `1px dashed ${P.surface3}`, borderRadius: 24, padding: "40px 28px", textAlign: "center", marginTop: 8 }}>
-      <div style={{ display: "flex", justifyContent: "center", gap: 12, fontSize: 28, marginBottom: 18 }}>✈️ ☕ 🎉</div>
+      <div style={{ display: "flex", justifyContent: "center", gap: 16, marginBottom: 18 }}>
+        <Plane size={28} color={P.terracotta} strokeWidth={1.5} />
+        <Coffee size={28} color={P.terracotta} strokeWidth={1.5} />
+        <PartyPopper size={28} color={P.terracotta} strokeWidth={1.5} />
+      </div>
       <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 20, fontWeight: 800, color: P.textPrimary, marginBottom: 8 }}>Nothing planned yet</div>
       <div style={{ fontSize: 14, color: P.slateBlue, fontFamily: "'DM Sans', sans-serif", lineHeight: 1.5, marginBottom: 24 }}>Your next trip, dinner, or night out starts here.</div>
       <button style={{ background: `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`, color: "#fff", border: "none", borderRadius: 14, padding: "13px 24px", fontSize: 15, fontWeight: 800, cursor: "pointer" }} onClick={onNew}>Plan something →</button>
