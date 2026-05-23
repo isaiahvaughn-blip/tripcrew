@@ -28,13 +28,15 @@ export function AddItinModal({ onClose, trip, onAdd }) {
 
   return (
     <div style={{ position: "absolute", inset: 0, zIndex: 100, background: P.phoneBg, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 22px 8px", flexShrink: 0 }}>
-        <div style={S.sheetTitle}>Add to Itinerary</div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 22px 12px", flexShrink: 0 }}>
+        <div style={{ fontSize: 22, fontWeight: 900, color: P.textPrimary, letterSpacing: "-0.5px", fontFamily: "'Syne', sans-serif" }}>Add to Itinerary</div>
         <button style={S.closeBtn} onClick={onClose}>✕</button>
       </div>
-      <div style={{ flex: 1, padding: "0 22px", display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: 0 }}>
-        <div style={{ overflowY: "auto", flex: 1 }}>
-          <div style={{ marginBottom: 8 }}>
+      <div style={{ flex: 1, padding: "0 22px", display: "flex", flexDirection: "column", minHeight: 0 }}>
+        <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 16 }}>
+
+          {/* TYPE */}
+          <div>
             <div style={S.fieldLbl}>TYPE</div>
             <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 2 }}>
               {Object.keys(ITINERARY_COLORS).map(t => {
@@ -43,26 +45,35 @@ export function AddItinModal({ onClose, trip, onAdd }) {
                 const selected = type === t;
                 return (
                   <button key={t} onClick={() => setType(t)}
-                    style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3, padding: "6px 8px", borderRadius: 12, cursor: "pointer", background: selected ? P.surface2 : P.surface1, border: selected ? `1px solid ${m.accent}` : `1px solid ${P.surface3}`, minHeight: 48, minWidth: 52, flexShrink: 0 }}>
-                    <TIcon size={16} color={selected ? m.accent : P.textMuted} strokeWidth={1.5} />
-                    <span style={{ fontSize: 9, fontWeight: 700, color: selected ? m.accent : P.textMuted, textTransform: "capitalize", letterSpacing: "0.3px" }}>{t}</span>
+                    style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, padding: "10px 10px", borderRadius: 14, cursor: "pointer", background: selected ? P.surface2 : P.surface1, border: selected ? `1px solid ${m.accent}` : `1px solid ${P.surface3}`, minHeight: 58, minWidth: 62, flexShrink: 0 }}>
+                    <TIcon size={20} color={selected ? m.accent : P.textMuted} strokeWidth={1.5} />
+                    <span style={{ fontSize: 10, fontWeight: 700, color: selected ? m.accent : P.textMuted, textTransform: "capitalize", letterSpacing: "0.3px" }}>{t}</span>
                   </button>
                 );
               })}
             </div>
           </div>
-          <div style={{ textAlign: "center", padding: "4px 0 8px", borderBottom: `1px solid ${P.surface3}`, marginBottom: 10 }}>
+
+          {/* TITLE */}
+          <div style={{ textAlign: "center", paddingBottom: 12, borderBottom: `1px solid ${P.surface3}` }}>
             <div style={S.fieldLbl}>TITLE</div>
             <input ref={titleRef} placeholder={TYPE_PLACEHOLDERS[type] || "e.g. Add a title"}
-              style={{ background: "transparent", border: "none", outline: "none", fontSize: 20, fontWeight: 900, color: P.textPrimary, letterSpacing: "-0.5px", width: "100%", textAlign: "center", fontFamily: "'Syne', sans-serif", padding: "2px 0" }} />
+              style={{ background: "transparent", border: "none", outline: "none", fontSize: 22, fontWeight: 900, color: P.textPrimary, letterSpacing: "-0.5px", width: "100%", textAlign: "center", fontFamily: "'Syne', sans-serif", padding: "4px 0" }} />
           </div>
-          <div style={{ marginBottom: 10 }}>
+
+          {/* DETAILS */}
+          <div>
             <div style={S.fieldLbl}>DETAILS / CONFIRMATION #</div>
-            <input ref={detailRef} style={{ ...S.input, fontSize: 14, padding: "10px 16px" }} placeholder="Confirmation code, address, notes..." />
+            <input ref={detailRef} style={{ ...S.input, fontSize: 15, padding: "12px 16px" }} placeholder="Confirmation code, address, notes..." />
           </div>
+
+          {/* DATE TIME */}
           <DateTimePicker day={day} time={time} onDayChange={setDay} onTimeChange={setTime} />
+
         </div>
-        <div style={{ paddingBottom: 16, flexShrink: 0 }}>
+
+        {/* BUTTON */}
+        <div style={{ paddingTop: 12, paddingBottom: 16, flexShrink: 0 }}>
           <button style={{ ...S.primaryBtn, background: `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`, color: "#fff" }} onClick={handleAdd}>
             Add to Itinerary
           </button>
@@ -96,13 +107,15 @@ export function EditItinModal({ item, onClose, onSave }) {
 
   return (
     <div style={{ position: "absolute", inset: 0, zIndex: 100, background: P.phoneBg, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 22px 8px", flexShrink: 0 }}>
-        <div style={S.sheetTitle}>Edit Item</div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 22px 12px", flexShrink: 0 }}>
+        <div style={{ fontSize: 22, fontWeight: 900, color: P.textPrimary, letterSpacing: "-0.5px", fontFamily: "'Syne', sans-serif" }}>Edit Item</div>
         <button style={S.closeBtn} onClick={onClose}>✕</button>
       </div>
-      <div style={{ flex: 1, padding: "0 22px", display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: 0 }}>
-        <div style={{ overflowY: "auto", flex: 1 }}>
-          <div style={{ marginBottom: 8 }}>
+      <div style={{ flex: 1, padding: "0 22px", display: "flex", flexDirection: "column", minHeight: 0 }}>
+        <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 16 }}>
+
+          {/* TYPE */}
+          <div>
             <div style={S.fieldLbl}>TYPE</div>
             <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 2 }}>
               {Object.keys(ITINERARY_COLORS).map(t => {
@@ -111,39 +124,48 @@ export function EditItinModal({ item, onClose, onSave }) {
                 const selected = type === t;
                 return (
                   <button key={t} onClick={() => setType(t)}
-                    style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3, padding: "6px 8px", borderRadius: 12, cursor: "pointer", background: selected ? P.surface2 : P.surface1, border: selected ? `1px solid ${m.accent}` : `1px solid ${P.surface3}`, minHeight: 48, minWidth: 52, flexShrink: 0 }}>
-                    <TIcon size={16} color={selected ? m.accent : P.textMuted} strokeWidth={1.5} />
-                    <span style={{ fontSize: 9, fontWeight: 700, color: selected ? m.accent : P.textMuted, textTransform: "capitalize", letterSpacing: "0.3px" }}>{t}</span>
+                    style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, padding: "10px 10px", borderRadius: 14, cursor: "pointer", background: selected ? P.surface2 : P.surface1, border: selected ? `1px solid ${m.accent}` : `1px solid ${P.surface3}`, minHeight: 58, minWidth: 62, flexShrink: 0 }}>
+                    <TIcon size={20} color={selected ? m.accent : P.textMuted} strokeWidth={1.5} />
+                    <span style={{ fontSize: 10, fontWeight: 700, color: selected ? m.accent : P.textMuted, textTransform: "capitalize", letterSpacing: "0.3px" }}>{t}</span>
                   </button>
                 );
               })}
             </div>
           </div>
-          <div style={{ textAlign: "center", padding: "4px 0 8px", borderBottom: `1px solid ${P.surface3}`, marginBottom: 10 }}>
+
+          {/* TITLE */}
+          <div style={{ textAlign: "center", paddingBottom: 12, borderBottom: `1px solid ${P.surface3}` }}>
             <div style={S.fieldLbl}>TITLE</div>
             <input ref={titleRef} defaultValue={item.title} placeholder={TYPE_PLACEHOLDERS[type] || "e.g. Add a title"}
-              style={{ background: "transparent", border: "none", outline: "none", fontSize: 20, fontWeight: 900, color: P.textPrimary, letterSpacing: "-0.5px", width: "100%", textAlign: "center", fontFamily: "'Syne', sans-serif", padding: "2px 0" }} />
+              style={{ background: "transparent", border: "none", outline: "none", fontSize: 22, fontWeight: 900, color: P.textPrimary, letterSpacing: "-0.5px", width: "100%", textAlign: "center", fontFamily: "'Syne', sans-serif", padding: "4px 0" }} />
           </div>
-          <div style={{ marginBottom: 10 }}>
+
+          {/* DETAILS */}
+          <div>
             <div style={S.fieldLbl}>DETAILS / CONFIRMATION #</div>
-            <input ref={detailRef} style={{ ...S.input, fontSize: 14, padding: "10px 16px" }} defaultValue={item.detail || ""} />
+            <input ref={detailRef} defaultValue={item.detail || ""} style={{ ...S.input, fontSize: 15, padding: "12px 16px" }} placeholder="Confirmation code, address, notes..." />
           </div>
+
+          {/* DATE TIME */}
           <DateTimePicker day={day} time={time} onDayChange={setDay} onTimeChange={setTime} />
+
         </div>
-        <div style={{ paddingBottom: 16, flexShrink: 0, display: "flex", gap: 10 }}>
-  <button style={{ ...S.primaryBtn, background: loading ? P.surface2 : `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`, color: "#fff", flex: 1 }}
-    onClick={handleSave} disabled={loading}>
-    {loading ? "Saving..." : "Save Changes"}
-  </button>
-  <button
-    onClick={async () => {
-      const { error } = await supabase.from("itinerary").delete().eq("id", item.id);
-      if (!error) onSave({ ...item, _deleted: true });
-    }}
-    style={{ background: "transparent", border: `1px solid ${P.danger}40`, borderRadius: 14, padding: "0 22px", color: P.danger, cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-    <Trash2 size={16} strokeWidth={2} />
-  </button>
-</div>
+
+        {/* BUTTONS */}
+        <div style={{ paddingTop: 12, paddingBottom: 16, flexShrink: 0, display: "flex", gap: 10 }}>
+          <button style={{ ...S.primaryBtn, background: loading ? P.surface2 : `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`, color: "#fff", flex: 1 }}
+            onClick={handleSave} disabled={loading}>
+            {loading ? "Saving..." : "Save Changes"}
+          </button>
+          <button
+            onClick={async () => {
+              const { error } = await supabase.from("itinerary").delete().eq("id", item.id);
+              if (!error) onSave({ ...item, _deleted: true });
+            }}
+            style={{ background: "transparent", border: `1px solid ${P.danger}40`, borderRadius: 14, padding: "0 22px", color: P.danger, cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Trash2 size={16} strokeWidth={2} />
+          </button>
+        </div>
       </div>
     </div>
   );
