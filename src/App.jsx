@@ -5,7 +5,8 @@ import WelcomeScreen  from "./components/WelcomeScreen";
 import AuthScreen     from "./components/AuthScreen";
 import ProfileScreen  from "./components/ProfileScreen";
 import SettingsScreen from "./components/SettingsScreen";
-import TripShell      from "./components/TripShell";
+import TripShell        from "./components/TripShell";
+import OnboardingScreen from "./components/OnboardingScreen";
 
 // Inject Google Fonts
 const fontLink = document.createElement("link");
@@ -29,8 +30,10 @@ export default function App() {
       setUser(session?.user ?? null);
       if (session?.user) {
         supabase.from("profiles").select("*").eq("id", session.user.id).single()
-          .then(({ data }) => setProfile(data));
-        setView("profile");
+          .then(({ data }) => {
+            setProfile(data);
+            setView(data?.onboarded ? "profile" : "onboarding");
+          });
       }
       setAuthChecked(true);
     });
@@ -38,8 +41,10 @@ export default function App() {
       setUser(session?.user ?? null);
       if (session?.user) {
         supabase.from("profiles").select("*").eq("id", session.user.id).single()
-          .then(({ data }) => setProfile(data));
-        setView("profile");
+          .then(({ data }) => {
+            setProfile(data);
+            setView(data?.onboarded ? "profile" : "onboarding");
+          });
       } else {
         setProfile(null);
         setView("welcome");
@@ -109,6 +114,9 @@ export default function App() {
   return (
     <div style={S.root}>
       <div style={S.phone}>
+        {view === "onboarding" && (
+          <OnboardingScreen user={user} onComplete={profile => { setProfile(profile); setView("profile"); }} />
+        )}
         {view === "profile" && (
           <ProfileScreen key={tripListKey} onOpen={openTrip} user={user} profile={profile}
             onSignOut={async () => { await supabase.auth.signOut(); }}

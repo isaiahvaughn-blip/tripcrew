@@ -27,7 +27,7 @@ export default function WelcomeScreen({ onGetStarted }) {
           <div style={SW.topBand} />
           <div style={SW.brandWrap}>
             <div style={SW.wordmark}>vouze</div>
-            <div style={SW.tagline}>Where every plan becomes a memory</div>
+            <div style={SW.tagline}>Plan it, track it, remember it.</div>
             <div style={SW.subTagline}>Your home for trips, nights out, and everything in between</div>
           </div>
           <div style={SW.cardStack}>
