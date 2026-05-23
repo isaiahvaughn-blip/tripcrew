@@ -3,6 +3,8 @@ import { supabase } from "../supabase";
 import { Download } from "lucide-react";
 import { P, S } from "../constants";
 import ConfirmModal from "./ConfirmModal";
+import imageCompression from "browser-image-compression";
+import JSZip from "jszip";
 
 function UploadsTab({ trip, user, profile }) {
   const [photos, setPhotos] = useState([]);
@@ -10,6 +12,8 @@ function UploadsTab({ trip, user, profile }) {
   const [previewPhoto, setPreviewPhoto] = useState(null);
   const [selecting, setSelecting] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
+  const [downloadingAll, setDownloadingAll] = useState(false);
+  const [confirmDeletePhotos, setConfirmDeletePhotos] = useState(false);
   const fileInputRef = useRef(null);
   const longPressTimers = useRef({});
 
@@ -34,13 +38,26 @@ function UploadsTab({ trip, user, profile }) {
     if (!validExts.includes(ext)) { alert('Please upload an image file (jpg, png, gif, webp, heic)'); return; }
     setUploading(true);
     try {
-      const ext = file.name.split('.').pop();
-      const path = `${trip.id}/${Date.now()}.${ext}`;
-      const { error: uploadError } = await supabase.storage.from('trip-photos').upload(path, file);
+      // Compress before upload
+      let fileToUpload = file;
+      if (['jpg','jpeg','png','webp'].includes(ext)) {
+        fileToUpload = await imageCompression(file, {
+          maxSizeMB: 0.3,
+          maxWidthOrHeight: 1200,
+          useWebWorker: true,
+        });
+      }
+
+      const uploadExt = file.name.split('.').pop();
+      const path = `${trip.id}/${Date.now()}.${uploadExt}`;
+      const { error: uploadError } = await supabase.storage.from('trip-photos').upload(path, fileToUpload);
       if (uploadError) throw uploadError;
       const { data: { publicUrl } } = supabase.storage.from('trip-photos').getPublicUrl(path);
       const uploader = profile?.display_name || user?.email?.split('@')[0] || 'Me';
-      const { error: dbError } = await supabase.from('photos').insert([{ trip_id: trip.id, user_id: user?.id, storage_path: path, url: publicUrl, caption: file.name.split('.')[0], uploader, sensitive: false }]);
+      const { error: dbError } = await supabase.from('photos').insert([{
+        trip_id: trip.id, user_id: user?.id, storage_path: path,
+        url: publicUrl, caption: file.name.split('.')[0], uploader, sensitive: false
+      }]);
       if (dbError) throw dbError;
       await fetchPhotos();
     } catch (e) { console.error(e); } finally { setUploading(false); }
@@ -50,8 +67,6 @@ function UploadsTab({ trip, user, profile }) {
     const { error } = await supabase.from('photos').update({ sensitive: !photo.sensitive }).eq('id', photo.id);
     if (!error) setPhotos(p => p.map(ph => ph.id === photo.id ? { ...ph, sensitive: !ph.sensitive } : ph));
   };
-
-  const [confirmDeletePhotos, setConfirmDeletePhotos] = useState(false);
 
   const handleDeleteSelected = async () => {
     for (const id of selectedIds) {
@@ -74,6 +89,38 @@ function UploadsTab({ trip, user, profile }) {
     setSelectedIds([]); setSelecting(false);
   };
 
+  const downloadPhotos = async (photosToDownload) => {
+    if (!photosToDownload.length) return;
+    setDownloadingAll(true);
+    try {
+      const zip = new JSZip();
+      const folder = zip.folder(trip.name || "vouze-photos");
+      await Promise.all(photosToDownload.map(async (ph, i) => {
+        const res = await fetch(ph.url);
+        const blob = await res.blob();
+        const ext = ph.storage_path.split('.').pop() || 'jpg';
+        const filename = `${String(i + 1).padStart(2, '0')}-${ph.caption || 'photo'}.${ext}`;
+        folder.file(filename, blob);
+      }));
+      const content = await zip.generateAsync({ type: "blob" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(content);
+      a.download = `${trip.name || "vouze"}-photos.zip`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } catch (e) { console.error(e); } finally { setDownloadingAll(false); }
+  };
+
+  const handleDownloadSelected = () => {
+    const selected = photos.filter(ph => selectedIds.includes(ph.id));
+    downloadPhotos(selected);
+  };
+
+  const handleDownloadAll = () => {
+    const nonSensitive = photos.filter(ph => !ph.sensitive);
+    downloadPhotos(nonSensitive);
+  };
+
   const handleLongPressStart = (id) => {
     longPressTimers.current[id] = setTimeout(() => { setSelecting(true); setSelectedIds([id]); }, 500);
   };
@@ -91,22 +138,51 @@ function UploadsTab({ trip, user, profile }) {
 
   return (
     <div style={S.tabScroll}>
-      {confirmDeletePhotos && <ConfirmModal message={`Remove ${selectedIds.length} photo${selectedIds.length > 1 ? 's' : ''}?`} onConfirm={handleDeleteSelected} onCancel={() => setConfirmDeletePhotos(false)} confirmLabel="Remove" danger />}
+      {confirmDeletePhotos && (
+        <ConfirmModal
+          message={`Remove ${selectedIds.length} photo${selectedIds.length > 1 ? 's' : ''}?`}
+          onConfirm={handleDeleteSelected}
+          onCancel={() => setConfirmDeletePhotos(false)}
+          confirmLabel="Remove"
+          danger
+        />
+      )}
+
       <div style={S.tabTopRow}>
         <div style={S.tabTitle}>Memories</div>
-        {selecting
-          ? <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          {selecting ? (
+            <>
               <button style={{ ...S.actionBtn, color: P.slateBlue }} onClick={() => { setSelecting(false); setSelectedIds([]); }}>Cancel</button>
               {selectedIds.length > 0 && <>
-                <button style={{ ...S.actionBtn, borderColor: P.terracotta + "60", color: P.terracotta }} onClick={handleMarkSensitiveSelected}>🔒</button>
-                <button style={{ ...S.actionBtn, borderColor: P.danger + "60", color: P.danger }} onClick={() => setConfirmDeletePhotos(true)}>Remove</button>
+                <button style={{ ...S.actionBtn, borderColor: P.lightBlue + "60", color: P.lightBlue }}
+                  onClick={handleDownloadSelected} disabled={downloadingAll}>
+                  <Download size={13} />
+                </button>
+                <button style={{ ...S.actionBtn, borderColor: P.terracotta + "60", color: P.terracotta }}
+                  onClick={handleMarkSensitiveSelected}>🔒</button>
+                <button style={{ ...S.actionBtn, borderColor: P.danger + "60", color: P.danger }}
+                  onClick={() => setConfirmDeletePhotos(true)}>Remove</button>
               </>}
-            </div>
-          : <button style={S.newBtn} onClick={() => fileInputRef.current?.click()} disabled={uploading}>
-              {uploading ? "Uploading..." : "+ Upload"}
-            </button>
-        }
+            </>
+          ) : (
+            <>
+              {photos.length > 0 && (
+                <button
+                  style={{ ...S.actionBtn, borderColor: P.lightBlue + "60", color: P.lightBlue }}
+                  onClick={handleDownloadAll}
+                  disabled={downloadingAll}>
+                  {downloadingAll ? "..." : <Download size={13} />}
+                </button>
+              )}
+              <button style={S.newBtn} onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+                {uploading ? "Uploading..." : "+ Upload"}
+              </button>
+            </>
+          )}
+        </div>
       </div>
+
       <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={e => handleUpload(e.target.files[0])} />
 
       <div style={{ fontSize: 12, color: P.textMuted, marginBottom: 14, fontFamily: "'DM Sans', sans-serif" }}>
@@ -187,6 +263,5 @@ function UploadsTab({ trip, user, profile }) {
     </div>
   );
 }
-
 
 export default UploadsTab;
