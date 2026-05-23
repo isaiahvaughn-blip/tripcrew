@@ -122,9 +122,14 @@ function MembersTab({ trip, profile, expenses, profileMap = {} }) {
                 const { data: profileData } = await supabase.from('profiles').select('display_name').eq('id', linkedUserId).single();
                 if (profileData?.display_name) displayName = profileData.display_name;
               }
-              const { data: memberData, error: memberError } = await supabase.from('members').insert([{ trip_id: trip.id, name: displayName }]).select();
-              if (memberError) console.error(memberError);
-              else if (memberData) setMembers(prev => [...prev, memberData[0]]);
+              // Dedup check before inserting into members
+              const { data: existingMember } = await supabase.from('members').select('id')
+                .eq('trip_id', trip.id).eq('name', displayName).maybeSingle();
+              if (!existingMember) {
+                const { data: memberData, error: memberError } = await supabase.from('members').insert([{ trip_id: trip.id, name: displayName }]).select();
+                if (memberError) console.error(memberError);
+                else if (memberData) setMembers(prev => [...prev, memberData[0]]);
+              }
               setNewName(""); setShowInvite(false);
             }}>Invite</button>
           </div>
