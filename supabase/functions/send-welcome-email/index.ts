@@ -12,7 +12,7 @@ serve(async (req) => {
     }
 
     const email = record.email;
-    const name  = record.raw_user_meta_data?.full_name || email.split("@")[0] || "there";
+    const name  = record.raw_user_meta_data?.full_name || null;
 
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -160,7 +160,7 @@ serve(async (req) => {
 
       <div class="card">
         <p class="thanks">Thanks for joining us</p>
-        <p class="headline">Welcome${name !== "there" ? `, ${name}.` : "."}</p>
+        <p class="headline">${name ? `Welcome, ${name}.` : "Welcome to Vouze."}</p>
         <p class="body-text">Every plan starts here &mdash; trips, dinners, nights out, and everything worth remembering. Vouze keeps your crew on the same page.</p>
       </div>
 
