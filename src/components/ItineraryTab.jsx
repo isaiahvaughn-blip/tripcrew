@@ -130,10 +130,17 @@ export function EditItinModal({ item, onClose, onSave }) {
           </div>
           <DateTimePicker day={day} time={time} onDayChange={setDay} onTimeChange={setTime} />
         </div>
-        <div style={{ paddingBottom: 16, flexShrink: 0 }}>
+        <div style={{ paddingBottom: 16, flexShrink: 0, display: "flex", flexDirection: "column", gap: 10 }}>
           <button style={{ ...S.primaryBtn, background: loading ? P.surface2 : `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`, color: "#fff" }}
             onClick={handleSave} disabled={loading}>
             {loading ? "Saving..." : "Save Changes"}
+          </button>
+          <button style={{ ...S.primaryBtn, background: "transparent", border: `1px solid ${P.danger}40`, color: P.danger }}
+            onClick={async () => {
+              const { error } = await supabase.from("itinerary").delete().eq("id", item.id);
+              if (!error) onSave({ ...item, _deleted: true });
+            }}>
+            Delete Item
           </button>
         </div>
       </div>
@@ -259,9 +266,16 @@ export default function ItineraryTab({ trip, onModal, refreshKey }) {
       ))}
       <div style={{ height: 20 }} />
       {editingItem && (
-        <EditItinModal item={editingItem} onClose={() => setEditingItem(null)}
-          onSave={updated => { setItems(prev => prev.map(i => i.id === updated.id ? updated : i)); setEditingItem(null); }} />
-      )}
+  <EditItinModal item={editingItem} onClose={() => setEditingItem(null)}
+    onSave={updated => {
+      if (updated._deleted) {
+        setItems(prev => prev.filter(i => i.id !== updated.id));
+      } else {
+        setItems(prev => prev.map(i => i.id === updated.id ? updated : i));
+      }
+      setEditingItem(null);
+    }} />
+)}
     </div>
   );
 }
