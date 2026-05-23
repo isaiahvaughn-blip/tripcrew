@@ -22,12 +22,14 @@ export default function App() {
   const [itinRefresh, setItinRefresh] = useState(0);
   const [profile,     setProfile]     = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
+  const [tripListKey, setTripListKey] = useState(0); // forces ProfileScreen to re-fetch trips
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       if (session?.user) {
-        supabase.from("profiles").select("*").eq("id", session.user.id).single().then(({ data }) => setProfile(data));
+        supabase.from("profiles").select("*").eq("id", session.user.id).single()
+          .then(({ data }) => setProfile(data));
         setView("profile");
       }
       setAuthChecked(true);
@@ -35,7 +37,8 @@ export default function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       if (session?.user) {
-        supabase.from("profiles").select("*").eq("id", session.user.id).single().then(({ data }) => setProfile(data));
+        supabase.from("profiles").select("*").eq("id", session.user.id).single()
+          .then(({ data }) => setProfile(data));
         setView("profile");
       } else {
         setProfile(null);
@@ -45,13 +48,37 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Link pending invites + migrate guest expenses when user logs in
   useEffect(() => {
     if (!user) return;
     const linkPending = async () => {
-      const { data: pending } = await supabase.from("trip_members").select("*").eq("invited_email", user.email).eq("status", "pending");
+      const { data: pending } = await supabase
+        .from("trip_members").select("*")
+        .eq("invited_email", user.email).eq("status", "pending");
       if (!pending?.length) return;
+
       for (const invite of pending) {
-        await supabase.from("trip_members").update({ user_id: user.id, status: "accepted" }).eq("id", invite.id);
+        // Link the invite to this user
+        await supabase.from("trip_members")
+          .update({ user_id: user.id, status: "accepted" })
+          .eq("id", invite.id);
+
+        // Get the guest name that was used in expenses
+        const { data: memberRow } = await supabase
+          .from("members").select("name")
+          .eq("trip_id", invite.trip_id)
+          .eq("name", user.email.split("@")[0])
+          .maybeSingle();
+
+        // Try to find guest name — could be email prefix or display name
+        const guestName = memberRow?.name || user.email.split("@")[0];
+
+        // Migrate guest name → UUID in expenses
+        await supabase.rpc("migrate_guest_to_uuid", {
+          p_trip_id:   invite.trip_id,
+          p_guest_name: guestName,
+          p_user_uuid:  user.id,
+        });
       }
     };
     linkPending();
@@ -74,11 +101,16 @@ export default function App() {
     setView("trip");
   };
 
+  const handleTripUpdate = updated => {
+    setActiveTrip(updated);
+    setTripListKey(k => k + 1); // trigger ProfileScreen to re-fetch trip list
+  };
+
   return (
     <div style={S.root}>
       <div style={S.phone}>
         {view === "profile" && (
-          <ProfileScreen onOpen={openTrip} user={user} profile={profile}
+          <ProfileScreen key={tripListKey} onOpen={openTrip} user={user} profile={profile}
             onSignOut={async () => { await supabase.auth.signOut(); }}
             onSettings={() => setView("settings")}
             onProfileUpdate={updated => setProfile(updated)} />
@@ -90,11 +122,12 @@ export default function App() {
         {view === "trip" && activeTrip && (
           <TripShell
             trip={activeTrip} activeTab={activeTab} setActiveTab={setActiveTab}
-            onBack={() => setView("profile")} onModal={setModal}
+            onBack={() => { setView("profile"); }}
+            onModal={setModal}
             itinRefresh={itinRefresh} modal={modal} setModal={setModal}
             user={user} profile={profile}
             onItinRefresh={() => setItinRefresh(r => r + 1)}
-            onTripUpdate={updated => setActiveTrip(updated)}
+            onTripUpdate={handleTripUpdate}
           />
         )}
       </div>

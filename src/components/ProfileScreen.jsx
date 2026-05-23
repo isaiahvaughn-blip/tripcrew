@@ -167,7 +167,6 @@ function TripCard({ trip, onOpen, onDelete, onEdit, selecting, selected, onLongP
           </div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
-          {trip.settled && <span style={S.settledBadge}>SETTLED</span>}
           <ChevronRight size={18} color={P.terracotta + "80"} />
         </div>
       </div>
@@ -198,6 +197,7 @@ export default function ProfileScreen({ onOpen, user, onSignOut, onSettings, pro
   const [showMetricPicker,  setShowMetricPicker]  = useState(false);
   const [selecting,    setSelecting]   = useState(false);
   const [selectedIds,  setSelectedIds] = useState([]);
+  const [confirmDeleteTrip, setConfirmDeleteTrip] = useState(null); // trip to confirm delete
   const [itinItems,  setItinItems]  = useState([]);
   const [expenses,   setExpenses]   = useState([]);
   const [photos,     setPhotos]     = useState([]);
@@ -227,9 +227,14 @@ export default function ProfileScreen({ onOpen, user, onSignOut, onSettings, pro
   }, []);
 
   const handleDeleteTrip = async trip => {
-    if (!window.confirm(`Delete "${trip.name}"? You can restore it from settings.`)) return;
-    const { error } = await supabase.from("trips").update({ deleted_at: new Date().toISOString() }).eq("id", trip.id);
-    if (!error) setTrips(prev => prev.filter(t => t.id !== trip.id));
+    setConfirmDeleteTrip(trip);
+  };
+
+  const confirmDeleteTripAction = async () => {
+    if (!confirmDeleteTrip) return;
+    const { error } = await supabase.from("trips").update({ deleted_at: new Date().toISOString() }).eq("id", confirmDeleteTrip.id);
+    if (!error) setTrips(prev => prev.filter(t => t.id !== confirmDeleteTrip.id));
+    setConfirmDeleteTrip(null);
   };
 
   const metricData = { trips, itinItems, expenses, photos, members };
@@ -273,7 +278,16 @@ export default function ProfileScreen({ onOpen, user, onSignOut, onSettings, pro
         </div>
       </div>
 
-      {showAvatarEdit && <AvatarEditSheet profile={profile} user={user} onClose={() => setShowAvatarEdit(false)} onSave={updated => { onProfileUpdate?.(updated); setShowAvatarEdit(false); }} />}
+      {confirmDeleteTrip && (
+      <ConfirmModal
+        message={`Delete "${confirmDeleteTrip.name}"? You can restore it from settings.`}
+        onConfirm={confirmDeleteTripAction}
+        onCancel={() => setConfirmDeleteTrip(null)}
+        confirmLabel="Delete"
+        danger
+      />
+    )}
+  {showAvatarEdit && <AvatarEditSheet profile={profile} user={user} onClose={() => setShowAvatarEdit(false)} onSave={updated => { onProfileUpdate?.(updated); setShowAvatarEdit(false); }} />}
       {editingTrip    && <EditTripModal trip={editingTrip} onClose={() => setEditingTrip(null)} onSave={updated => { setTrips(prev => prev.map(t => t.id === updated.id ? updated : t)); setEditingTrip(null); }} />}
       {showMetricPicker && <MetricPickerSheet current={metricPrefs} userId={user.id} onClose={() => setShowMetricPicker(false)} onSave={updated => { onProfileUpdate?.({ ...profile, metric_prefs: updated }); setShowMetricPicker(false); }} />}
 

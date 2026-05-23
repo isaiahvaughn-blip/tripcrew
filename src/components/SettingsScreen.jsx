@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../supabase";
 import { P, S } from "../constants";
+import ConfirmModal from "./ConfirmModal";
 
 const SA = {
   backBtn: { background: "transparent", border: "none", color: P.slateBlue, fontSize: 14, fontWeight: 700, cursor: "pointer", padding: 0, marginBottom: 0, fontFamily: "'DM Sans', sans-serif" },
@@ -16,6 +17,7 @@ export default function SettingsScreen({ user, profile, onBack, onProfileUpdate 
   const [savingPayment,  setSavingPayment]  = useState(false);
   const [savedPayment,   setSavedPayment]   = useState(false);
   const [deletedTrips,   setDeletedTrips]   = useState([]);
+  const [confirmPermDelete, setConfirmPermDelete] = useState(null);
   const [restoring,      setRestoring]      = useState(null);
 
   useEffect(() => {
@@ -50,13 +52,27 @@ export default function SettingsScreen({ user, profile, onBack, onProfileUpdate 
   };
 
   const handlePermanentDelete = async trip => {
-    if (!window.confirm(`Permanently delete "${trip.name}"? This cannot be undone.`)) return;
-    const { error } = await supabase.from("trips").delete().eq("id", trip.id);
-    if (!error) setDeletedTrips(prev => prev.filter(t => t.id !== trip.id));
+    setConfirmPermDelete(trip);
+  };
+
+  const confirmPermDeleteAction = async () => {
+    if (!confirmPermDelete) return;
+    const { error } = await supabase.from("trips").delete().eq("id", confirmPermDelete.id);
+    if (!error) setDeletedTrips(prev => prev.filter(t => t.id !== confirmPermDelete.id));
+    setConfirmPermDelete(null);
   };
 
   return (
     <div style={S.screen}>
+      {confirmPermDelete && (
+        <ConfirmModal
+          message={`Permanently delete "${confirmPermDelete.name}"? This cannot be undone.`}
+          onConfirm={confirmPermDeleteAction}
+          onCancel={() => setConfirmPermDelete(null)}
+          confirmLabel="Delete Forever"
+          danger
+        />
+      )}
       <div style={{ padding: "52px 24px 0", display: "flex", alignItems: "center", gap: 14, marginBottom: 32 }}>
         <button style={SA.backBtn} onClick={onBack}>← Back</button>
         <div style={{ fontSize: 24, fontWeight: 900, color: P.textPrimary, letterSpacing: "-0.8px" }}>Settings</div>

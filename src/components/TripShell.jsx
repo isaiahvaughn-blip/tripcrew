@@ -94,7 +94,7 @@ export default function TripShell({ trip, activeTab, setActiveTab, onBack, onMod
         {activeTab === "itinerary" && <ItineraryTab trip={trip} onModal={onModal} refreshKey={itinRefresh} />}
         {activeTab === "expenses"  && <ExpensesTab  trip={trip} onModal={onModal} profile={profile} user={user} expenses={expenses} settlements={settlements} myName={myName} profileMap={profileMap} onEditExpense={setEditingExpense} />}
         {activeTab === "uploads"   && <UploadsTab   trip={trip} user={user} profile={profile} />}
-        {activeTab === "members"   && <MembersTab   trip={trip} profile={profile} expenses={expenses} />}
+        {activeTab === "members"   && <MembersTab   trip={trip} profile={profile} expenses={expenses} profileMap={profileMap} />}
         {activeTab === "summary"   && <SummaryTab   trip={trip} settlements={settlements} myName={myName} expenses={expenses} />}
 
         {/* Modals rendered at shell level for correct containing block */}

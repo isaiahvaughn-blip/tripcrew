@@ -1,18 +1,22 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../supabase";
 import { P, S } from "../constants";
+import { resolveName } from "../utils";
+import ConfirmModal from "./ConfirmModal";
 
-function MembersTab({ trip, profile, expenses }) {
+function MembersTab({ trip, profile, expenses, profileMap = {} }) {
   const [members, setMembers] = useState([]);
+  const [confirmRemoveMember, setConfirmRemoveMember] = useState(null);
   const [memberProfiles, setMemberProfiles] = useState({});
   const [showInvite, setShowInvite] = useState(false);
   const [newName, setNewName] = useState("");
   const myName = profile?.display_name || "";
 
+  // Build balances keyed by resolved display name
   const memberBalances = {};
   expenses.forEach(exp => {
-    const paidBy = exp.paid_by;
-    const splitWith = exp.split_with || [];
+    const paidBy    = resolveName(exp.paid_by, profileMap);
+    const splitWith = (exp.split_with || []).map(e => resolveName(e, profileMap));
     if (!splitWith.length) return;
     const share = exp.amount / splitWith.length;
     if (!memberBalances[paidBy]) memberBalances[paidBy] = 0;
@@ -80,7 +84,21 @@ function MembersTab({ trip, profile, expenses }) {
   };
 
   return (
-    <div style={S.tabScroll}>
+    <div style={{ position: "relative", flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      {confirmRemoveMember && (
+        <ConfirmModal
+          message={`Remove ${confirmRemoveMember.name} from this trip?`}
+          onConfirm={async () => {
+            await supabase.from("members").delete().eq("id", confirmRemoveMember.id);
+            setMembers(prev => prev.filter(mem => mem.id !== confirmRemoveMember.id));
+            setConfirmRemoveMember(null);
+          }}
+          onCancel={() => setConfirmRemoveMember(null)}
+          confirmLabel="Remove"
+          danger
+        />
+      )}
+      <div style={S.tabScroll}>
       <div style={S.tabTopRow}>
         <div style={S.tabTitle}>Members</div>
         <button style={S.newBtn} onClick={() => setShowInvite(true)}>+ Invite</button>
@@ -129,11 +147,7 @@ function MembersTab({ trip, profile, expenses }) {
               <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                 <div style={{ background: P.surface2, border: `1px solid ${balance.color}30`, borderRadius: 10, padding: "6px 12px", fontSize: 12, fontWeight: 700, color: balance.color, minWidth: 80, textAlign: "center" }}>{balance.text}</div>
                 {m.name !== myName && (
-                  <button style={S.rowDeleteBtn} onClick={async () => {
-                    if (!window.confirm(`Remove ${m.name} from this trip?`)) return;
-                    const { error } = await supabase.from('members').delete().eq('id', m.id);
-                    if (!error) setMembers(prev => prev.filter(mb => mb.id !== m.id));
-                  }}>✕</button>
+                  <button style={S.rowDeleteBtn} onClick={() => setConfirmRemoveMember(m)}>✕</button>
                 )}
               </div>
             </div>
@@ -141,6 +155,7 @@ function MembersTab({ trip, profile, expenses }) {
         );
       })}
       <div style={{ height: 20 }} />
+    </div>
     </div>
   );
 }

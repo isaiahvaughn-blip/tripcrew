@@ -229,7 +229,12 @@ export default function NewTripModal({ onClose, onSave, userId, userProfile }) {
           const { data: pd } = await supabase.from("profiles").select("display_name").eq("id", linkedUserId).single();
           if (pd?.display_name) displayName = pd.display_name;
         }
-        await supabase.from("members").insert([{ trip_id: trip.id, name: displayName }]);
+        // Only insert into members if not already present (prevents duplicates)
+        const { data: existingMember } = await supabase.from("members").select("id")
+          .eq("trip_id", trip.id).eq("name", displayName).maybeSingle();
+        if (!existingMember) {
+          await supabase.from("members").insert([{ trip_id: trip.id, name: displayName }]);
+        }
       }
       if (answers.vibe?.shortForm && answers.location) {
         const itinType = ["dinner","coffee","drinks"].includes(answers.vibe.key) ? "restaurant" : "activity";

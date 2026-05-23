@@ -3,12 +3,25 @@ import { supabase } from "../supabase";
 import { DollarSign } from "lucide-react";
 import { P, S, CATS, CATEGORY_META, CAT_ICONS } from "../constants";
 import { resolveName } from "../utils";
+import ConfirmModal from "./ConfirmModal";
+
+const EXPENSE_PLACEHOLDERS = {
+  Dining:   "e.g. Nobu, dinner for 4",
+  Drinks:   "e.g. Teardrop bar tab",
+  Stay:     "e.g. Fairmont 2 nights",
+  Activity: "e.g. Museum of Fine Arts",
+  Shopping: "e.g. Zara haul",
+  Travel:   "e.g. Dollar Car Rental",
+  Flight:   "e.g. PDX to LAX round trip",
+  Other:    "e.g. what was it?",
+};
 
 // ─── ADD / EDIT EXPENSE MODAL ─────────────────────────────────────────────────
 
 export function AddExpenseModal({ onClose, trip, onAdd, user, profile, existingExpense, profileMap = {} }) {
   const [members, setMembers] = useState([]); // [{ id: uuid|name, label: displayName }]
   const [step, setStep] = useState(1);
+  const [confirmDeleteExpense, setConfirmDeleteExpense] = useState(false);
   const [exp, setExp] = useState({
     title:     existingExpense?.title    || "",
     amount:    existingExpense?.amount   || "",
@@ -156,7 +169,7 @@ export function AddExpenseModal({ onClose, trip, onAdd, user, profile, existingE
             </div>
             <div style={{ marginBottom: 6 }}>
               <div style={S.fieldLbl}>DESCRIPTION</div>
-              <input style={{ ...S.input, padding: "10px 16px" }} placeholder="e.g. Dinner at Coco's" value={exp.title} onChange={e => setExp(n => ({ ...n, title: e.target.value }))} />
+              <input style={{ ...S.input, padding: "10px 16px" }} placeholder={EXPENSE_PLACEHOLDERS[exp.category] || "e.g. what was it?"} value={exp.title} onChange={e => setExp(n => ({ ...n, title: e.target.value }))} />
             </div>
             <div style={{ marginBottom: 6 }}>
               <div style={S.fieldLbl}>PAID BY</div>
@@ -168,8 +181,14 @@ export function AddExpenseModal({ onClose, trip, onAdd, user, profile, existingE
               </div>
             </div>
           </div>
-          <div style={{ paddingBottom: 16, flexShrink: 0 }}>
-            <button style={{ ...S.primaryBtn, background: `linear-gradient(135deg, ${P.orange}, ${P.terracotta})` }}
+          <div style={{ paddingBottom: 16, flexShrink: 0, display: "flex", gap: 10 }}>
+            {existingExpense && (
+              <button style={{ background: P.dangerBg, border: `1px solid ${P.danger}40`, color: P.danger, borderRadius: 16, padding: "16px 20px", fontSize: 15, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}
+                onClick={() => setConfirmDeleteExpense(true)}>
+                🗑
+              </button>
+            )}
+            <button style={{ ...S.primaryBtn, background: `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`, flex: 1 }}
               onClick={() => { if (!exp.amount || parseFloat(exp.amount) <= 0) return; members.length <= 1 ? setStep(3) : setStep(2); }}>
               {members.length <= 1 ? "Review →" : "Next → Split"}
             </button>
@@ -198,8 +217,14 @@ export function AddExpenseModal({ onClose, trip, onAdd, user, profile, existingE
             </div>
           </div>
           <div style={{ paddingBottom: 16, flexShrink: 0, display: "flex", gap: 10 }}>
-            <button style={S.secondaryBtn} onClick={() => setStep(1)}>← Back</button>
-            <button style={{ ...S.primaryBtn, background: `linear-gradient(135deg, ${P.orange}, ${P.terracotta})` }} onClick={() => setStep(3)}>Review →</button>
+            {existingExpense && (
+              <button style={{ background: P.dangerBg, border: `1px solid ${P.danger}40`, color: P.danger, borderRadius: 16, padding: "16px 20px", fontSize: 15, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}
+                onClick={() => setConfirmDeleteExpense(true)}>
+                🗑
+              </button>
+            )}
+            <button style={{ ...S.secondaryBtn, flex: 1 }} onClick={() => setStep(1)}>← Back</button>
+            <button style={{ ...S.primaryBtn, background: `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`, flex: 1 }} onClick={() => setStep(3)}>Review →</button>
           </div>
         </div>
       )}
@@ -224,11 +249,7 @@ export function AddExpenseModal({ onClose, trip, onAdd, user, profile, existingE
             </div>
             {existingExpense && (
               <button style={{ ...S.primaryBtn, background: "transparent", color: P.danger, border: `1px solid ${P.danger}40` }}
-                onClick={async () => {
-                  if (!window.confirm("Delete this expense?")) return;
-                  await supabase.from("expenses").delete().eq("id", existingExpense.id);
-                  if (onAdd) onAdd(); onClose();
-                }}>
+                onClick={() => setConfirmDeleteExpense(true)}>
                 Delete Expense
               </button>
             )}
@@ -240,6 +261,18 @@ export function AddExpenseModal({ onClose, trip, onAdd, user, profile, existingE
             </button>
           </div>
         </div>
+      )}
+      {confirmDeleteExpense && (
+        <ConfirmModal
+          message="Delete this expense?"
+          onConfirm={async () => {
+            await supabase.from("expenses").delete().eq("id", existingExpense.id);
+            if (onAdd) onAdd(); onClose();
+          }}
+          onCancel={() => setConfirmDeleteExpense(false)}
+          confirmLabel="Delete"
+          danger
+        />
       )}
     </div>
   );
