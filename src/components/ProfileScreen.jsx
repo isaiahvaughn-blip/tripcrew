@@ -7,8 +7,6 @@ import NewTripModal from "./NewTripModal";
 import EditTripModal from "./EditTripModal";
 import ConfirmModal from "./ConfirmModal";
 
-// ─── AVATAR EDIT SHEET ────────────────────────────────────────────────────────
-
 function AvatarEditSheet({ profile, user, onClose, onSave }) {
   const [displayName, setDisplayName] = useState(profile?.display_name || "");
   const [avatarVal, setAvatarVal] = useState(() => {
@@ -61,8 +59,6 @@ function AvatarEditSheet({ profile, user, onClose, onSave }) {
     </div>
   );
 }
-
-// ─── METRIC PICKER SHEET ──────────────────────────────────────────────────────
 
 function MetricPickerSheet({ current, userId, onClose, onSave }) {
   const [selected, setSelected] = useState(current || DEFAULT_METRICS);
@@ -130,8 +126,6 @@ function MetricPickerSheet({ current, userId, onClose, onSave }) {
   );
 }
 
-// ─── TRIP CARD ────────────────────────────────────────────────────────────────
-
 function TripCard({ trip, onOpen, onDelete, onEdit, selecting, selected, onLongPress, onToggleSelect }) {
   const IconComp = TRIP_ICONS[trip.emoji] || (() => null);
   const showTime = trip.time && !trip.dates?.includes("–");
@@ -174,8 +168,6 @@ function TripCard({ trip, onOpen, onDelete, onEdit, selecting, selected, onLongP
   );
 }
 
-// ─── EMPTY STATE ──────────────────────────────────────────────────────────────
-
 function EmptyTripsState({ onNew }) {
   return (
     <div style={{ background: P.surface1, border: `1px dashed ${P.surface3}`, borderRadius: 24, padding: "40px 28px", textAlign: "center", marginTop: 8 }}>
@@ -187,9 +179,7 @@ function EmptyTripsState({ onNew }) {
   );
 }
 
-// ─── PROFILE SCREEN ───────────────────────────────────────────────────────────
-
-export default function ProfileScreen({ onOpen, user, onSignOut, onSettings, profile, onProfileUpdate }) {
+export default function ProfileScreen({ onOpen, user, onSignOut, onSettings, profile, onProfileUpdate, onFirstTripCreated }) {
   const [trips,       setTrips]       = useState([]);
   const [showNewTrip, setShowNewTrip] = useState(false);
   const [editingTrip, setEditingTrip] = useState(null);
@@ -197,7 +187,7 @@ export default function ProfileScreen({ onOpen, user, onSignOut, onSettings, pro
   const [showMetricPicker,  setShowMetricPicker]  = useState(false);
   const [selecting,    setSelecting]   = useState(false);
   const [selectedIds,  setSelectedIds] = useState([]);
-  const [confirmDeleteTrip, setConfirmDeleteTrip] = useState(null); // trip to confirm delete
+  const [confirmDeleteTrip, setConfirmDeleteTrip] = useState(null);
   const [itinItems,  setItinItems]  = useState([]);
   const [expenses,   setExpenses]   = useState([]);
   const [photos,     setPhotos]     = useState([]);
@@ -279,16 +269,16 @@ export default function ProfileScreen({ onOpen, user, onSignOut, onSettings, pro
       </div>
 
       {confirmDeleteTrip && (
-      <ConfirmModal
-        message={`Delete "${confirmDeleteTrip.name}"? You can restore it from settings.`}
-        onConfirm={confirmDeleteTripAction}
-        onCancel={() => setConfirmDeleteTrip(null)}
-        confirmLabel="Delete"
-        danger
-      />
-    )}
-  {showAvatarEdit && <AvatarEditSheet profile={profile} user={user} onClose={() => setShowAvatarEdit(false)} onSave={updated => { onProfileUpdate?.(updated); setShowAvatarEdit(false); }} />}
-      {editingTrip    && <EditTripModal trip={editingTrip} onClose={() => setEditingTrip(null)} onSave={updated => { setTrips(prev => prev.map(t => t.id === updated.id ? updated : t)); setEditingTrip(null); }} />}
+        <ConfirmModal
+          message={`Delete "${confirmDeleteTrip.name}"? You can restore it from settings.`}
+          onConfirm={confirmDeleteTripAction}
+          onCancel={() => setConfirmDeleteTrip(null)}
+          confirmLabel="Delete"
+          danger
+        />
+      )}
+      {showAvatarEdit && <AvatarEditSheet profile={profile} user={user} onClose={() => setShowAvatarEdit(false)} onSave={updated => { onProfileUpdate?.(updated); setShowAvatarEdit(false); }} />}
+      {editingTrip && <EditTripModal trip={editingTrip} onClose={() => setEditingTrip(null)} onSave={updated => { setTrips(prev => prev.map(t => t.id === updated.id ? updated : t)); setEditingTrip(null); }} />}
       {showMetricPicker && <MetricPickerSheet current={metricPrefs} userId={user.id} onClose={() => setShowMetricPicker(false)} onSave={updated => { onProfileUpdate?.({ ...profile, metric_prefs: updated }); setShowMetricPicker(false); }} />}
 
       <div style={{ display: "flex", gap: 8, justifyContent: "center", marginTop: 14 }}>
@@ -315,7 +305,13 @@ export default function ProfileScreen({ onOpen, user, onSignOut, onSettings, pro
           }
         </div>
         {selecting && <div style={{ fontSize: 12, color: P.textMuted, textAlign: "center", marginBottom: 12 }}>Hold to select · Tap to toggle · Delete when ready</div>}
-        {showNewTrip && <NewTripModal onClose={() => setShowNewTrip(false)} userId={user.id} userProfile={profile} onSave={trip => { setTrips(prev => [trip, ...prev]); setShowNewTrip(false); }} />}
+        {showNewTrip && <NewTripModal onClose={() => setShowNewTrip(false)} userId={user.id} userProfile={profile}
+          onSave={trip => {
+            const updatedTrips = [trip, ...trips];
+            setTrips(updatedTrips);
+            setShowNewTrip(false);
+            if (updatedTrips.length === 1) onFirstTripCreated?.();
+          }} />}
         {trips.length === 0 && !showNewTrip && <EmptyTripsState onNew={() => setShowNewTrip(true)} />}
         {trips.map(t => (
           <TripCard key={t.id} trip={t} onOpen={onOpen}

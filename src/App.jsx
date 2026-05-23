@@ -14,6 +14,53 @@ fontLink.rel  = "stylesheet";
 fontLink.href = "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,900&display=swap";
 document.head.appendChild(fontLink);
 
+function PWABanner({ triggered }) {
+  const [show, setShow] = useState(false);
+
+  useEffect(() => {
+    if (!triggered) return;
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    const isStandalone = window.matchMedia("(display-mode: standalone)").matches;
+    const dismissed = localStorage.getItem("pwa_banner_dismissed");
+    if (isIOS && !isStandalone && !dismissed) setShow(true);
+  }, [triggered]);
+
+  if (!show) return null;
+
+  const dismiss = () => {
+    localStorage.setItem("pwa_banner_dismissed", "1");
+    setShow(false);
+  };
+
+  return (
+    <div style={{
+      position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 9999,
+      background: "#162c3a", borderTop: "1px solid #243d52",
+      padding: "12px 16px", display: "flex", alignItems: "center", gap: "12px",
+    }}>
+      <div style={{
+        width: 40, height: 40, borderRadius: 10, background: "#0d1e28",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        flexShrink: 0, border: "1px solid #243d52",
+      }}>
+        <span style={{ fontFamily: "Georgia, serif", fontStyle: "italic", fontWeight: 900, color: "#e4a576", fontSize: 22 }}>v</span>
+      </div>
+      <div style={{ flex: 1 }}>
+        <div style={{ color: "#f0ebe4", fontSize: 13, fontWeight: 700, lineHeight: 1.3 }}>
+          Add Vouze to your Home Screen
+        </div>
+        <div style={{ color: "#9ab0bd", fontSize: 12, lineHeight: 1.3, marginTop: 2 }}>
+          Tap the share icon then "Add to Home Screen"
+        </div>
+      </div>
+      <button onClick={dismiss} style={{
+        background: "none", border: "none", color: "#698ea2",
+        fontSize: 20, cursor: "pointer", padding: "4px 8px", flexShrink: 0,
+      }}>✕</button>
+    </div>
+  );
+}
+
 export default function App() {
   const [user,        setUser]        = useState(null);
   const [view,        setView]        = useState("welcome");
@@ -23,7 +70,8 @@ export default function App() {
   const [itinRefresh, setItinRefresh] = useState(0);
   const [profile,     setProfile]     = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
-  const [tripListKey, setTripListKey] = useState(0); // forces ProfileScreen to re-fetch trips
+  const [tripListKey, setTripListKey] = useState(0);
+  const [pwaBannerTriggered, setPwaBannerTriggered] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -63,24 +111,20 @@ export default function App() {
       if (!pending?.length) return;
 
       for (const invite of pending) {
-        // Link the invite to this user
         await supabase.from("trip_members")
           .update({ user_id: user.id, status: "accepted" })
           .eq("id", invite.id);
 
-        // Get the guest name that was used in expenses
         const { data: memberRow } = await supabase
           .from("members").select("name")
           .eq("trip_id", invite.trip_id)
           .eq("name", user.email.split("@")[0])
           .maybeSingle();
 
-        // Try to find guest name — could be email prefix or display name
         const guestName = memberRow?.name || user.email.split("@")[0];
 
-        // Migrate guest name → UUID in expenses
         await supabase.rpc("migrate_guest_to_uuid", {
-          p_trip_id:   invite.trip_id,
+          p_trip_id:    invite.trip_id,
           p_guest_name: guestName,
           p_user_uuid:  user.id,
         });
@@ -108,7 +152,7 @@ export default function App() {
 
   const handleTripUpdate = updated => {
     setActiveTrip(updated);
-    setTripListKey(k => k + 1); // trigger ProfileScreen to re-fetch trip list
+    setTripListKey(k => k + 1);
   };
 
   return (
@@ -121,7 +165,8 @@ export default function App() {
           <ProfileScreen key={tripListKey} onOpen={openTrip} user={user} profile={profile}
             onSignOut={async () => { await supabase.auth.signOut(); }}
             onSettings={() => setView("settings")}
-            onProfileUpdate={updated => setProfile(updated)} />
+            onProfileUpdate={updated => setProfile(updated)}
+            onFirstTripCreated={() => setPwaBannerTriggered(true)} />
         )}
         {view === "settings" && (
           <SettingsScreen user={user} profile={profile} onBack={() => setView("profile")}
@@ -139,6 +184,7 @@ export default function App() {
           />
         )}
       </div>
+      <PWABanner triggered={pwaBannerTriggered} />
     </div>
   );
 }
