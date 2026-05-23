@@ -121,21 +121,6 @@ export default function AuthScreen({ onAuth, onBack }) {
               {loading ? "..." : mode === "login" ? "Sign In" : "Create Account"}
             </button>
 
-            <div style={{ display: "flex", alignItems: "center", margin: "18px 0" }}>
-              <div style={{ flex: 1, height: 1, background: P.surface3 }} />
-              <span style={{ color: P.textMuted, fontSize: 13, padding: "0 14px" }}>or</span>
-              <div style={{ flex: 1, height: 1, background: P.surface3 }} />
-            </div>
-
-            <button style={{ ...S.primaryBtn, background: "#fff", color: "#000", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 18 }}
-              onClick={async () => {
-                const { error } = await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: window.location.origin + "/" } });
-                if (error) console.error(error);
-              }}>
-              <img src="https://www.google.com/favicon.ico" style={{ width: 18, height: 18 }} alt="Google" />
-              Continue with Google
-            </button>
-
             <div style={{ textAlign: "center", fontSize: 14, color: P.slateBlue }}>
               {mode === "login" ? "No account? " : "Have an account? "}
               <span style={{ color: P.terracotta, cursor: "pointer", fontWeight: 700 }} onClick={() => { setMode(mode === "login" ? "signup" : "login"); setError(""); }}>
