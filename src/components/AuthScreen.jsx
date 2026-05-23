@@ -142,6 +142,15 @@ export default function AuthScreen({ onAuth, onBack }) {
                 {mode === "login" ? "Sign up" : "Sign in"}
               </span>
             </div>
+
+            {mode === "signup" && (
+              <div style={{ textAlign: "center", fontSize: 12, color: P.textMuted, marginTop: 14, lineHeight: 1.6 }}>
+                By creating an account you agree to our{" "}
+                <a href="/terms.html" target="_blank" rel="noopener noreferrer" style={{ color: P.terracotta, textDecoration: "none", fontWeight: 700 }}>Terms</a>
+                {" "}and{" "}
+                <a href="/privacy.html" target="_blank" rel="noopener noreferrer" style={{ color: P.terracotta, textDecoration: "none", fontWeight: 700 }}>Privacy Policy</a>
+              </div>
+            )}
           </>
           )}
         </div>

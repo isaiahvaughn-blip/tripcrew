@@ -133,7 +133,22 @@ export default function App() {
     linkPending();
   }, [user]);
 
-  if (!authChecked) return null;
+  if (!authChecked) return (
+  <div style={{ ...S.root }}>
+    <div style={{ ...S.phone, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
+        <div style={{
+          width: 40, height: 40, borderRadius: "50%",
+          border: `3px solid #243d52`,
+          borderTopColor: "#e4a576",
+          animation: "spin 0.8s linear infinite",
+        }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <div style={{ fontFamily: "Georgia, serif", fontStyle: "italic", fontWeight: 900, fontSize: 24, color: "#e4a576", letterSpacing: "-1px" }}>vouze</div>
+      </div>
+    </div>
+  </div>
+);
 
   if (!user) {
     if (view === "welcome") return <WelcomeScreen onGetStarted={() => setView("auth")} />;

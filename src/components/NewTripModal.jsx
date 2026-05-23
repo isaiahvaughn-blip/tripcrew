@@ -47,6 +47,25 @@ export default function NewTripModal({ onClose, onSave, userId, userProfile }) {
 
   const isShortForm = answers.vibe?.shortForm || false;
 
+  // Email input refs — avoids re-render lag
+  const emailInputRef = useRef(null);
+  const [emailTags, setEmailTags] = useState([]);
+
+  const addEmail = () => {
+    const val = emailInputRef.current?.value?.trim();
+    if (!val) return;
+    const updated = [...emailTags, val];
+    setEmailTags(updated);
+    setAnswers(a => ({ ...a, who: updated }));
+    if (emailInputRef.current) emailInputRef.current.value = "";
+  };
+
+  const removeEmail = (i) => {
+    const updated = emailTags.filter((_, j) => j !== i);
+    setEmailTags(updated);
+    setAnswers(a => ({ ...a, who: updated }));
+  };
+
   const Receipt = () => {
     const items = [];
     if (step > 1 && answers.vibe) items.push({ label: "vibe", value: `${answers.vibe.emoji} ${answers.vibe.label}` });
@@ -62,7 +81,7 @@ export default function NewTripModal({ onClose, onSave, userId, userProfile }) {
     return (
       <div style={SN.receipt}>
         {items.map((item, i) => (
-          <div key={i} style={SN.receiptRow}>
+          <div key={i} style={{ ...SN.receiptRow, ...(i === items.length - 1 ? { borderBottom: "none", marginBottom: 0, paddingBottom: 0 } : {}) }}>
             <span style={SN.receiptLabel}>{item.label}</span>
             <span style={SN.receiptValue}>{item.value}</span>
           </div>
@@ -117,30 +136,36 @@ export default function NewTripModal({ onClose, onSave, userId, userProfile }) {
   );
 
   // Step 3 — Who
-  const [emailInput, setEmailInput] = useState("");
-  const addEmail = () => { if (emailInput.trim()) { setAnswers(a => ({ ...a, who: [...a.who, emailInput.trim()] })); setEmailInput(""); } };
   const StepWho = () => (
     <div style={{ ...SN.stepWrap, display: "flex", flexDirection: "column", minHeight: "70vh" }}>
       <div style={{ flex: 1 }}>
         <Receipt />
         <div style={SN.question}>Who's coming?</div>
         <div style={SN.whoRow}>
-          <button style={{ ...SN.whoChip, ...(answers.solo ? SN.whoChipOn : {}) }} onClick={() => setAnswers(a => ({ ...a, solo: true, who: [] }))}>Just me</button>
-          <button style={{ ...SN.whoChip, ...(!answers.solo ? SN.whoChipOn : {}) }} onClick={() => setAnswers(a => ({ ...a, solo: false }))}>+ Add people</button>
+          <button style={{ ...SN.whoChip, ...(answers.solo ? SN.whoChipOn : {}) }}
+            onClick={() => setAnswers(a => ({ ...a, solo: true, who: [] }))}>Just me</button>
+          <button style={{ ...SN.whoChip, ...(!answers.solo ? SN.whoChipOn : {}) }}
+            onClick={() => setAnswers(a => ({ ...a, solo: false }))}>+ Add people</button>
         </div>
         {!answers.solo && (
           <div style={{ marginTop: 16 }}>
             <div style={SN.emailRow}>
-              <input style={{ ...S.input, flex: 1, fontSize: 15 }} placeholder="friend@email.com" value={emailInput} type="email" autoComplete="off"
-                onChange={e => setEmailInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter") addEmail(); }} />
+              <input
+                ref={emailInputRef}
+                style={{ ...S.input, flex: 1, fontSize: 15 }}
+                placeholder="friend@email.com"
+                type="email"
+                autoComplete="off"
+                onKeyDown={e => { if (e.key === "Enter") addEmail(); }}
+              />
               <button style={SN.addEmailBtn} onClick={addEmail}>Add</button>
             </div>
-            {answers.who.length > 0 && (
+            {emailTags.length > 0 && (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
-                {answers.who.map((email, i) => (
+                {emailTags.map((email, i) => (
                   <div key={i} style={SN.emailTag}>
                     <span>{email}</span>
-                    <button style={SN.removeEmail} onClick={() => setAnswers(a => ({ ...a, who: a.who.filter((_, j) => j !== i) }))}>✕</button>
+                    <button style={SN.removeEmail} onClick={() => removeEmail(i)}>✕</button>
                   </div>
                 ))}
               </div>
@@ -229,10 +254,9 @@ export default function NewTripModal({ onClose, onSave, userId, userProfile }) {
           const { data: pd } = await supabase.from("profiles").select("display_name").eq("id", linkedUserId).single();
           if (pd?.display_name) displayName = pd.display_name;
         }
-        // Only insert into members if not already present (prevents duplicates)
-        const { data: existingMember } = await supabase.from("members").select("id")
+        const { data: existingMemberInvite } = await supabase.from("members").select("id")
           .eq("trip_id", trip.id).eq("name", displayName).maybeSingle();
-        if (!existingMember) {
+        if (!existingMemberInvite) {
           await supabase.from("members").insert([{ trip_id: trip.id, name: displayName }]);
         }
       }
