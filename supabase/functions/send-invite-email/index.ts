@@ -1,15 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const RESEND_API_KEY    = Deno.env.get("RESEND_API_KEY");
-const SUPABASE_URL      = Deno.env.get("SUPABASE_URL");
+const RESEND_API_KEY       = Deno.env.get("RESEND_API_KEY");
+const SUPABASE_URL         = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SECRET_KEYS = Deno.env.get("SUPABASE_SECRET_KEYS");
 
-// SUPABASE_SECRET_KEYS is a JSON dict — pull the service_role key out of it
 const serviceRoleKey = (() => {
   try {
     const parsed = JSON.parse(SUPABASE_SECRET_KEYS || "{}");
-    // It's an object like { "service_role": "eyJ..." }
     return parsed.service_role || Object.values(parsed)[0] || "";
   } catch {
     return "";
@@ -21,25 +19,43 @@ serve(async (req) => {
     const payload = await req.json();
     const record  = payload.record;
 
-    if (!record?.email) {
-      return new Response(JSON.stringify({ error: "No email found" }), { status: 400 });
+    // Only fire for pending invites (i.e. the person doesn't have an account yet)
+    if (!record?.invited_email || record.status !== "pending") {
+      return new Response(JSON.stringify({ skipped: true }), { status: 200 });
     }
 
-    const email = record.email;
+    const toEmail = record.invited_email;
+    const tripId  = record.trip_id;
 
-    // Try to get display_name from profiles table
-    let displayName: string | null = null;
-    if (record.id && SUPABASE_URL && serviceRoleKey) {
-      const supabase = createClient(SUPABASE_URL, serviceRoleKey);
-      const { data: profile } = await supabase
+    const supabase = createClient(SUPABASE_URL!, serviceRoleKey);
+
+    // Get trip name
+    const { data: trip } = await supabase
+      .from("trips")
+      .select("name, emoji")
+      .eq("id", tripId)
+      .maybeSingle();
+
+    const tripName  = trip?.name  || "a trip";
+    const tripEmoji = trip?.emoji || "✈️";
+
+    // Get the inviter's display name — the trip owner
+    const { data: ownerMember } = await supabase
+      .from("trip_members")
+      .select("user_id")
+      .eq("trip_id", tripId)
+      .eq("role", "owner")
+      .maybeSingle();
+
+    let inviterName = "Someone";
+    if (ownerMember?.user_id) {
+      const { data: ownerProfile } = await supabase
         .from("profiles")
         .select("display_name")
-        .eq("id", record.id)
+        .eq("id", ownerMember.user_id)
         .maybeSingle();
-      displayName = profile?.display_name || null;
+      if (ownerProfile?.display_name) inviterName = ownerProfile.display_name;
     }
-
-    const greeting = displayName ? `Welcome, ${displayName}.` : "Welcome to Vouze.";
 
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -49,8 +65,8 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         from:    "Vouze <hello@vouze.app>",
-        to:      [email],
-        subject: "Welcome to Vouze",
+        to:      [toEmail],
+        subject: `${inviterName} added you to a trip on Vouze`,
         html: `
 <!DOCTYPE html>
 <html lang="en">
@@ -99,7 +115,7 @@ serve(async (req) => {
       margin-bottom: 24px;
       border: 1px solid #243d52;
     }
-    .thanks {
+    .label {
       font-size: 12px;
       color: #698ea2 !important;
       margin: 0 0 8px 0;
@@ -119,6 +135,18 @@ serve(async (req) => {
       color: #9ab0bd !important;
       line-height: 1.6;
       margin: 0;
+    }
+    .trip-pill {
+      display: inline-block;
+      background-color: #1c3448;
+      border: 1px solid #243d52;
+      border-radius: 12px;
+      padding: 12px 18px;
+      margin-top: 16px;
+      font-size: 16px;
+      font-weight: 800;
+      color: #f0ebe4 !important;
+      letter-spacing: -0.3px;
     }
     .cta-wrap { text-align: center; margin: 0 0 24px 0; }
     .cta {
@@ -152,14 +180,18 @@ serve(async (req) => {
     <div class="container">
       <p class="wordmark">vouze</p>
       <p class="tagline">Plan it, split it, remember it.</p>
+
       <div class="card">
-        <p class="thanks">Thanks for joining us</p>
-        <p class="headline">${greeting}</p>
-        <p class="body-text">Every plan starts here &mdash; trips, dinners, nights out, and everything worth remembering. Vouze keeps your crew on the same page.</p>
+        <p class="label">You're invited</p>
+        <p class="headline">${inviterName} added you to a trip.</p>
+        <p class="body-text">Sign in to see the full itinerary, track expenses, and stay in sync with your crew.</p>
+        <div class="trip-pill">${tripEmoji} ${tripName}</div>
       </div>
+
       <div class="cta-wrap">
-        <a href="https://www.vouze.app" class="cta">Start planning &rarr;</a>
+        <a href="https://www.vouze.app" class="cta">View trip &rarr;</a>
       </div>
+
       <div class="footer">
         <a href="https://www.vouze.app">vouze.app</a>
       </div>
