@@ -1,6 +1,9 @@
 import { Calendar, Clock } from "lucide-react";
-import { P, S } from "../constants";
+import { P } from "../constants";
 import { formatTime12 } from "../utils";
+
+const today = new Date().toISOString().split("T")[0];
+const isMobile = /iphone|ipad|ipod|android/i.test(navigator.userAgent);
 
 export default function DateTimePicker({ day, time, onDayChange, onTimeChange }) {
   const formatDayDisplay = (d) => {
@@ -9,49 +12,87 @@ export default function DateTimePicker({ day, time, onDayChange, onTimeChange })
     return dt.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   };
 
+  const desktopInputStyle = {
+    background: "transparent",
+    border: "none",
+    borderBottom: `1px solid ${P.surface3}`,
+    color: P.terracotta,
+    fontSize: 14,
+    fontWeight: 700,
+    fontFamily: "'DM Sans', sans-serif",
+    outline: "none",
+    cursor: "pointer",
+    colorScheme: "dark",
+    width: "100%",
+    textAlign: "center",
+    padding: "4px 0",
+  };
+
   return (
     <div style={{ display: "flex", gap: 16, marginBottom: 8 }}>
 
       {/* DATE */}
       <div style={{ flex: 1, textAlign: "center" }}>
-        <div style={S.fieldLbl}>DATE</div>
-        <div style={{ minHeight: 48, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          {day ? (
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontSize: 16, fontWeight: 700, color: P.terracotta }}>{formatDayDisplay(day)}</span>
-              <button onClick={() => onDayChange("")}
-                style={{ background: "none", border: "none", color: P.textMuted, cursor: "pointer", fontSize: 13, padding: 0 }}>✕</button>
-            </div>
-          ) : (
-            <div style={{ position: "relative", display: "inline-flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-              <input type="date" onChange={e => onDayChange(e.target.value)}
-                style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer", width: "100%", height: "100%", zIndex: 2 }} />
-              <Calendar size={26} color={P.slateBlue} strokeWidth={1.5} />
-              <span style={{ fontSize: 11, color: P.textMuted, fontWeight: 700, letterSpacing: "0.5px" }}>DATE</span>
-            </div>
-          )}
-        </div>
+        <div style={{ fontSize: 10, fontWeight: 800, color: P.textMuted, letterSpacing: "1.5px", marginBottom: 6 }}>DATE</div>
+        {isMobile ? (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", position: "relative", height: 36 }}>
+            <input
+              type="date"
+              value={day || today}
+              onChange={e => onDayChange(e.target.value)}
+              style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer", width: "100%", height: "100%", zIndex: 2 }}
+            />
+            {day ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 15, fontWeight: 700, color: P.terracotta }}>{formatDayDisplay(day)}</span>
+                <button onClick={e => { e.stopPropagation(); onDayChange(""); }}
+                  style={{ background: "none", border: "none", color: P.textMuted, cursor: "pointer", fontSize: 13, padding: 0, zIndex: 3, position: "relative" }}>✕</button>
+              </div>
+            ) : (
+              <Calendar size={28} color={P.slateBlue} strokeWidth={1.5} />
+            )}
+          </div>
+        ) : (
+          <input
+            type="date"
+            value={day || today}
+            onChange={e => onDayChange(e.target.value)}
+            style={desktopInputStyle}
+          />
+        )}
       </div>
 
       {/* TIME */}
       <div style={{ flex: 1, textAlign: "center" }}>
-        <div style={S.fieldLbl}>TIME <span style={{ color: P.textMuted, fontWeight: 400, letterSpacing: 0, textTransform: "none", fontSize: 10 }}>(optional)</span></div>
-        <div style={{ minHeight: 48, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          {time ? (
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontSize: 16, fontWeight: 700, color: P.terracotta }}>{formatTime12(time)}</span>
-              <button onClick={() => onTimeChange("")}
-                style={{ background: "none", border: "none", color: P.textMuted, cursor: "pointer", fontSize: 13, padding: 0 }}>✕</button>
-            </div>
-          ) : (
-            <div style={{ position: "relative", display: "inline-flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-              <input type="time" onChange={e => onTimeChange(e.target.value)}
-                style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer", width: "100%", height: "100%", zIndex: 2 }} />
-              <Clock size={26} color={P.slateBlue} strokeWidth={1.5} />
-              <span style={{ fontSize: 11, color: P.textMuted, fontWeight: 700, letterSpacing: "0.5px" }}>TIME</span>
-            </div>
-          )}
+        <div style={{ fontSize: 10, fontWeight: 800, color: P.textMuted, letterSpacing: "1.5px", marginBottom: 6 }}>
+          TIME <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(optional)</span>
         </div>
+        {isMobile ? (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", position: "relative", height: 36 }}>
+            <input
+              type="time"
+              value={time || ""}
+              onChange={e => onTimeChange(e.target.value)}
+              style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer", width: "100%", height: "100%", zIndex: 2 }}
+            />
+            {time ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 15, fontWeight: 700, color: P.terracotta }}>{formatTime12(time)}</span>
+                <button onClick={e => { e.stopPropagation(); onTimeChange(""); }}
+                  style={{ background: "none", border: "none", color: P.textMuted, cursor: "pointer", fontSize: 13, padding: 0, zIndex: 3, position: "relative" }}>✕</button>
+              </div>
+            ) : (
+              <Clock size={28} color={P.slateBlue} strokeWidth={1.5} />
+            )}
+          </div>
+        ) : (
+          <input
+            type="time"
+            value={time || ""}
+            onChange={e => onTimeChange(e.target.value)}
+            style={desktopInputStyle}
+          />
+        )}
       </div>
 
     </div>

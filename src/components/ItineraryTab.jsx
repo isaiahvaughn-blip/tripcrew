@@ -9,7 +9,7 @@ import DateTimePicker from "./DateTimePicker";
 // ─── ADD ITIN MODAL ───────────────────────────────────────────────────────────
 
 export function AddItinModal({ onClose, trip, onAdd }) {
-  const [type, setType] = useState("activity");
+  const [type, setType] = useState("flight");
   const [day,  setDay]  = useState("");
   const [time, setTime] = useState("");
   const titleRef  = useRef(null);
