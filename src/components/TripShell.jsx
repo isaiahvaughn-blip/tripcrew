@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../supabase";
-import { Calendar, DollarSign, Image, Users, BarChart2, Plane } from "lucide-react";
+import { Calendar, DollarSign, Image, Users, BarChart2, Plane, Download } from "lucide-react";
 import { P, S, TRIP_ICONS } from "../constants";
 import { calcSettlements } from "../utils";
 import ItineraryTab, { AddItinModal } from "./ItineraryTab";
@@ -17,6 +17,7 @@ export default function TripShell({ trip, activeTab, setActiveTab, onBack, onMod
   const [profileMap, setProfileMap] = useState({}); // { uuid: displayName }
   const [editingTrip,    setEditingTrip]    = useState(false);
   const [editingExpense, setEditingExpense] = useState(null);
+  const [previewPhoto,   setPreviewPhoto]   = useState(null);
 
   const IconComp  = TRIP_ICONS[trip.emoji] || Plane;
   const myName    = profile?.display_name || user?.email?.split("@")[0] || "Me";
@@ -93,7 +94,7 @@ export default function TripShell({ trip, activeTab, setActiveTab, onBack, onMod
       <div style={{ ...S.tabContent, position: "relative" }}>
         {activeTab === "itinerary" && <ItineraryTab trip={trip} onModal={onModal} refreshKey={itinRefresh} />}
         {activeTab === "expenses"  && <ExpensesTab  trip={trip} onModal={onModal} profile={profile} user={user} expenses={expenses} settlements={settlements} myName={myName} profileMap={profileMap} onEditExpense={setEditingExpense} />}
-        {activeTab === "uploads"   && <UploadsTab   trip={trip} user={user} profile={profile} />}
+        {activeTab === "uploads"   && <UploadsTab   trip={trip} user={user} profile={profile} onPreview={setPreviewPhoto} />}
         {activeTab === "members"   && <MembersTab   trip={trip} profile={profile} expenses={expenses} profileMap={profileMap} />}
         {activeTab === "summary"   && <SummaryTab   trip={trip} settlements={settlements} myName={myName} expenses={expenses} />}
 
@@ -120,6 +121,32 @@ export default function TripShell({ trip, activeTab, setActiveTab, onBack, onMod
           </button>
         ))}
       </div>
+
+      {/* Photo preview — rendered at shell level to cover tab bar */}
+      {previewPhoto && (
+        <div style={{ position: "absolute", inset: 0, zIndex: 300, background: P.outerBg, display: "flex", flexDirection: "column" }}
+          onClick={() => setPreviewPhoto(null)}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 20px 12px", flexShrink: 0 }}>
+            <div style={{ fontSize: 12, color: P.textMuted }}>by {previewPhoto.uploader}</div>
+            <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+              <button onClick={e => { e.stopPropagation(); previewPhoto.onToggleSensitive?.(); }}
+                style={{ background: previewPhoto.sensitive ? "#2a1810" : P.surface2, border: "none", color: previewPhoto.sensitive ? P.terracotta : P.textMuted, borderRadius: 10, padding: "7px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                {previewPhoto.sensitive ? "🔒 Sensitive" : "Mark 🔒"}
+              </button>
+              <button onClick={e => { e.stopPropagation(); const a = document.createElement('a'); a.href = previewPhoto.url; a.download = previewPhoto.caption || 'photo'; a.target = '_blank'; a.click(); }}
+                style={{ background: P.surface2, border: "none", color: P.lightBlue, borderRadius: 10, padding: "7px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+                <Download size={12} /> Save
+              </button>
+              <button style={S.closeBtn} onClick={() => setPreviewPhoto(null)}>✕</button>
+            </div>
+          </div>
+          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 12px 24px" }}>
+            <img src={previewPhoto.url} alt={previewPhoto.caption}
+              style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain", borderRadius: 12 }}
+              onClick={e => e.stopPropagation()} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

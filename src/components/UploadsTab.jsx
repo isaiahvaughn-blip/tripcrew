@@ -6,10 +6,9 @@ import ConfirmModal from "./ConfirmModal";
 import imageCompression from "browser-image-compression";
 import JSZip from "jszip";
 
-function UploadsTab({ trip, user, profile }) {
+function UploadsTab({ trip, user, profile, onPreview }) {
   const [photos, setPhotos] = useState([]);
   const [uploading, setUploading] = useState(false);
-  const [previewPhoto, setPreviewPhoto] = useState(null);
   const [selecting, setSelecting] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
   const [downloadingAll, setDownloadingAll] = useState(false);
@@ -27,8 +26,23 @@ function UploadsTab({ trip, user, profile }) {
 
   const fetchPhotos = async () => {
     const { data, error } = await supabase.from('photos').select('*').eq('trip_id', trip.id).order('created_at', { ascending: false });
-    if (error) console.error(error);
-    else setPhotos(data || []);
+    if (error) { console.error(error); return; }
+
+    // Build a map of user_id → display_name for all uploaders
+    const uploaderIds = [...new Set((data || []).map(ph => ph.user_id).filter(Boolean))];
+    const uploaderMap = {};
+    if (uploaderIds.length) {
+      const { data: profiles } = await supabase.from('profiles').select('id, display_name').in('id', uploaderIds);
+      (profiles || []).forEach(p => { if (p.display_name) uploaderMap[p.id] = p.display_name; });
+    }
+
+    // Generate signed URLs (1 hour expiry) + resolve uploader name live
+    const withSignedUrls = await Promise.all((data || []).map(async (ph) => {
+      const { data: signed } = await supabase.storage.from('trip-photos').createSignedUrl(ph.storage_path, 3600);
+      const resolvedUploader = (ph.user_id && uploaderMap[ph.user_id]) || ph.uploader || 'Unknown';
+      return { ...ph, url: signed?.signedUrl || ph.url, uploader: resolvedUploader };
+    }));
+    setPhotos(withSignedUrls);
   };
 
   const handleUpload = async (file) => {
@@ -52,11 +66,10 @@ function UploadsTab({ trip, user, profile }) {
       const path = `${trip.id}/${Date.now()}.${uploadExt}`;
       const { error: uploadError } = await supabase.storage.from('trip-photos').upload(path, fileToUpload);
       if (uploadError) throw uploadError;
-      const { data: { publicUrl } } = supabase.storage.from('trip-photos').getPublicUrl(path);
       const uploader = profile?.display_name || user?.email?.split('@')[0] || 'Me';
       const { error: dbError } = await supabase.from('photos').insert([{
         trip_id: trip.id, user_id: user?.id, storage_path: path,
-        url: publicUrl, caption: file.name.split('.')[0], uploader, sensitive: false
+        url: '', caption: file.name.split('.')[0], uploader, sensitive: false
       }]);
       if (dbError) throw dbError;
       await fetchPhotos();
@@ -67,7 +80,6 @@ function UploadsTab({ trip, user, profile }) {
     const { error } = await supabase.from('photos').update({ sensitive: !photo.sensitive }).eq('id', photo.id);
     if (!error) setPhotos(p => p.map(ph => ph.id === photo.id ? { ...ph, sensitive: !ph.sensitive } : ph));
   };
-
   const handleDeleteSelected = async () => {
     for (const id of selectedIds) {
       const ph = photos.find(p => p.id === id);
@@ -130,7 +142,7 @@ function UploadsTab({ trip, user, profile }) {
     if (selecting) {
       setSelectedIds(prev => prev.includes(ph.id) ? prev.filter(x => x !== ph.id) : [...prev, ph.id]);
     } else {
-      setPreviewPhoto(ph);
+      onPreview({ ...ph, onToggleSensitive: () => toggleSensitive(ph) });
     }
   };
 
@@ -231,35 +243,6 @@ function UploadsTab({ trip, user, profile }) {
       )}
 
       <div style={{ height: 20 }} />
-
-      {previewPhoto && (
-        <div style={{ position: "absolute", inset: 0, zIndex: 200, background: "rgba(0,0,0,0.95)", display: "flex", flexDirection: "column" }}
-          onClick={() => setPreviewPhoto(null)}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 20px 12px", flexShrink: 0 }}>
-            <div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: P.textPrimary }}>{previewPhoto.caption}</div>
-              <div style={{ fontSize: 12, color: P.textMuted, marginTop: 2 }}>by {previewPhoto.uploader}</div>
-            </div>
-            <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-              <button onClick={e => { e.stopPropagation(); toggleSensitive(previewPhoto); setPreviewPhoto(p => ({ ...p, sensitive: !p.sensitive })); }}
-                style={{ background: previewPhoto.sensitive ? "#2a1810" : P.surface2, border: "none", color: previewPhoto.sensitive ? P.terracotta : P.textMuted, borderRadius: 10, padding: "7px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                {previewPhoto.sensitive ? "🔒 Sensitive" : "Mark 🔒"}
-              </button>
-              <button onClick={e => { e.stopPropagation(); const a = document.createElement('a'); a.href = previewPhoto.url; a.download = previewPhoto.caption || 'photo'; a.target = '_blank'; a.click(); }}
-                style={{ background: P.surface2, border: "none", color: P.lightBlue, borderRadius: 10, padding: "7px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
-                <Download size={12} /> Save
-              </button>
-              <button style={S.closeBtn} onClick={() => setPreviewPhoto(null)}>✕</button>
-            </div>
-          </div>
-          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 12px" }}>
-            <img src={previewPhoto.url} alt={previewPhoto.caption}
-              style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain", borderRadius: 12 }}
-              onClick={e => e.stopPropagation()} />
-          </div>
-          <div style={{ height: 32 }} />
-        </div>
-      )}
     </div>
   );
 }
