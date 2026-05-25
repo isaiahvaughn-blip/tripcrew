@@ -33,12 +33,15 @@ const SN = {
   nameInput: { background: "transparent", border: "none", borderBottom: `1px solid ${P.surface3}`, color: P.textPrimary, fontSize: 22, fontWeight: 900, letterSpacing: "-0.8px", width: "100%", textAlign: "center", outline: "none", marginBottom: 12, fontFamily: "'Syne', sans-serif", padding: "4px 0" },
   confirmMeta: { fontSize: 13, color: P.textSecondary, marginBottom: 6 },
   confirmPeople: { fontSize: 13, color: P.slateBlue },
+  stepOuter: { display: "flex", flexDirection: "column", flex: 1 },
+  stepContent: { flex: 1 },
+  stepFooter: { paddingTop: 16, paddingBottom: 8 },
 };
 
 export default function NewTripModal({ onClose, onSave, userId, userProfile }) {
   const [step, setStep] = useState(1);
   const [answers, setAnswers] = useState({
-    vibe: null, location: "", who: [], solo: false,
+    vibe: null, location: "", who: [], guests: [], solo: false,
     startDate: new Date().toISOString().split("T")[0],
     endDate: "", time: "", generatedName: "", editedName: "", emoji: "",
   });
@@ -49,7 +52,10 @@ export default function NewTripModal({ onClose, onSave, userId, userProfile }) {
 
   // Email input refs — avoids re-render lag
   const emailInputRef = useRef(null);
+  const guestInputRef = useRef(null);
   const [emailTags, setEmailTags] = useState([]);
+  const [guestTags, setGuestTags] = useState([]);
+  const [whoMode, setWhoMode] = useState("email"); // "email" | "guest"
 
   const addEmail = () => {
     const val = emailInputRef.current?.value?.trim();
@@ -66,11 +72,29 @@ export default function NewTripModal({ onClose, onSave, userId, userProfile }) {
     setAnswers(a => ({ ...a, who: updated }));
   };
 
+  const addGuest = () => {
+    const val = guestInputRef.current?.value?.trim();
+    if (!val) return;
+    const updated = [...guestTags, val];
+    setGuestTags(updated);
+    setAnswers(a => ({ ...a, guests: updated }));
+    if (guestInputRef.current) guestInputRef.current.value = "";
+  };
+
+  const removeGuest = (i) => {
+    const updated = guestTags.filter((_, j) => j !== i);
+    setGuestTags(updated);
+    setAnswers(a => ({ ...a, guests: updated }));
+  };
+
   const Receipt = () => {
     const items = [];
     if (step > 1 && answers.vibe) items.push({ label: "vibe", value: `${answers.vibe.emoji} ${answers.vibe.label}` });
     if (step > 2 && answers.location) items.push({ label: "where", value: answers.location });
-    if (step > 3) items.push({ label: "who", value: answers.solo ? "Just me" : answers.who.length ? `${answers.who.length} people` : "Just me" });
+    if (step > 3) {
+      const total = (answers.who?.length || 0) + (answers.guests?.length || 0);
+      items.push({ label: "who", value: answers.solo ? "Just me" : total ? `${total} people` : "Just me" });
+    }
     if (step > 4 && answers.startDate) {
       const d = new Date(answers.startDate + "T12:00:00");
       const dateStr = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
@@ -117,8 +141,8 @@ export default function NewTripModal({ onClose, onSave, userId, userProfile }) {
   const locationRef = useRef(null);
   const [locationInput, setLocationInput] = useState(answers.location || "");
   const StepWhere = () => (
-    <div style={{ ...SN.stepWrap, display: "flex", flexDirection: "column", minHeight: "70vh" }}>
-      <div style={{ flex: 1 }}>
+    <div style={SN.stepOuter}>
+      <div style={SN.stepContent}>
         <Receipt />
         <div style={SN.question}>Where to?</div>
         <div style={SN.subQuestion}>{isShortForm ? "Name the spot" : "City or destination"}</div>
@@ -127,53 +151,96 @@ export default function NewTripModal({ onClose, onSave, userId, userProfile }) {
           placeholder={isShortForm ? "e.g. Barista, Ox Restaurant" : "e.g. Tokyo, Banff, Portland"}
           defaultValue={locationInput} onBlur={e => setLocationInput(e.target.value)} autoFocus />
       </div>
-      <button style={{ ...SN.nextBtn, marginTop: "auto" }} onClick={() => {
-        const loc = locationRef.current?.value || locationInput;
-        if (!loc.trim()) return;
-        setAnswers(a => ({ ...a, location: loc })); setStep(3);
-      }}>Next →</button>
+      <div style={SN.stepFooter}>
+        <button style={SN.nextBtn} onClick={() => {
+          const loc = locationRef.current?.value || locationInput;
+          if (!loc.trim()) return;
+          setAnswers(a => ({ ...a, location: loc })); setStep(3);
+        }}>Next →</button>
+      </div>
     </div>
   );
 
   // Step 3 — Who
   const StepWho = () => (
-    <div style={{ ...SN.stepWrap, display: "flex", flexDirection: "column", minHeight: "70vh" }}>
-      <div style={{ flex: 1 }}>
+    <div style={SN.stepOuter}>
+      <div style={SN.stepContent}>
         <Receipt />
         <div style={SN.question}>Who's coming?</div>
+
+        {/* Solo / Add people */}
         <div style={SN.whoRow}>
           <button style={{ ...SN.whoChip, ...(answers.solo ? SN.whoChipOn : {}) }}
-            onClick={() => setAnswers(a => ({ ...a, solo: true, who: [] }))}>Just me</button>
+            onClick={() => setAnswers(a => ({ ...a, solo: true, who: [], guests: [] }))}>Just me</button>
           <button style={{ ...SN.whoChip, ...(!answers.solo ? SN.whoChipOn : {}) }}
             onClick={() => setAnswers(a => ({ ...a, solo: false }))}>+ Add people</button>
         </div>
+
         {!answers.solo && (
           <div style={{ marginTop: 16 }}>
-            <div style={SN.emailRow}>
-              <input
-                ref={emailInputRef}
-                style={{ ...S.input, flex: 1, fontSize: 15 }}
-                placeholder="friend@email.com"
-                type="email"
-                autoComplete="off"
-                onKeyDown={e => { if (e.key === "Enter") addEmail(); }}
-              />
-              <button style={SN.addEmailBtn} onClick={addEmail}>Add</button>
+            {/* Email / Guest toggle */}
+            <div style={{ display: "flex", gap: 0, marginBottom: 14, background: P.surface2, borderRadius: 12, padding: 3, border: `1px solid ${P.surface3}` }}>
+              {[["email", "By email"], ["guest", "By name"]].map(([mode, label]) => (
+                <button key={mode} onClick={() => setWhoMode(mode)}
+                  style={{ flex: 1, padding: "8px 0", fontSize: 13, fontWeight: 700, border: "none", borderRadius: 10, cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
+                    background: whoMode === mode ? P.surface3 : "transparent",
+                    color: whoMode === mode ? P.textPrimary : P.textMuted }}>
+                  {label}
+                </button>
+              ))}
             </div>
-            {emailTags.length > 0 && (
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
-                {emailTags.map((email, i) => (
-                  <div key={i} style={SN.emailTag}>
-                    <span>{email}</span>
-                    <button style={SN.removeEmail} onClick={() => removeEmail(i)}>✕</button>
+
+            {whoMode === "email" ? (
+              <>
+                <div style={SN.emailRow}>
+                  <input ref={emailInputRef} style={{ ...S.input, flex: 1, fontSize: 15 }}
+                    placeholder="friend@email.com" type="email" autoComplete="off"
+                    onKeyDown={e => { if (e.key === "Enter") addEmail(); }} />
+                  <button style={SN.addEmailBtn} onClick={addEmail}>Add</button>
+                </div>
+                <div style={{ fontSize: 12, color: P.textMuted, marginTop: 8 }}>
+                  They'll see this trip when they sign in.
+                </div>
+                {emailTags.length > 0 && (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
+                    {emailTags.map((email, i) => (
+                      <div key={i} style={SN.emailTag}>
+                        <span>{email}</span>
+                        <button style={SN.removeEmail} onClick={() => removeEmail(i)}>✕</button>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                )}
+              </>
+            ) : (
+              <>
+                <div style={SN.emailRow}>
+                  <input ref={guestInputRef} style={{ ...S.input, flex: 1, fontSize: 15 }}
+                    placeholder="e.g. Zane, Aunt Carol" autoComplete="off"
+                    onKeyDown={e => { if (e.key === "Enter") addGuest(); }} />
+                  <button style={SN.addEmailBtn} onClick={addGuest}>Add</button>
+                </div>
+                <div style={{ fontSize: 12, color: P.textMuted, marginTop: 8 }}>
+                  No account needed — just a name for splitting expenses.
+                </div>
+                {guestTags.length > 0 && (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
+                    {guestTags.map((name, i) => (
+                      <div key={i} style={{ ...SN.emailTag, borderColor: P.slateBlue + "50", color: P.slateBlue }}>
+                        <span>{name}</span>
+                        <button style={SN.removeEmail} onClick={() => removeGuest(i)}>✕</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}
       </div>
-      <button style={{ ...SN.nextBtn, marginTop: "auto" }} onClick={() => setStep(4)}>Next →</button>
+      <div style={SN.stepFooter}>
+        <button style={SN.nextBtn} onClick={() => setStep(4)}>Next →</button>
+      </div>
     </div>
   );
 
@@ -196,30 +263,41 @@ export default function NewTripModal({ onClose, onSave, userId, userProfile }) {
   };
 
   const StepWhen = () => (
-    <div style={{ ...SN.stepWrap, display: "flex", flexDirection: "column", minHeight: "70vh" }}>
-      <div style={{ flex: 1 }}>
+    <div style={SN.stepOuter}>
+      <div style={SN.stepContent}>
         <Receipt />
         <div style={SN.question}>When?</div>
+
         <div style={S.field}>
           <div style={S.fieldLbl}>DATE</div>
-          <input style={{ ...S.input, colorScheme: "dark" }} type="date" defaultValue={answers.startDate} onChange={e => setAnswers(a => ({ ...a, startDate: e.target.value }))} />
+          <input style={{ ...S.input, colorScheme: "dark" }} type="date"
+            defaultValue={answers.startDate}
+            onChange={e => setAnswers(a => ({ ...a, startDate: e.target.value }))} />
         </div>
+
         {!isShortForm && (
           <div style={S.field}>
-            <div style={{ ...S.fieldLbl, display: "flex", justifyContent: "space-between" }}><span>END DATE</span><span style={{ color: P.textMuted }}>optional</span></div>
-            <input style={{ ...S.input, colorScheme: "dark" }} type="date" defaultValue={answers.endDate} min={answers.startDate} onChange={e => setAnswers(a => ({ ...a, endDate: e.target.value }))} />
+            <div style={S.fieldLbl}>END DATE <span style={{ fontWeight: 400, color: P.textMuted }}>(optional)</span></div>
+            <input style={{ ...S.input, colorScheme: "dark" }} type="date"
+              defaultValue={answers.endDate} min={answers.startDate}
+              onChange={e => setAnswers(a => ({ ...a, endDate: e.target.value }))} />
           </div>
         )}
-        {isShortForm && (
-          <div style={S.field}>
-            <div style={{ ...S.fieldLbl, display: "flex", justifyContent: "space-between" }}><span>TIME</span><span style={{ color: P.textMuted }}>optional</span></div>
-            <input style={{ ...S.input, colorScheme: "dark" }} type="time" defaultValue={answers.time} onChange={e => setAnswers(a => ({ ...a, time: e.target.value }))} />
-          </div>
-        )}
+
+        <div style={S.field}>
+          <div style={S.fieldLbl}>TIME <span style={{ fontWeight: 400, color: P.textMuted }}>(optional)</span></div>
+          <input style={{ ...S.input, colorScheme: "dark" }} type="time"
+            defaultValue={answers.time}
+            onChange={e => setAnswers(a => ({ ...a, time: e.target.value }))} />
+        </div>
       </div>
-      <button style={{ ...SN.nextBtn, marginTop: "auto", opacity: answers.startDate ? 1 : 0.4 }} disabled={!answers.startDate} onClick={handleGenerateName}>
-        {generating ? "Working on it..." : "Next →"}
-      </button>
+      <div style={SN.stepFooter}>
+        <button style={{ ...SN.nextBtn, opacity: answers.startDate ? 1 : 0.4 }}
+          disabled={!answers.startDate || generating}
+          onClick={handleGenerateName}>
+          {generating ? "Working on it..." : "Next →"}
+        </button>
+      </div>
     </div>
   );
 
@@ -248,16 +326,27 @@ export default function NewTripModal({ onClose, onSave, userId, userProfile }) {
       for (const email of answers.who) {
         const { data: existingUser } = await supabase.rpc("get_user_id_by_email", { email_input: email.toLowerCase() });
         const linkedUserId = existingUser?.[0]?.id || null;
-        await supabase.from("trip_members").insert([{ trip_id: trip.id, user_id: linkedUserId, invited_email: email.toLowerCase(), role: "member", status: linkedUserId ? "accepted" : "pending" }]);
-        let displayName = email.split("@")[0];
+        const { error: tmError } = await supabase.from("trip_members").insert([{ trip_id: trip.id, user_id: linkedUserId, invited_email: email.toLowerCase(), role: "member", status: linkedUserId ? "accepted" : "pending" }]);
+        if (tmError && tmError.code !== '23505') throw tmError;
+        // Use security-definer RPC to bypass RLS on profiles table
+        let displayName = null;
         if (linkedUserId) {
-          const { data: pd } = await supabase.from("profiles").select("display_name").eq("id", linkedUserId).single();
-          if (pd?.display_name) displayName = pd.display_name;
+          const { data: dn } = await supabase.rpc("get_display_name_by_user_id", { user_uuid: linkedUserId });
+          if (dn) displayName = dn;
         }
-        const { data: existingMemberInvite } = await supabase.from("members").select("id")
-          .eq("trip_id", trip.id).eq("name", displayName).maybeSingle();
-        if (!existingMemberInvite) {
-          await supabase.from("members").insert([{ trip_id: trip.id, name: displayName }]);
+        if (displayName) {
+          const { data: existingMemberInvite } = await supabase.from("members").select("id")
+            .eq("trip_id", trip.id).eq("name", displayName).maybeSingle();
+          if (!existingMemberInvite) {
+            await supabase.from("members").insert([{ trip_id: trip.id, name: displayName }]);
+          }
+        }
+      }
+      if (answers.guests?.length) {
+        for (const guestName of answers.guests) {
+          const { data: existing } = await supabase.from("members").select("id")
+            .eq("trip_id", trip.id).eq("name", guestName).maybeSingle();
+          if (!existing) await supabase.from("members").insert([{ trip_id: trip.id, name: guestName }]);
         }
       }
       if (answers.vibe?.shortForm && answers.location) {
@@ -300,7 +389,7 @@ export default function NewTripModal({ onClose, onSave, userId, userProfile }) {
         </div>
         <button style={S.closeBtn} onClick={onClose}>✕</button>
       </div>
-      <div style={{ flex: 1, padding: "0 22px 16px", overflowY: "auto" }}>
+      <div style={{ flex: 1, padding: "0 22px 16px", display: "flex", flexDirection: "column" }}>
         {step === 1 && <StepVibe />}
         {step === 2 && <StepWhere />}
         {step === 3 && <StepWho />}

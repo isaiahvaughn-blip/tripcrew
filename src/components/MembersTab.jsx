@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "../supabase";
 import { P, S } from "../constants";
 import { resolveName } from "../utils";
@@ -8,8 +8,10 @@ function MembersTab({ trip, profile, expenses, profileMap = {} }) {
   const [members, setMembers] = useState([]);
   const [confirmRemoveMember, setConfirmRemoveMember] = useState(null);
   const [memberProfiles, setMemberProfiles] = useState({});
-  const [showInvite, setShowInvite] = useState(false);
-  const [newName, setNewName] = useState("");
+  const [showInvite, setShowInvite] = useState(false);  // email invite panel
+  const [showGuest, setShowGuest] = useState(false);    // guest name panel
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [guestName, setGuestName] = useState("");
   const myName = profile?.display_name || "";
 
   // Build balances keyed by resolved display name
@@ -83,6 +85,49 @@ function MembersTab({ trip, profile, expenses, profileMap = {} }) {
     return p?.display_name || memberName;
   };
 
+  // Email invite handler (existing logic + RLS fix)
+  const handleInvite = async () => {
+    if (!inviteEmail.trim()) return;
+    const email = inviteEmail.trim().toLowerCase();
+    const { data: existingUser } = await supabase.rpc('get_user_id_by_email', { email_input: email });
+    const linkedUserId = existingUser?.[0]?.id || null;
+    const { error: tmError } = await supabase.from('trip_members').insert([{
+      trip_id: trip.id, user_id: linkedUserId, invited_email: email,
+      role: 'member', status: linkedUserId ? 'accepted' : 'pending'
+    }]);
+    if (tmError && tmError.code !== '23505') { console.error(tmError); return; }
+    // Use security-definer RPC to bypass RLS on profiles table
+    let displayName = null;
+    if (linkedUserId) {
+      const { data: dn } = await supabase.rpc("get_display_name_by_user_id", { user_uuid: linkedUserId });
+      if (dn) displayName = dn;
+    }
+    if (displayName) {
+      const { data: existing } = await supabase.from('members').select('id')
+        .eq('trip_id', trip.id).eq('name', displayName).maybeSingle();
+      if (!existing) {
+        const { data: md } = await supabase.from('members').insert([{ trip_id: trip.id, name: displayName }]).select();
+        if (md) setMembers(prev => [...prev, md[0]]);
+      }
+    }
+    setInviteEmail(""); setShowInvite(false);
+  };
+
+  // Guest add handler — name only, no account needed
+  const handleAddGuest = async () => {
+    const name = guestName.trim();
+    if (!name) return;
+    // Dedup check
+    const { data: existing } = await supabase.from('members').select('id')
+      .eq('trip_id', trip.id).eq('name', name).maybeSingle();
+    if (existing) { setGuestName(""); setShowGuest(false); return; }
+    const { data: md, error } = await supabase.from('members')
+      .insert([{ trip_id: trip.id, name }]).select();
+    if (error) { console.error(error); return; }
+    if (md) setMembers(prev => [...prev, md[0]]);
+    setGuestName(""); setShowGuest(false);
+  };
+
   return (
     <div style={{ position: "relative", flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
       {confirmRemoveMember && (
@@ -99,71 +144,80 @@ function MembersTab({ trip, profile, expenses, profileMap = {} }) {
         />
       )}
       <div style={S.tabScroll}>
-      <div style={S.tabTopRow}>
-        <div style={S.tabTitle}>Members</div>
-        <button style={S.newBtn} onClick={() => setShowInvite(true)}>+ Invite</button>
-      </div>
-      {showInvite && (
-        <div style={{ background: P.surface1, borderRadius: 16, padding: 18, marginBottom: 16, border: `1px solid ${P.surface3}` }}>
-          <div style={S.fieldLbl}>INVITE BY EMAIL</div>
-          <input style={S.input} placeholder="friend@email.com" value={newName} onChange={e => setNewName(e.target.value)} type="email" />
-          <div style={{ fontSize: 12, color: P.textMuted, marginTop: 8, marginBottom: 12 }}>They'll see this trip when they sign in.</div>
+        <div style={S.tabTopRow}>
+          <div style={S.tabTitle}>Members</div>
           <div style={{ display: "flex", gap: 8 }}>
-            <button style={S.secondaryBtn} onClick={() => setShowInvite(false)}>Cancel</button>
-            <button style={{ ...S.primaryBtn, background: `linear-gradient(135deg, ${P.orange}, ${P.terracotta})` }} onClick={async () => {
-              if (!newName) return;
-              const email = newName.trim().toLowerCase();
-              const { data: existingUser } = await supabase.rpc('get_user_id_by_email', { email_input: email });
-              const linkedUserId = existingUser?.[0]?.id || null;
-              const { error: tmError } = await supabase.from('trip_members').insert([{ trip_id: trip.id, user_id: linkedUserId, invited_email: email, role: 'member', status: linkedUserId ? 'accepted' : 'pending' }]).select();
-              if (tmError && tmError.code !== '23505') { console.error(tmError); return; }
-              let displayName = email.split('@')[0];
-              if (linkedUserId) {
-                const { data: profileData } = await supabase.from('profiles').select('display_name').eq('id', linkedUserId).single();
-                if (profileData?.display_name) displayName = profileData.display_name;
-              }
-              // Dedup check before inserting into members
-              const { data: existingMember } = await supabase.from('members').select('id')
-                .eq('trip_id', trip.id).eq('name', displayName).maybeSingle();
-              if (!existingMember) {
-                const { data: memberData, error: memberError } = await supabase.from('members').insert([{ trip_id: trip.id, name: displayName }]).select();
-                if (memberError) console.error(memberError);
-                else if (memberData) setMembers(prev => [...prev, memberData[0]]);
-              }
-              setNewName(""); setShowInvite(false);
-            }}>Invite</button>
+            <button style={{ ...S.actionBtn, color: P.slateBlue, borderColor: P.slateBlue + "50" }}
+              onClick={() => { setShowGuest(true); setShowInvite(false); }}>+ Guest</button>
+            <button style={S.newBtn}
+              onClick={() => { setShowInvite(true); setShowGuest(false); }}>+ Invite</button>
           </div>
         </div>
-      )}
-      {members.map((m, i) => {
-        const { content, isEmoji } = getAvatarContent(m.name);
-        const displayName = getDisplayName(m.name);
-        const color = avatarColors[i % avatarColors.length];
-        const balance = getBalanceLabel(m.name);
-        return (
-          <div key={m.id} style={S.memberRow}>
-            <div style={{ ...S.memberAvatar, background: color + "25", color }}>
-              <span style={{ fontSize: isEmoji ? 22 : 16, fontWeight: isEmoji ? 400 : 900, letterSpacing: "-0.5px" }}>{content}</span>
+
+        {/* Email invite panel */}
+        {showInvite && (
+          <div style={{ background: P.surface1, borderRadius: 16, padding: 18, marginBottom: 16, border: `1px solid ${P.surface3}` }}>
+            <div style={S.fieldLbl}>INVITE BY EMAIL</div>
+            <input style={S.input} placeholder="friend@email.com" value={inviteEmail}
+              onChange={e => setInviteEmail(e.target.value)} type="email"
+              onKeyDown={e => { if (e.key === "Enter") handleInvite(); }} />
+            <div style={{ fontSize: 12, color: P.textMuted, marginTop: 8, marginBottom: 12 }}>
+              They'll see this trip when they sign in.
             </div>
-            <div style={S.memberInfo}>
-              <div style={S.memberName}>{displayName}</div>
-            </div>
-            <div style={S.memberRight}>
-              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                <div style={{ background: P.surface2, border: `1px solid ${balance.color}30`, borderRadius: 10, padding: "6px 12px", fontSize: 12, fontWeight: 700, color: balance.color, minWidth: 80, textAlign: "center" }}>{balance.text}</div>
-                {m.name !== myName && (
-                  <button style={S.rowDeleteBtn} onClick={() => setConfirmRemoveMember(m)}>✕</button>
-                )}
-              </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button style={S.secondaryBtn} onClick={() => { setShowInvite(false); setInviteEmail(""); }}>Cancel</button>
+              <button style={{ ...S.primaryBtn, background: `linear-gradient(135deg, ${P.orange}, ${P.terracotta})` }}
+                onClick={handleInvite}>Invite</button>
             </div>
           </div>
-        );
-      })}
-      <div style={{ height: 20 }} />
-    </div>
+        )}
+
+        {/* Guest name panel */}
+        {showGuest && (
+          <div style={{ background: P.surface1, borderRadius: 16, padding: 18, marginBottom: 16, border: `1px solid ${P.slateBlue}40` }}>
+            <div style={S.fieldLbl}>ADD GUEST</div>
+            <input style={S.input} placeholder="e.g. Zane, Aunt Carol" value={guestName}
+              onChange={e => setGuestName(e.target.value)} autoFocus
+              onKeyDown={e => { if (e.key === "Enter") handleAddGuest(); }} />
+            <div style={{ fontSize: 12, color: P.textMuted, marginTop: 8, marginBottom: 12 }}>
+              No account needed — just a name for splitting expenses.
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button style={S.secondaryBtn} onClick={() => { setShowGuest(false); setGuestName(""); }}>Cancel</button>
+              <button style={{ ...S.primaryBtn, background: `linear-gradient(135deg, ${P.lightBlue}, ${P.slateBlue})` }}
+                onClick={handleAddGuest}>Add Guest</button>
+            </div>
+          </div>
+        )}
+
+        {members.map((m, i) => {
+          const { content, isEmoji } = getAvatarContent(m.name);
+          const displayName = getDisplayName(m.name);
+          const color = avatarColors[i % avatarColors.length];
+          const balance = getBalanceLabel(m.name);
+          return (
+            <div key={m.id} style={S.memberRow}>
+              <div style={{ ...S.memberAvatar, background: color + "25", color }}>
+                <span style={{ fontSize: isEmoji ? 22 : 16, fontWeight: isEmoji ? 400 : 900, letterSpacing: "-0.5px" }}>{content}</span>
+              </div>
+              <div style={S.memberInfo}>
+                <div style={S.memberName}>{displayName}</div>
+              </div>
+              <div style={S.memberRight}>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <div style={{ background: P.surface2, border: `1px solid ${balance.color}30`, borderRadius: 10, padding: "6px 12px", fontSize: 12, fontWeight: 700, color: balance.color, minWidth: 80, textAlign: "center" }}>{balance.text}</div>
+                  {m.name !== myName && (
+                    <button style={S.rowDeleteBtn} onClick={() => setConfirmRemoveMember(m)}>✕</button>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+        <div style={{ height: 20 }} />
+      </div>
     </div>
   );
 }
-
 
 export default MembersTab;
