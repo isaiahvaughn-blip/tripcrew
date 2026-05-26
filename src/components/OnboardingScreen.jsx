@@ -103,7 +103,7 @@ function OnboardingCards({ onDone }) {
 }
 
 function NamePrompt({ user, onDone }) {
-  const [name,   setName]   = useState(user?.email?.split("@")[0] || "");
+  const [name,   setName]   = useState("");
   const [saving, setSaving] = useState(false);
   const [error,  setError]  = useState("");
 
