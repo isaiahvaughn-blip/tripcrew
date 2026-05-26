@@ -19,7 +19,7 @@ const SW = {
   ctaBtn: { width: "100%", background: `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`, color: "#fff", border: "none", borderRadius: 18, padding: "18px", fontSize: 17, fontWeight: 800, cursor: "pointer", fontFamily: "'Syne', sans-serif", letterSpacing: "-0.3px", boxShadow: `0 8px 24px rgba(240,115,64,0.35)` },
 };
 
-export default function WelcomeScreen({ onGetStarted }) {
+export default function WelcomeScreen({ onGetStarted, onLogin }) {
   return (
     <div style={S.root}>
       <div style={S.phone}>
@@ -48,6 +48,10 @@ export default function WelcomeScreen({ onGetStarted }) {
           </div>
           <div style={SW.ctaWrap}>
             <button style={SW.ctaBtn} onClick={onGetStarted}>Let's plan something</button>
+            <div style={{ marginTop: 16, textAlign: "center" }}>
+              <span style={{ fontSize: 14, color: P.textMuted, fontFamily: "'DM Sans', sans-serif" }}>Already have an account? </span>
+              <button onClick={onLogin} style={{ background: "transparent", border: "none", color: P.slateBlue, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", textDecoration: "underline", padding: 0 }}>Log in</button>
+            </div>
           </div>
           <div style={SW.bottomBand} />
         </div>

@@ -151,7 +151,7 @@ export default function App() {
 );
 
   if (!user) {
-    if (view === "welcome") return <WelcomeScreen onGetStarted={() => setView("auth")} />;
+    if (view === "welcome") return <WelcomeScreen onGetStarted={() => setView("auth")} onLogin={() => setView("auth")} />;
     return <AuthScreen onAuth={setUser} onBack={() => setView("welcome")} />;
   }
 
