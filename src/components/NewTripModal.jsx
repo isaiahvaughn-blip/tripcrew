@@ -362,20 +362,24 @@ export default function NewTripModal({ onClose, onSave, userId, userProfile }) {
     const dateStr = formatDates(answers.startDate, answers.endDate);
     const timeStr = formatTime12(answers.time);
     return (
-      <div style={SN.stepWrap}>
-        <Receipt />
-        <div style={SN.question}>Looks good?</div>
-        <div style={SN.confirmCard}>
-          <div style={SN.confirmIcon}><IconComp size={28} color={P.terracotta} strokeWidth={1.5} /></div>
-          <input ref={nameInputRef} key="name-input" style={SN.nameInput} defaultValue={answers.editedName} maxLength={30}
-            onBlur={e => setAnswers(a => ({ ...a, editedName: e.target.value }))} />
-          <div style={SN.confirmMeta}>{answers.location}{dateStr ? ` · ${dateStr}` : ""}{timeStr ? ` · ${timeStr}` : ""}</div>
-          <div style={SN.confirmPeople}>{answers.solo ? "Just you" : answers.who.length ? `You + ${answers.who.length} others` : "Just you"}</div>
+      <div style={SN.stepOuter}>
+        <div style={SN.stepContent}>
+          <Receipt />
+          <div style={SN.question}>Looks good?</div>
+          <div style={SN.confirmCard}>
+            <div style={SN.confirmIcon}><IconComp size={28} color={P.terracotta} strokeWidth={1.5} /></div>
+            <input ref={nameInputRef} key="name-input" style={SN.nameInput} defaultValue={answers.editedName} maxLength={30}
+              onBlur={e => setAnswers(a => ({ ...a, editedName: e.target.value }))} />
+            <div style={SN.confirmMeta}>{answers.location}{dateStr ? ` · ${dateStr}` : ""}{timeStr ? ` · ${timeStr}` : ""}</div>
+            <div style={SN.confirmPeople}>{answers.solo ? "Just you" : answers.who.length ? `You + ${answers.who.length} others` : "Just you"}</div>
+          </div>
+          <div style={{ fontSize: 12, color: P.textMuted, textAlign: "center", marginBottom: 16 }}>Tap the name to edit it</div>
         </div>
-        <div style={{ fontSize: 12, color: P.textMuted, textAlign: "center", marginBottom: 16 }}>Tap the name to edit it</div>
-        <button style={{ ...SN.nextBtn, background: saving ? P.surface2 : `linear-gradient(135deg, ${P.orange}, ${P.terracotta})` }} onClick={handleSave} disabled={saving}>
-          {saving ? "Working on it..." : "Let's go ✓"}
-        </button>
+        <div style={SN.stepFooter}>
+          <button style={{ ...SN.nextBtn, background: saving ? P.surface2 : `linear-gradient(135deg, ${P.orange}, ${P.terracotta})` }} onClick={handleSave} disabled={saving}>
+            {saving ? "Working on it..." : "Let's go ✓"}
+          </button>
+        </div>
       </div>
     );
   };
