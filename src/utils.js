@@ -107,6 +107,7 @@ export function formatDayLabel(dateStr) {
 
 export function renderAvatarContent(profile, user) {
   const av = profile?.avatar;
+  if (av?.startsWith("photo:"))    return { text: null, photoUrl: av.slice(6), fontSize: 0 };
   if (av?.startsWith("emoji:"))    return { text: av.slice(6),                            fontSize: 32 };
   if (av?.startsWith("name:"))     return { text: av.slice(5).slice(0, 3).toUpperCase(),  fontSize: 18 };
   if (av?.startsWith("initials:")) return { text: av.slice(9).slice(0, 3).toUpperCase(),  fontSize: 20 };

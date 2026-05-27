@@ -14,13 +14,36 @@ function AvatarEditSheet({ profile, user, onClose, onSave }) {
     if (av?.startsWith("emoji:"))    return av.slice(6);
     if (av?.startsWith("initials:")) return av.slice(9);
     if (av?.startsWith("name:"))     return av.slice(5);
+    if (av?.startsWith("photo:"))    return "";
     return (profile?.display_name || user?.email || "").slice(0, 2).toUpperCase();
   });
+  const [photoUrl, setPhotoUrl] = useState(() => profile?.avatar?.startsWith("photo:") ? profile.avatar.slice(6) : null);
+  const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const photoInputRef = useRef(null);
+
+  const handlePhotoUpload = async (file) => {
+    if (!file) return;
+    setUploading(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const path = `avatars/${user.id}.${ext}`;
+      const { error: uploadError } = await supabase.storage.from('trip-photos').upload(path, file, { upsert: true });
+      if (uploadError) throw uploadError;
+      const { data: { publicUrl } } = supabase.storage.from('trip-photos').getPublicUrl(path);
+      setPhotoUrl(publicUrl);
+      setAvatarVal(""); // clear initials/emoji if photo is set
+    } catch (e) { console.error(e); } finally { setUploading(false); }
+  };
 
   const handleSave = async () => {
     setSaving(true);
-    const avatarStr = avatarVal.trim() ? `initials:${avatarVal.trim().slice(0, 5)}` : null;
+    let avatarStr;
+    if (photoUrl) {
+      avatarStr = `photo:${photoUrl}`;
+    } else {
+      avatarStr = avatarVal.trim() ? `initials:${avatarVal.trim().slice(0, 5)}` : null;
+    }
     const { data, error } = await supabase.from("profiles")
       .update({ display_name: displayName, avatar: avatarStr }).eq("id", user.id).select().single();
     if (!error) onSave(data);
@@ -37,21 +60,42 @@ function AvatarEditSheet({ profile, user, onClose, onSave }) {
           <button style={S.closeBtn} onClick={onClose}>✕</button>
         </div>
         <div style={S.sheetBody}>
-          <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
-            <div style={{ ...S.profileAvatar, width: 84, height: 84 }}>
-              <span style={{ fontSize: previewContent.length === 1 ? 36 : 22, fontWeight: 900, letterSpacing: previewContent.length > 1 ? "-1px" : 0 }}>{previewContent}</span>
+          {/* Avatar preview + photo upload */}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 24, gap: 12 }}>
+            <div style={{ position: "relative", cursor: "pointer" }} onClick={() => photoInputRef.current?.click()}>
+              <div style={{ ...S.profileAvatar, width: 84, height: 84, overflow: "hidden" }}>
+                {photoUrl ? (
+                  <img src={photoUrl} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ) : (
+                  <span style={{ fontSize: previewContent.length === 1 ? 36 : 22, fontWeight: 900, letterSpacing: previewContent.length > 1 ? "-1px" : 0 }}>{previewContent}</span>
+                )}
+              </div>
+              <div style={{ position: "absolute", bottom: 0, right: 0, background: P.surface2, border: `2px solid ${P.phoneBg}`, borderRadius: "50%", width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: P.textSecondary }}>
+                {uploading ? "…" : "📷"}
+              </div>
             </div>
+            <input ref={photoInputRef} type="file" accept="image/*" style={{ display: "none" }}
+              onChange={e => handlePhotoUpload(e.target.files[0])} />
+            {photoUrl && (
+              <button onClick={() => setPhotoUrl(null)}
+                style={{ background: "transparent", border: "none", color: P.textMuted, fontSize: 12, cursor: "pointer", textDecoration: "underline" }}>
+                Remove photo
+              </button>
+            )}
           </div>
+
           <div style={S.field}>
             <div style={S.fieldLbl}>DISPLAY NAME</div>
             <input style={S.input} value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Your name" />
           </div>
-          <div style={S.field}>
-            <div style={S.fieldLbl}>AVATAR — EMOJI OR INITIALS (UP TO 5)</div>
-            <input style={{ ...S.input, fontSize: 22, textAlign: "center", letterSpacing: "2px" }} value={avatarVal} maxLength={5} onChange={e => setAvatarVal(e.target.value)} placeholder="🌊 or IVJ" />
-            <div style={{ fontSize: 12, color: P.textMuted, marginTop: 8 }}>Paste an emoji, type initials, or anything up to 5 characters</div>
-          </div>
-          <button style={{ ...S.primaryBtn, background: saving ? P.surface2 : `linear-gradient(135deg, ${P.orange}, ${P.terracotta})` }} onClick={handleSave} disabled={saving}>
+          {!photoUrl && (
+            <div style={S.field}>
+              <div style={S.fieldLbl}>AVATAR — EMOJI OR INITIALS (UP TO 5)</div>
+              <input style={{ ...S.input, fontSize: 22, textAlign: "center", letterSpacing: "2px" }} value={avatarVal} maxLength={5} onChange={e => setAvatarVal(e.target.value)} placeholder="🌊 or IVJ" />
+              <div style={{ fontSize: 12, color: P.textMuted, marginTop: 8 }}>Paste an emoji, type initials, or anything up to 5 characters</div>
+            </div>
+          )}
+          <button style={{ ...S.primaryBtn, background: saving ? P.surface2 : `linear-gradient(135deg, ${P.orange}, ${P.terracotta})` }} onClick={handleSave} disabled={saving || uploading}>
             {saving ? "Saving..." : "Save Profile"}
           </button>
         </div>
@@ -232,25 +276,27 @@ export default function ProfileScreen({ onOpen, user, onSignOut, onSettings, pro
   };
 
   const metricData = { trips, itinItems, expenses, photos, members };
-  const { text: avatarText, fontSize: avatarFontSize } = renderAvatarContent(profile, user);
+  const { text: avatarText, fontSize: avatarFontSize, photoUrl: avatarPhotoUrl } = renderAvatarContent(profile, user);
 
   return (
     <div style={S.screen}>
-      <div style={S.profileHero}>
-        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
+      <div style={{ ...S.profileHero, padding: "52px 28px 20px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 14 }}>
           <div style={{ position: "relative", flexShrink: 0, cursor: "pointer" }} onClick={() => setShowAvatarEdit(true)}>
-            <div style={{ ...S.profileAvatar, width: 60, height: 60, fontSize: 20 }}>
-              <span style={{ fontSize: avatarFontSize, fontWeight: 900 }}>{avatarText}</span>
+            <div style={{ ...S.profileAvatar, width: 100, height: 100, overflow: "hidden" }}>
+              {avatarPhotoUrl
+                ? <img src={avatarPhotoUrl} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                : <span style={{ fontSize: avatarFontSize, fontWeight: 900 }}>{avatarText}</span>
+              }
             </div>
-            <div style={{ position: "absolute", bottom: 0, right: 0, background: P.surface2, border: `2px solid ${P.phoneBg}`, borderRadius: "50%", width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: P.textSecondary, cursor: "pointer" }}>✎</div>
+            <div style={{ position: "absolute", bottom: 2, right: 2, background: P.surface2, border: `2px solid ${P.phoneBg}`, borderRadius: "50%", width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: P.textSecondary, cursor: "pointer" }}>✎</div>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ ...S.profileName, fontSize: 22, marginBottom: 2 }}>{profile?.display_name || user.email}</div>
-            <div style={S.profileSub}>member since {profile?.created_at ? new Date(profile.created_at).getFullYear() : "—"}</div>
+            <div style={{ ...S.profileName, fontSize: 22 }}>{profile?.display_name || user.email}</div>
           </div>
         </div>
         <div style={{ position: "relative" }}>
-          <div style={S.profileStats}>
+          <div style={{ ...S.profileStats, padding: "12px 0" }}>
             {metricPrefs.slice(0, 3).map((key, i) => {
               const def = METRIC_DEFS.find(m => m.key === key) || METRIC_DEFS[0];
               const val = computeMetric(key, metricData);

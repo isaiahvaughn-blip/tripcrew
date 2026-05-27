@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { supabase } from "../supabase";
 import { P, S, VIBES, TRIP_ICONS } from "../constants";
 import { formatDates, formatTime12 } from "../utils";
+import DateTimePicker from "./DateTimePicker";
 
 const SN = {
   header: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 22px 8px" },
@@ -269,27 +270,27 @@ export default function NewTripModal({ onClose, onSave, userId, userProfile }) {
         <div style={SN.question}>When?</div>
 
         <div style={S.field}>
-          <div style={S.fieldLbl}>DATE</div>
-          <input style={{ ...S.input, colorScheme: "dark" }} type="date"
-            defaultValue={answers.startDate}
-            onChange={e => setAnswers(a => ({ ...a, startDate: e.target.value }))} />
+          <DateTimePicker
+            day={answers.startDate}
+            time={answers.time}
+            onDayChange={d => setAnswers(a => ({ ...a, startDate: d }))}
+            onTimeChange={t => setAnswers(a => ({ ...a, time: t }))}
+          />
         </div>
 
         {!isShortForm && (
           <div style={S.field}>
-            <div style={S.fieldLbl}>END DATE <span style={{ fontWeight: 400, color: P.textMuted }}>(optional)</span></div>
-            <input style={{ ...S.input, colorScheme: "dark" }} type="date"
-              defaultValue={answers.endDate} min={answers.startDate}
-              onChange={e => setAnswers(a => ({ ...a, endDate: e.target.value }))} />
+            <div style={{ ...S.fieldLbl, marginBottom: 8 }}>END DATE <span style={{ fontWeight: 400, color: P.textMuted }}>(optional)</span></div>
+            <DateTimePicker
+              day={answers.endDate}
+              time=""
+              onDayChange={d => setAnswers(a => ({ ...a, endDate: d }))}
+              onTimeChange={() => {}}
+              hideTime
+              minDate={answers.startDate}
+            />
           </div>
         )}
-
-        <div style={S.field}>
-          <div style={S.fieldLbl}>TIME <span style={{ fontWeight: 400, color: P.textMuted }}>(optional)</span></div>
-          <input style={{ ...S.input, colorScheme: "dark" }} type="time"
-            defaultValue={answers.time}
-            onChange={e => setAnswers(a => ({ ...a, time: e.target.value }))} />
-        </div>
       </div>
       <div style={SN.stepFooter}>
         <button style={{ ...SN.nextBtn, opacity: answers.startDate ? 1 : 0.4 }}
