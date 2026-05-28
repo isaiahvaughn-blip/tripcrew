@@ -42,7 +42,7 @@ const SN = {
 export default function NewTripModal({ onClose, onSave, userId, userProfile }) {
   const [step, setStep] = useState(1);
   const [answers, setAnswers] = useState({
-    vibe: null, location: "", who: [], guests: [], solo: false,
+    vibe: null, location: "", who: [], guests: [], solo: true,
     startDate: new Date().toISOString().split("T")[0],
     endDate: "", time: "", generatedName: "", editedName: "", emoji: "",
   });
@@ -199,7 +199,7 @@ export default function NewTripModal({ onClose, onSave, userId, userProfile }) {
                     onKeyDown={e => { if (e.key === "Enter") addEmail(); }} />
                   <button style={SN.addEmailBtn} onClick={addEmail}>Add</button>
                 </div>
-                <div style={{ fontSize: 12, color: P.textMuted, marginTop: 8 }}>
+                <div style={{ fontSize: 13, color: P.textSecondary, marginTop: 8 }}>
                   They'll see this trip when they sign in.
                 </div>
                 {emailTags.length > 0 && (
@@ -221,7 +221,7 @@ export default function NewTripModal({ onClose, onSave, userId, userProfile }) {
                     onKeyDown={e => { if (e.key === "Enter") addGuest(); }} />
                   <button style={SN.addEmailBtn} onClick={addGuest}>Add</button>
                 </div>
-                <div style={{ fontSize: 12, color: P.textMuted, marginTop: 8 }}>
+                <div style={{ fontSize: 13, color: P.textSecondary, marginTop: 8 }}>
                   No account needed — just a name for splitting expenses.
                 </div>
                 {guestTags.length > 0 && (
@@ -287,6 +287,7 @@ export default function NewTripModal({ onClose, onSave, userId, userProfile }) {
               onDayChange={d => setAnswers(a => ({ ...a, endDate: d }))}
               onTimeChange={() => {}}
               hideTime
+              hideLabel
               minDate={answers.startDate}
             />
           </div>
