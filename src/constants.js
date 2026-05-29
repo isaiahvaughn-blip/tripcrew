@@ -2,7 +2,7 @@ import {
   Plane, Mountain, Bike, Umbrella, Map, Snowflake, Car, Anchor, Tent, Theater,
   UtensilsCrossed, Hotel, Zap, Train,
   Coffee, Wine, Music, ShoppingBag, Dumbbell, PartyPopper, House, Sunset, Camera,
-  MapPin, Trophy,
+  MapPin, Trophy, Users, Ticket,
 } from "lucide-react";
 
 // ─── PALETTE ──────────────────────────────────────────────────────────────────
@@ -29,54 +29,64 @@ export const P = {
 // ─── ITINERARY ────────────────────────────────────────────────────────────────
 
 export const ITINERARY_COLORS = {
-  flight:     { accent: P.lightBlue },
-  transport:  { accent: "#a090d0" },
-  stay:       { accent: "#6bbf8a" },
-  restaurant: { accent: "#e4a0b0" },
-  drinks:     { accent: P.orange },
-  activity:   { accent: P.terracotta },
-  shopping:   { accent: "#d4a0e0" },
-  other:      { accent: P.slateBlue },
+  flight:      { accent: P.lightBlue },
+  transport:   { accent: "#a090d0" },
+  stay:        { accent: "#6bbf8a" },
+  restaurant:  { accent: "#e4a0b0" },
+  drinks:      { accent: P.orange },
+  activity:    { accent: P.terracotta },
+  event:       { accent: "#f0c060" },
+  gathering:   { accent: "#80c8a0" },
+  celebration: { accent: "#f080c0" },
+  shopping:    { accent: "#d4a0e0" },
+  other:       { accent: P.slateBlue },
 };
 
 export const ITIN_TYPE_ICONS = {
   flight: Plane, transport: Train, stay: Hotel,
   restaurant: UtensilsCrossed, drinks: Wine,
-  activity: Zap, shopping: ShoppingBag, other: MapPin,
+  activity: Zap, event: Ticket, gathering: Users,
+  celebration: PartyPopper, shopping: ShoppingBag, other: MapPin,
 };
 
-export const ITIN_TYPES = ["flight","transport","stay","restaurant","drinks","activity","shopping","other"];
+export const ITIN_TYPES = ["flight","transport","stay","restaurant","drinks","activity","event","gathering","celebration","shopping","other"];
 
 export const TYPE_PLACEHOLDERS = {
-  flight:     "e.g. PDX to LAX",
-  transport:  "e.g. Dollar Car Rental",
-  stay:       "e.g. Fairmont Lake Louise",
-  restaurant: "e.g. Nobu Houston",
-  drinks:     "e.g. Teardrop Cocktail Lounge",
-  activity:   "e.g. Museum of Fine Arts",
-  shopping:   "e.g. Galleria Mall",
-  other:      "e.g. Scenic overlook",
+  flight:      "e.g. PDX to LAX",
+  transport:   "e.g. Dollar Car Rental",
+  stay:        "e.g. Fairmont Lake Louise",
+  restaurant:  "e.g. Nobu Houston",
+  drinks:      "e.g. Teardrop Cocktail Lounge",
+  activity:    "e.g. Museum of Fine Arts",
+  event:       "e.g. Taylor Swift · MSG",
+  gathering:   "e.g. Cookout at Derek's",
+  celebration: "e.g. Sarah's 30th Birthday",
+  shopping:    "e.g. Galleria Mall",
+  other:       "e.g. Scenic overlook",
 };
 
 // ─── EXPENSES ─────────────────────────────────────────────────────────────────
 
 export const CATEGORY_META = {
-  Dining:   { color: "#e4a0b0", bg: "#2a1520" },
-  Drinks:   { color: P.orange,  bg: "#2a1c10" },
-  Stay:     { color: "#6bbf8a", bg: "#142a1e" },
-  Activity: { color: P.lightBlue, bg: "#162840" },
-  Shopping: { color: "#d4a0e0", bg: "#1e1a2a" },
-  Travel:   { color: "#a090d0", bg: "#1a1e2a" },
-  Flight:   { color: P.lightBlue, bg: "#102030" },
-  Other:    { color: P.slateBlue, bg: "#162030" },
+  Dining:      { color: "#e4a0b0", bg: "#2a1520" },
+  Drinks:      { color: P.orange,  bg: "#2a1c10" },
+  Stay:        { color: "#6bbf8a", bg: "#142a1e" },
+  Activity:    { color: P.lightBlue, bg: "#162840" },
+  Event:       { color: "#f0c060", bg: "#2a2010" },
+  Celebration: { color: "#f080c0", bg: "#2a1028" },
+  Shopping:    { color: "#d4a0e0", bg: "#1e1a2a" },
+  Travel:      { color: "#a090d0", bg: "#1a1e2a" },
+  Flight:      { color: P.lightBlue, bg: "#102030" },
+  Other:       { color: P.slateBlue, bg: "#162030" },
 };
 
 export const CAT_ICONS = {
   Dining: UtensilsCrossed, Drinks: Wine, Stay: Hotel,
-  Activity: Zap, Shopping: ShoppingBag, Travel: Train, Flight: Plane, Other: MapPin,
+  Activity: Zap, Event: Ticket, Celebration: PartyPopper,
+  Shopping: ShoppingBag, Travel: Train, Flight: Plane, Other: MapPin,
 };
 
-export const CATS = ["Dining","Drinks","Stay","Activity","Shopping","Travel","Flight","Other"];
+export const CATS = ["Dining","Drinks","Stay","Activity","Event","Celebration","Shopping","Travel","Flight","Other"];
 
 // ─── TRIPS ────────────────────────────────────────────────────────────────────
 

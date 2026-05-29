@@ -6,7 +6,9 @@ import ConfirmModal from "./ConfirmModal";
 
 function MembersTab({ trip, profile, expenses, profileMap = {} }) {
   const [members, setMembers] = useState([]);
+  const [pendingInvites, setPendingInvites] = useState([]);
   const [confirmRemoveMember, setConfirmRemoveMember] = useState(null);
+  const [confirmRemoveInvite, setConfirmRemoveInvite] = useState(null);
   const [memberProfiles, setMemberProfiles] = useState({});
   const [showInvite, setShowInvite] = useState(false);  // email invite panel
   const [showGuest, setShowGuest] = useState(false);    // guest name panel
@@ -37,10 +39,13 @@ function MembersTab({ trip, profile, expenses, profileMap = {} }) {
     const fetchMembers = async () => {
       const [{ data: memberRows }, { data: tmRows }] = await Promise.all([
         supabase.from('members').select('*').eq('trip_id', trip.id),
-        supabase.from('trip_members').select('user_id, invited_email').eq('trip_id', trip.id),
+        supabase.from('trip_members').select('user_id, invited_email, status').eq('trip_id', trip.id),
       ]);
 
       setMembers(memberRows || []);
+
+      // Pending invites — status=pending, has invited_email
+      setPendingInvites((tmRows || []).filter(r => r.status === 'pending' && r.invited_email));
 
       const userIds = (tmRows || []).map(r => r.user_id).filter(Boolean);
       if (!userIds.length) return;
@@ -143,6 +148,20 @@ function MembersTab({ trip, profile, expenses, profileMap = {} }) {
           danger
         />
       )}
+      {confirmRemoveInvite && (
+        <ConfirmModal
+          message={`Cancel invite to ${confirmRemoveInvite.invited_email}?`}
+          onConfirm={async () => {
+            await supabase.from("trip_members").delete()
+              .eq("trip_id", trip.id).eq("invited_email", confirmRemoveInvite.invited_email).eq("status", "pending");
+            setPendingInvites(prev => prev.filter(i => i.invited_email !== confirmRemoveInvite.invited_email));
+            setConfirmRemoveInvite(null);
+          }}
+          onCancel={() => setConfirmRemoveInvite(null)}
+          confirmLabel="Cancel Invite"
+          danger
+        />
+      )}
       <div style={S.tabScroll}>
         <div style={S.tabTopRow}>
           <div style={S.tabTitle}>Members</div>
@@ -214,6 +233,27 @@ function MembersTab({ trip, profile, expenses, profileMap = {} }) {
             </div>
           );
         })}
+
+        {/* Pending invites section */}
+        {pendingInvites.length > 0 && (
+          <div style={{ marginTop: 16 }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: P.textMuted, letterSpacing: "1.5px", marginBottom: 10, fontFamily: "'DM Sans', sans-serif" }}>WAITING TO JOIN</div>
+            {pendingInvites.map((invite, i) => (
+              <div key={i} style={{ ...S.memberRow, opacity: 0.7 }}>
+                <div style={{ ...S.memberAvatar, background: P.surface3, color: P.textMuted }}>
+                  <span style={{ fontSize: 16, fontWeight: 900 }}>?</span>
+                </div>
+                <div style={S.memberInfo}>
+                  <div style={{ ...S.memberName, fontSize: 14, color: P.textSecondary }}>{invite.invited_email}</div>
+                  <div style={{ fontSize: 11, color: P.textMuted, marginTop: 2 }}>Invite sent · hasn't signed up yet</div>
+                </div>
+                <div style={S.memberRight}>
+                  <button style={S.rowDeleteBtn} onClick={() => setConfirmRemoveInvite(invite)}>✕</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
         <div style={{ height: 20 }} />
       </div>
     </div>

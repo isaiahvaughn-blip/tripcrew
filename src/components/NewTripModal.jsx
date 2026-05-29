@@ -269,29 +269,55 @@ export default function NewTripModal({ onClose, onSave, userId, userProfile }) {
         <Receipt />
         <div style={SN.question}>When?</div>
 
-        <div style={S.field}>
-          <DateTimePicker
-            day={answers.startDate}
-            time={answers.time}
-            onDayChange={d => setAnswers(a => ({ ...a, startDate: d }))}
-            onTimeChange={t => setAnswers(a => ({ ...a, time: t }))}
-          />
-        </div>
-
-        {!isShortForm && (
-          <div style={S.field}>
-            <div style={{ ...S.fieldLbl, marginBottom: 8 }}>END DATE <span style={{ fontWeight: 400, color: P.textMuted }}>(optional)</span></div>
+        {/* DATE ROW — start and end side by side */}
+        <div style={{ display: "flex", gap: 12, marginBottom: 8 }}>
+          <div style={{ flex: 1, background: P.surface1, borderRadius: 14, padding: "12px 14px", border: `1px solid ${P.surface3}` }}>
+            <div style={S.fieldLbl}>DATE</div>
             <DateTimePicker
-              day={answers.endDate}
+              day={answers.startDate}
               time=""
-              onDayChange={d => setAnswers(a => ({ ...a, endDate: d }))}
+              onDayChange={d => setAnswers(a => ({ ...a, startDate: d }))}
               onTimeChange={() => {}}
               hideTime
               hideLabel
-              minDate={answers.startDate}
             />
           </div>
-        )}
+          {!isShortForm && (
+            <div style={{ flex: 1, background: P.surface1, borderRadius: 14, padding: "12px 14px", border: `1px solid ${P.surface3}` }}>
+              <div style={S.fieldLbl}>END DATE <span style={{ fontWeight: 400, color: P.textMuted }}>(optional)</span></div>
+              <DateTimePicker
+                day={answers.endDate}
+                time=""
+                onDayChange={d => setAnswers(a => ({ ...a, endDate: d }))}
+                onTimeChange={() => {}}
+                hideTime
+                hideLabel
+                minDate={answers.startDate}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* TIME — full width below */}
+        <div style={{ background: P.surface1, borderRadius: 14, padding: "12px 14px", border: `1px solid ${P.surface3}`, marginTop: 0 }}>
+          <div style={{ fontSize: 11, fontWeight: 800, color: P.textMuted, letterSpacing: "1.5px", marginBottom: 10, fontFamily: "'DM Sans', sans-serif" }}>
+            TIME <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(optional)</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", position: "relative", height: 56 }}>
+            <input type="time" value={answers.time || ""}
+              onChange={e => setAnswers(a => ({ ...a, time: e.target.value }))}
+              style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer", width: "100%", height: "100%", zIndex: 2 }} />
+            {answers.time ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 22, fontWeight: 800, color: P.terracotta, fontFamily: "'DM Sans', sans-serif" }}>{formatTime12(answers.time)}</span>
+                <button onClick={e => { e.stopPropagation(); setAnswers(a => ({ ...a, time: "" })); }}
+                  style={{ background: "none", border: "none", color: P.textMuted, cursor: "pointer", fontSize: 16, padding: 0, zIndex: 3, position: "relative" }}>✕</button>
+              </div>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={P.slateBlue} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            )}
+          </div>
+        </div>
       </div>
       <div style={SN.stepFooter}>
         <button style={{ ...SN.nextBtn, opacity: answers.startDate ? 1 : 0.4 }}

@@ -5,7 +5,7 @@ import { formatTime12 } from "../utils";
 const today = new Date().toISOString().split("T")[0];
 const isMobile = /iphone|ipad|ipod|android/i.test(navigator.userAgent);
 
-export default function DateTimePicker({ day, time, onDayChange, onTimeChange, hideTime = false, minDate = null, hideLabel = false }) {
+export default function DateTimePicker({ day, time, onDayChange, onTimeChange, hideTime = false, minDate = null, hideLabel = false, prefixLabel = null, prefixColor = null }) {
   const formatDayDisplay = (d) => {
     if (!d) return null;
     const dt = new Date(d + "T12:00:00");
@@ -33,7 +33,10 @@ export default function DateTimePicker({ day, time, onDayChange, onTimeChange, h
       {/* DATE */}
       <div style={{ flex: hideTime ? 2 : 1, textAlign: "center" }}>
         {!hideLabel && (
-          <div style={{ fontSize: 11, fontWeight: 800, color: P.textMuted, letterSpacing: "1.5px", marginBottom: 10 }}>DATE</div>
+          <div style={{ fontSize: 11, fontWeight: 800, color: P.textMuted, letterSpacing: "1.5px", marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
+            {prefixLabel && <span style={{ color: prefixColor || P.textMuted }}>{prefixLabel}</span>}
+            <span>DATE</span>
+          </div>
         )}
         {isMobile ? (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", position: "relative", height: 56 }}>

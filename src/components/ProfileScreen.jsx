@@ -31,7 +31,8 @@ function AvatarEditSheet({ profile, user, onClose, onSave }) {
       const { error: uploadError } = await supabase.storage.from('trip-photos').upload(path, file, { upsert: true });
       if (uploadError) throw uploadError;
       const { data: { publicUrl } } = supabase.storage.from('trip-photos').getPublicUrl(path);
-      setPhotoUrl(publicUrl);
+      // Append cache-buster so browser fetches the new image instead of serving cached old one
+      setPhotoUrl(`${publicUrl}?t=${Date.now()}`);
       setAvatarVal(""); // clear initials/emoji if photo is set
     } catch (e) { console.error(e); } finally { setUploading(false); }
   };

@@ -12,70 +12,121 @@ export function AddItinModal({ onClose, trip, onAdd }) {
   const [type, setType] = useState("flight");
   const [day,  setDay]  = useState("");
   const [time, setTime] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [addReturn, setAddReturn] = useState(false);
+  const [returnDay,  setReturnDay]  = useState("");
+  const [returnTime, setReturnTime] = useState("");
   const titleRef  = useRef(null);
   const detailRef = useRef(null);
+  const returnDetailRef = useRef(null);
 
   const handleAdd = async () => {
     const title  = titleRef.current?.value || "";
     const detail = detailRef.current?.value || "";
-    if (!title) return;
-    const { data, error } = await supabase.from("itinerary")
-      .insert([{ trip_id: trip.id, day, time, type, title, detail, icon: "🎯", visibility: "group" }]).select();
-    if (error) { console.error(error); return; }
-    onAdd(data[0]);
-    onClose();
+    if (!title || loading) return;
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.from("itinerary")
+        .insert([{ trip_id: trip.id, day, time, type, title, detail, icon: "🎯", visibility: "group" }]).select();
+      if (error) { console.error(error); setLoading(false); return; }
+
+      if (addReturn && ["flight","transport"].includes(type)) {
+        const returnDetail = returnDetailRef.current?.value || "";
+        const { data: rd, error: re } = await supabase.from("itinerary")
+          .insert([{ trip_id: trip.id, day: returnDay, time: returnTime, type, title: `Return: ${title}`, detail: returnDetail, icon: "🎯", visibility: "group" }]).select();
+        if (!re && rd) onAdd(rd[0]);
+      }
+
+      onAdd(data[0]);
+      onClose();
+    } catch (e) { console.error(e); setLoading(false); }
   };
+
+  const isFlightOrTransport = ["flight","transport"].includes(type);
 
   return (
     <div style={{ position: "absolute", inset: 0, zIndex: 100, background: P.phoneBg, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 22px 12px", flexShrink: 0 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 22px 8px", flexShrink: 0 }}>
         <div style={{ fontSize: 22, fontWeight: 900, color: P.textPrimary, letterSpacing: "-0.5px", fontFamily: "'Syne', sans-serif" }}>Add to Itinerary</div>
         <button style={S.closeBtn} onClick={onClose}>✕</button>
       </div>
       <div style={{ flex: 1, padding: "0 22px", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-  <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 14, overflow: "hidden" }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 10, overflow: "hidden" }}>
 
-          {/* TYPE */}
-          <div>
-            <div style={S.fieldLbl}>TYPE</div>
+          {/* TYPE — fixed height, no reflow */}
+          <div style={{ flexShrink: 0 }}>
             <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 2 }}>
               {Object.keys(ITINERARY_COLORS).map(t => {
                 const m = ITINERARY_COLORS[t];
                 const TIcon = ITIN_TYPE_ICONS[t];
                 const selected = type === t;
                 return (
-                  <button key={t} onClick={() => setType(t)}
-                    style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, padding: "10px 10px", borderRadius: 14, cursor: "pointer", background: selected ? P.surface2 : P.surface1, border: selected ? `1px solid ${m.accent}` : `1px solid ${P.surface3}`, minHeight: 58, minWidth: 62, flexShrink: 0 }}>
-                    <TIcon size={20} color={selected ? m.accent : P.textMuted} strokeWidth={1.5} />
-                    <span style={{ fontSize: 10, fontWeight: 700, color: selected ? m.accent : P.textMuted, textTransform: "capitalize", letterSpacing: "0.3px" }}>{t}</span>
+                  <button key={t} onClick={() => { setType(t); setAddReturn(false); }}
+                    style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, padding: "8px 10px", borderRadius: 14, cursor: "pointer", background: selected ? P.surface2 : P.surface1, border: selected ? `1px solid ${m.accent}` : `1px solid ${P.surface3}`, minHeight: 52, minWidth: 58, flexShrink: 0 }}>
+                    <TIcon size={18} color={selected ? m.accent : P.textMuted} strokeWidth={1.5} />
+                    <span style={{ fontSize: 9, fontWeight: 700, color: selected ? m.accent : P.textMuted, textTransform: "capitalize", letterSpacing: "0.3px" }}>{t}</span>
                   </button>
                 );
               })}
             </div>
           </div>
 
+          {/* ONE WAY / ROUND TRIP toggle */}
+          {isFlightOrTransport && (
+            <div style={{ display: "flex", background: P.surface2, borderRadius: 12, padding: 3, border: `1px solid ${P.surface3}`, flexShrink: 0 }}>
+              {[["One way", false], ["Round trip", true]].map(([label, val]) => (
+                <button key={label} onClick={() => setAddReturn(val)}
+                  style={{ flex: 1, padding: "7px 0", fontSize: 13, fontWeight: 700, border: "none", borderRadius: 10, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", background: addReturn === val ? P.surface3 : "transparent", color: addReturn === val ? P.textPrimary : P.textMuted, transition: "all 0.15s" }}>
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
+
           {/* TITLE */}
-          <div style={{ textAlign: "center", paddingBottom: 12, borderBottom: `1px solid ${P.surface3}` }}>
-            <div style={S.fieldLbl}>TITLE</div>
+          <div style={{ textAlign: "center", paddingBottom: 8, borderBottom: `1px solid ${P.surface3}`, flexShrink: 0 }}>
             <input ref={titleRef} placeholder={TYPE_PLACEHOLDERS[type] || "e.g. Add a title"}
-              style={{ background: "transparent", border: "none", outline: "none", fontSize: 22, fontWeight: 900, color: P.textPrimary, letterSpacing: "-0.5px", width: "100%", textAlign: "center", fontFamily: "'Syne', sans-serif", padding: "4px 0" }} />
+              style={{ background: "transparent", border: "none", outline: "none", fontSize: 24, fontWeight: 900, color: P.textPrimary, letterSpacing: "-0.5px", width: "100%", textAlign: "center", fontFamily: "'Syne', sans-serif", padding: "8px 0" }} />
           </div>
 
-          {/* DETAILS */}
-          <div>
-            <div style={S.fieldLbl}>DETAILS / CONFIRMATION #</div>
-            <input ref={detailRef} style={{ ...S.input, fontSize: 15, padding: "12px 16px" }} placeholder="Confirmation code, address, notes..." />
+          {/* DETAILS — split side by side for round trip */}
+          {isFlightOrTransport && addReturn ? (
+            <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+              <input ref={detailRef} style={{ ...S.input, fontSize: 13, padding: "10px 12px", flex: 1 }} placeholder="Conf. #, Terminal, Notes" />
+              <input ref={returnDetailRef} style={{ ...S.input, fontSize: 13, padding: "10px 12px", flex: 1 }} placeholder="Conf. #, Terminal, Notes" />
+            </div>
+          ) : (
+            <input ref={detailRef} style={{ ...S.input, fontSize: 14, padding: "11px 16px", flexShrink: 0 }} placeholder="Confirmation #, address, notes..." />
+          )}
+
+          {/* OUTBOUND DATE TIME — label inline left */}
+          <div style={{ flexShrink: 0 }}>
+            <DateTimePicker
+              day={day} time={time} onDayChange={setDay} onTimeChange={setTime}
+              prefixLabel={isFlightOrTransport && addReturn ? "OUTBOUND" : null}
+            />
           </div>
 
-          {/* DATE TIME */}
-          <DateTimePicker day={day} time={time} onDayChange={setDay} onTimeChange={setTime} />
+          {/* RETURN DATE TIME */}
+          {isFlightOrTransport && addReturn && (
+            <div style={{ flexShrink: 0 }}>
+              <DateTimePicker
+                day={returnDay} time={returnTime} onDayChange={setReturnDay} onTimeChange={setReturnTime}
+                minDate={day}
+                prefixLabel="RETURN"
+                prefixColor={P.lightBlue}
+              />
+            </div>
+          )}
 
         </div>
 
         {/* BUTTON */}
-        <div style={{ paddingTop: 12, paddingBottom: 16, flexShrink: 0 }}>
-          <button style={{ ...S.primaryBtn, background: `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`, color: "#fff" }} onClick={handleAdd}>
-            Add to Itinerary
+        <div style={{ paddingTop: 10, paddingBottom: 16, flexShrink: 0 }}>
+          <button
+            style={{ ...S.primaryBtn, background: loading ? P.surface2 : `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`, color: "#fff" }}
+            onClick={handleAdd} disabled={loading}>
+            {loading ? "Adding..." : addReturn ? "Add Both Flights" : "Add to Itinerary"}
           </button>
         </div>
       </div>
@@ -112,7 +163,7 @@ export function EditItinModal({ item, onClose, onSave }) {
         <button style={S.closeBtn} onClick={onClose}>✕</button>
       </div>
       <div style={{ flex: 1, padding: "0 22px", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-  <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 14, overflow: "hidden" }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 14, overflow: "hidden" }}>
 
           {/* TYPE */}
           <div>
@@ -143,7 +194,7 @@ export function EditItinModal({ item, onClose, onSave }) {
           {/* DETAILS */}
           <div>
             <div style={S.fieldLbl}>DETAILS / CONFIRMATION #</div>
-            <input ref={detailRef} defaultValue={item.detail || ""} style={{ ...S.input, fontSize: 15, padding: "12px 16px" }} placeholder="Confirmation code, address, notes..." />
+            <input ref={detailRef} defaultValue={item.detail || ""} style={{ ...S.input, fontSize: 15, padding: "12px 16px" }} placeholder="Confirmation code, Terminal, Flight #, notes..." />
           </div>
 
           {/* DATE TIME */}
@@ -256,7 +307,7 @@ export default function ItineraryTab({ trip, onModal, refreshKey }) {
             const hasEmojiIcon = item.icon && item.icon.length <= 4 && item.icon !== "🎯";
             const TypeIcon = ITIN_TYPE_ICONS[item.type] || Zap;
             const isSelected = selectedIds.includes(item.id);
-            const hasLocation = ["stay","restaurant","activity"].includes(item.type);
+            const hasLocation = !["flight", "transport"].includes(item.type);
             return (
               <div key={item.id}
                 style={{ ...SI.item, borderLeftColor: meta.accent, ...(isSelected ? SI.itemSelected : {}) }}
@@ -289,16 +340,16 @@ export default function ItineraryTab({ trip, onModal, refreshKey }) {
       ))}
       <div style={{ height: 20 }} />
       {editingItem && (
-  <EditItinModal item={editingItem} onClose={() => setEditingItem(null)}
-    onSave={updated => {
-      if (updated._deleted) {
-        setItems(prev => prev.filter(i => i.id !== updated.id));
-      } else {
-        setItems(prev => prev.map(i => i.id === updated.id ? updated : i));
-      }
-      setEditingItem(null);
-    }} />
-)}
+        <EditItinModal item={editingItem} onClose={() => setEditingItem(null)}
+          onSave={updated => {
+            if (updated._deleted) {
+              setItems(prev => prev.filter(i => i.id !== updated.id));
+            } else {
+              setItems(prev => prev.map(i => i.id === updated.id ? updated : i));
+            }
+            setEditingItem(null);
+          }} />
+      )}
     </div>
   );
 }
