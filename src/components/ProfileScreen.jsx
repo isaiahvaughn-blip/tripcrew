@@ -7,6 +7,120 @@ import NewTripModal from "./NewTripModal";
 import EditTripModal from "./EditTripModal";
 import ConfirmModal from "./ConfirmModal";
 
+function CropOverlay({ file, onConfirm, onCancel }) {
+  const canvasRef = useRef(null);
+  const imgRef = useRef(new Image());
+  const [scale, setScale] = useState(1);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [dragging, setDragging] = useState(false);
+  const dragStart = useRef({ x: 0, y: 0, ox: 0, oy: 0 });
+  const SIZE = 280; // crop circle diameter
+
+  useEffect(() => {
+    const img = imgRef.current;
+    img.onload = () => {
+      // Fit image to fill circle initially
+      const minDim = Math.min(img.width, img.height);
+      const initScale = SIZE / minDim;
+      setScale(initScale);
+      setOffset({ x: (SIZE - img.width * initScale) / 2, y: (SIZE - img.height * initScale) / 2 });
+    };
+    img.src = URL.createObjectURL(file);
+    return () => URL.revokeObjectURL(img.src);
+  }, [file]);
+
+  useEffect(() => { draw(); }, [scale, offset]);
+
+  const draw = () => {
+    const canvas = canvasRef.current;
+    if (!canvas || !imgRef.current.complete) return;
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, SIZE, SIZE);
+    ctx.drawImage(imgRef.current, offset.x, offset.y, imgRef.current.width * scale, imgRef.current.height * scale);
+  };
+
+  const clampOffset = (ox, oy, sc) => {
+    const img = imgRef.current;
+    const iw = img.width * sc;
+    const ih = img.height * sc;
+    return {
+      x: Math.min(0, Math.max(ox, SIZE - iw)),
+      y: Math.min(0, Math.max(oy, SIZE - ih)),
+    };
+  };
+
+  const onMouseDown = (e) => {
+    setDragging(true);
+    const cx = e.touches ? e.touches[0].clientX : e.clientX;
+    const cy = e.touches ? e.touches[0].clientY : e.clientY;
+    dragStart.current = { x: cx, y: cy, ox: offset.x, oy: offset.y };
+  };
+
+  const onMouseMove = (e) => {
+    if (!dragging) return;
+    const cx = e.touches ? e.touches[0].clientX : e.clientX;
+    const cy = e.touches ? e.touches[0].clientY : e.clientY;
+    const dx = cx - dragStart.current.x;
+    const dy = cy - dragStart.current.y;
+    setOffset(clampOffset(dragStart.current.ox + dx, dragStart.current.oy + dy, scale));
+  };
+
+  const onMouseUp = () => setDragging(false);
+
+  const onWheel = (e) => {
+    e.preventDefault();
+    const newScale = Math.max(0.5, Math.min(5, scale - e.deltaY * 0.002));
+    const clamped = clampOffset(offset.x, offset.y, newScale);
+    setScale(newScale);
+    setOffset(clamped);
+  };
+
+  const handleConfirm = () => {
+    const canvas = canvasRef.current;
+    const out = document.createElement("canvas");
+    out.width = 400; out.height = 400;
+    const ctx = out.getContext("2d");
+    // Draw circular clip
+    ctx.beginPath();
+    ctx.arc(200, 200, 200, 0, Math.PI * 2);
+    ctx.clip();
+    // Scale from crop canvas to output
+    const ratio = 400 / SIZE;
+    ctx.drawImage(canvas, 0, 0, SIZE, SIZE, 0, 0, 400, 400);
+    out.toBlob(blob => onConfirm(blob), "image/jpeg", 0.9);
+  };
+
+  return (
+    <div style={{ position: "absolute", inset: 0, zIndex: 300, background: "rgba(0,0,0,0.95)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 24 }}>
+      <div style={{ fontSize: 13, color: P.textSecondary, fontFamily: "'DM Sans', sans-serif" }}>Drag to reposition · Scroll to zoom</div>
+
+      {/* Crop area */}
+      <div style={{ position: "relative", width: SIZE, height: SIZE, borderRadius: "50%", overflow: "hidden", border: `3px solid ${P.terracotta}`, cursor: dragging ? "grabbing" : "grab", flexShrink: 0 }}
+        onMouseDown={onMouseDown} onMouseMove={onMouseMove} onMouseUp={onMouseUp} onMouseLeave={onMouseUp}
+        onTouchStart={onMouseDown} onTouchMove={onMouseMove} onTouchEnd={onMouseUp}
+        onWheel={onWheel}>
+        <canvas ref={canvasRef} width={SIZE} height={SIZE} style={{ display: "block" }} />
+      </div>
+
+      {/* Zoom slider */}
+      <input type="range" min="0.5" max="5" step="0.01" value={scale}
+        onChange={e => { const s = parseFloat(e.target.value); setScale(s); setOffset(o => clampOffset(o.x, o.y, s)); }}
+        style={{ width: SIZE, accentColor: P.terracotta }} />
+
+      <div style={{ display: "flex", gap: 12 }}>
+        <button onClick={onCancel}
+          style={{ background: P.surface2, border: `1px solid ${P.surface3}`, color: P.textMuted, borderRadius: 14, padding: "13px 28px", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+          Cancel
+        </button>
+        <button onClick={handleConfirm}
+          style={{ background: `linear-gradient(135deg, ${P.orange}, ${P.terracotta})`, border: "none", color: "#fff", borderRadius: 14, padding: "13px 28px", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+          Use Photo
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function AvatarEditSheet({ profile, user, onClose, onSave }) {
   const [displayName, setDisplayName] = useState(profile?.display_name || "");
   const [avatarVal, setAvatarVal] = useState(() => {
@@ -18,22 +132,26 @@ function AvatarEditSheet({ profile, user, onClose, onSave }) {
     return (profile?.display_name || user?.email || "").slice(0, 2).toUpperCase();
   });
   const [photoUrl, setPhotoUrl] = useState(() => profile?.avatar?.startsWith("photo:") ? profile.avatar.slice(6) : null);
+  const [cropFile, setCropFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const photoInputRef = useRef(null);
 
-  const handlePhotoUpload = async (file) => {
+  const handleFileSelect = (file) => {
     if (!file) return;
+    setCropFile(file);
+  };
+
+  const handleCropConfirm = async (blob) => {
+    setCropFile(null);
     setUploading(true);
     try {
-      const ext = file.name.split('.').pop();
-      const path = `avatars/${user.id}-${Date.now()}.${ext}`;
-      const { error: uploadError } = await supabase.storage.from('trip-photos').upload(path, file);
+      const path = `avatars/${user.id}-${Date.now()}.jpg`;
+      const { error: uploadError } = await supabase.storage.from('trip-photos').upload(path, blob);
       if (uploadError) throw uploadError;
       const { data: { publicUrl } } = supabase.storage.from('trip-photos').getPublicUrl(path);
-      // Append cache-buster so browser fetches the new image instead of serving cached old one
       setPhotoUrl(`${publicUrl}?t=${Date.now()}`);
-      setAvatarVal(""); // clear initials/emoji if photo is set
+      setAvatarVal("");
     } catch (e) { console.error(e); } finally { setUploading(false); }
   };
 
@@ -52,56 +170,68 @@ function AvatarEditSheet({ profile, user, onClose, onSave }) {
   };
 
   const previewContent = avatarVal.trim().slice(0, 5) || "?";
-  return (
-    <div style={S.overlay}>
-      <div style={S.sheet}>
-        <div style={S.sheetHandle} />
-        <div style={S.sheetHeader}>
-          <div style={S.sheetTitle}>Edit Profile</div>
-          <button style={S.closeBtn} onClick={onClose}>✕</button>
-        </div>
-        <div style={S.sheetBody}>
-          {/* Avatar preview + photo upload */}
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 24, gap: 12 }}>
-            <div style={{ position: "relative", cursor: "pointer" }} onClick={() => photoInputRef.current?.click()}>
-              <div style={{ ...S.profileAvatar, width: 84, height: 84, overflow: "hidden" }}>
-                {photoUrl ? (
-                  <img src={photoUrl} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                ) : (
-                  <span style={{ fontSize: previewContent.length === 1 ? 36 : 22, fontWeight: 900, letterSpacing: previewContent.length > 1 ? "-1px" : 0 }}>{previewContent}</span>
-                )}
-              </div>
-              <div style={{ position: "absolute", bottom: 0, right: 0, background: P.surface2, border: `2px solid ${P.phoneBg}`, borderRadius: "50%", width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: P.textSecondary }}>
-                {uploading ? "…" : "📷"}
-              </div>
-            </div>
-            <input ref={photoInputRef} type="file" accept="image/*" style={{ display: "none" }}
-              onChange={e => handlePhotoUpload(e.target.files[0])} />
-            {photoUrl && (
-              <button onClick={() => setPhotoUrl(null)}
-                style={{ background: "transparent", border: "none", color: P.textMuted, fontSize: 12, cursor: "pointer", textDecoration: "underline" }}>
-                Remove photo
-              </button>
-            )}
-          </div>
 
-          <div style={S.field}>
-            <div style={S.fieldLbl}>DISPLAY NAME</div>
-            <input style={S.input} value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Your name" />
+  return (
+    <>
+      {cropFile && (
+        <CropOverlay
+          file={cropFile}
+          onConfirm={handleCropConfirm}
+          onCancel={() => setCropFile(null)}
+        />
+      )}
+      <div style={S.overlay}>
+        <div style={S.sheet}>
+          <div style={S.sheetHandle} />
+          <div style={S.sheetHeader}>
+            <div style={S.sheetTitle}>Edit Profile</div>
+            <button style={S.closeBtn} onClick={onClose}>✕</button>
           </div>
-          {!photoUrl && (
-            <div style={S.field}>
-              <div style={S.fieldLbl}>AVATAR — EMOJI OR INITIALS (UP TO 5)</div>
-              <input style={{ ...S.input, fontSize: 22, textAlign: "center", letterSpacing: "2px" }} value={avatarVal} maxLength={5} onChange={e => setAvatarVal(e.target.value)} placeholder="🌊 or IVJ" />
-              <div style={{ fontSize: 12, color: P.textMuted, marginTop: 8 }}>Paste an emoji, type initials, or anything up to 5 characters</div>
+          <div style={S.sheetBody}>
+            {/* Avatar preview + photo upload */}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 24, gap: 12 }}>
+              <div style={{ position: "relative", cursor: "pointer" }} onClick={() => photoInputRef.current?.click()}>
+                <div style={{ ...S.profileAvatar, width: 84, height: 84, overflow: "hidden" }}>
+                  {uploading ? (
+                    <span style={{ fontSize: 12, color: P.textMuted }}>...</span>
+                  ) : photoUrl ? (
+                    <img src={photoUrl} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  ) : (
+                    <span style={{ fontSize: previewContent.length === 1 ? 36 : 22, fontWeight: 900, letterSpacing: previewContent.length > 1 ? "-1px" : 0 }}>{previewContent}</span>
+                  )}
+                </div>
+                <div style={{ position: "absolute", bottom: 0, right: 0, background: P.surface2, border: `2px solid ${P.phoneBg}`, borderRadius: "50%", width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: P.textSecondary }}>
+                  📷
+                </div>
+              </div>
+              <input ref={photoInputRef} type="file" accept="image/*" style={{ display: "none" }}
+                onChange={e => handleFileSelect(e.target.files[0])} />
+              {photoUrl && (
+                <button onClick={() => setPhotoUrl(null)}
+                  style={{ background: "transparent", border: "none", color: P.textMuted, fontSize: 12, cursor: "pointer", textDecoration: "underline" }}>
+                  Remove photo
+                </button>
+              )}
             </div>
-          )}
-          <button style={{ ...S.primaryBtn, background: saving ? P.surface2 : `linear-gradient(135deg, ${P.orange}, ${P.terracotta})` }} onClick={handleSave} disabled={saving || uploading}>
-            {saving ? "Saving..." : "Save Profile"}
-          </button>
+
+            <div style={S.field}>
+              <div style={S.fieldLbl}>DISPLAY NAME</div>
+              <input style={S.input} value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Your name" />
+            </div>
+            {!photoUrl && (
+              <div style={S.field}>
+                <div style={S.fieldLbl}>AVATAR — EMOJI OR INITIALS (UP TO 5)</div>
+                <input style={{ ...S.input, fontSize: 22, textAlign: "center", letterSpacing: "2px" }} value={avatarVal} maxLength={5} onChange={e => setAvatarVal(e.target.value)} placeholder="🌊 or IVJ" />
+                <div style={{ fontSize: 12, color: P.textMuted, marginTop: 8 }}>Paste an emoji, type initials, or anything up to 5 characters</div>
+              </div>
+            )}
+            <button style={{ ...S.primaryBtn, background: saving ? P.surface2 : `linear-gradient(135deg, ${P.orange}, ${P.terracotta})` }} onClick={handleSave} disabled={saving || uploading}>
+              {saving ? "Saving..." : "Save Profile"}
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 

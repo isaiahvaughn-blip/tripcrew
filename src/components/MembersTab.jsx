@@ -37,15 +37,14 @@ function MembersTab({ trip, profile, expenses, profileMap = {} }) {
 
   useEffect(() => {
     const fetchMembers = async () => {
-      const [{ data: memberRows }, { data: tmRows }] = await Promise.all([
+      const [{ data: memberRows }, { data: tmRows }, { data: pendingRows }] = await Promise.all([
         supabase.from('members').select('*').eq('trip_id', trip.id),
         supabase.from('trip_members').select('user_id, invited_email, status').eq('trip_id', trip.id),
+        supabase.rpc('get_pending_invites', { p_trip_id: trip.id }),
       ]);
 
       setMembers(memberRows || []);
-
-      // Pending invites — status=pending, has invited_email
-      setPendingInvites((tmRows || []).filter(r => r.status === 'pending' && r.invited_email));
+      setPendingInvites((pendingRows || []).map(r => ({ invited_email: r.invited_email })));
 
       const userIds = (tmRows || []).map(r => r.user_id).filter(Boolean);
       if (!userIds.length) return;
