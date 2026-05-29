@@ -27,8 +27,8 @@ function AvatarEditSheet({ profile, user, onClose, onSave }) {
     setUploading(true);
     try {
       const ext = file.name.split('.').pop();
-      const path = `avatars/${user.id}.${ext}`;
-      const { error: uploadError } = await supabase.storage.from('trip-photos').upload(path, file, { upsert: true });
+      const path = `avatars/${user.id}-${Date.now()}.${ext}`;
+      const { error: uploadError } = await supabase.storage.from('trip-photos').upload(path, file);
       if (uploadError) throw uploadError;
       const { data: { publicUrl } } = supabase.storage.from('trip-photos').getPublicUrl(path);
       // Append cache-buster so browser fetches the new image instead of serving cached old one
