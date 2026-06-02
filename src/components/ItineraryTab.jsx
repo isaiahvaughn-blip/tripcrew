@@ -194,7 +194,7 @@ export function EditItinModal({ item, onClose, onSave }) {
           {/* DETAILS */}
           <div>
             <div style={S.fieldLbl}>DETAILS / CONFIRMATION #</div>
-            <input ref={detailRef} defaultValue={item.detail || ""} style={{ ...S.input, fontSize: 15, padding: "12px 16px" }} placeholder="Confirmation code, Terminal, Flight #, notes..." />
+            <input ref={detailRef} defaultValue={item.detail || ""} style={{ ...S.input, fontSize: 15, padding: "12px 16px" }} placeholder="Confirmation code, address, notes..." />
           </div>
 
           {/* DATE TIME */}
@@ -246,23 +246,11 @@ const SI = {
 export default function ItineraryTab({ trip, onModal, refreshKey }) {
   const [items, setItems] = useState([]);
   const [editingItem, setEditingItem] = useState(null);
-  const [selectedIds, setSelectedIds] = useState([]);
-  const [selecting, setSelecting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const longPressTimers = useRef({});
 
-  const handleDeleteSelected = async () => {
-    for (const id of selectedIds) await supabase.from("itinerary").delete().eq("id", id);
-    setItems(prev => prev.filter(i => !selectedIds.includes(i.id)));
-    setSelectedIds([]); setSelecting(false); setConfirmDelete(false);
-  };
+  const handleDeleteSelected = async () => { setConfirmDelete(false); };
 
-  const handleLongPressStart = id => { longPressTimers.current[id] = setTimeout(() => { setSelecting(true); setSelectedIds([id]); }, 500); };
-  const handleLongPressEnd   = id => clearTimeout(longPressTimers.current[id]);
-  const handleItemTap = item => {
-    if (selecting) { setSelectedIds(prev => prev.includes(item.id) ? prev.filter(id => id !== item.id) : [...prev, item.id]); }
-    else { setEditingItem(item); }
-  };
+  const handleItemTap = item => { setEditingItem(item); };
 
   useEffect(() => {
     const fetchItinerary = async () => {
@@ -283,15 +271,8 @@ export default function ItineraryTab({ trip, onModal, refreshKey }) {
       {confirmDelete && <ConfirmModal message={`Delete ${selectedIds.length} item${selectedIds.length > 1 ? "s" : ""}?`} onConfirm={handleDeleteSelected} onCancel={() => setConfirmDelete(false)} confirmLabel="Delete" danger />}
       <div style={S.tabTopRow}>
         <div style={S.tabTitle}>Itinerary</div>
-        {selecting
-          ? <div style={{ display: "flex", gap: 8 }}>
-              <button style={{ ...S.actionBtn, color: P.slateBlue }} onClick={() => { setSelecting(false); setSelectedIds([]); }}>Cancel</button>
-              {selectedIds.length > 0 && <button style={{ ...S.actionBtn, borderColor: P.danger + "60", color: P.danger }} onClick={() => setConfirmDelete(true)}>Delete ({selectedIds.length})</button>}
-            </div>
-          : <button style={S.newBtn} onClick={() => onModal("addItinerary")}>+ Add</button>
-        }
+        <button style={S.newBtn} onClick={() => onModal("addItinerary")}>+ Add</button>
       </div>
-      {selecting && <div style={SI.selectHint}>Long press to select · Tap to toggle · Delete when ready</div>}
       {items.length === 0 && (
         <div style={SI.emptyState}>
           <div style={{ fontSize: 32, marginBottom: 12 }}>🗺️</div>
@@ -306,14 +287,11 @@ export default function ItineraryTab({ trip, onModal, refreshKey }) {
             const meta = ITINERARY_COLORS[item.type] || ITINERARY_COLORS.activity;
             const hasEmojiIcon = item.icon && item.icon.length <= 4 && item.icon !== "🎯";
             const TypeIcon = ITIN_TYPE_ICONS[item.type] || Zap;
-            const isSelected = selectedIds.includes(item.id);
             const hasLocation = !["flight", "transport"].includes(item.type);
             return (
               <div key={item.id}
-                style={{ ...SI.item, borderLeftColor: meta.accent, ...(isSelected ? SI.itemSelected : {}) }}
-                onClick={() => handleItemTap(item)}
-                onTouchStart={() => handleLongPressStart(item.id)} onTouchEnd={() => handleLongPressEnd(item.id)}
-                onMouseDown={() => handleLongPressStart(item.id)} onMouseUp={() => handleLongPressEnd(item.id)} onMouseLeave={() => handleLongPressEnd(item.id)}>
+                style={{ ...SI.item, borderLeftColor: meta.accent }}
+                onClick={() => handleItemTap(item)}>
                 <div style={SI.timeCol}><span style={SI.time}>{formatTime12(item.time) || "—"}</span></div>
                 <div style={SI.content}>
                   <div style={SI.titleRow}>
@@ -328,11 +306,6 @@ export default function ItineraryTab({ trip, onModal, refreshKey }) {
                   </div>
                   {item.detail && <div style={SI.detail}>{item.detail}</div>}
                 </div>
-                {selecting && (
-                  <div style={{ ...SI.checkbox, ...(isSelected ? SI.checkboxOn : {}) }}>
-                    {isSelected && <span style={{ fontSize: 11, color: "#fff", fontWeight: 800 }}>✓</span>}
-                  </div>
-                )}
               </div>
             );
           })}

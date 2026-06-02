@@ -311,12 +311,12 @@ function TripCard({ trip, onOpen, onDelete, onEdit, selecting, selected, onLongP
     return `${h % 12 || 12}:${String(m).padStart(2,"0")}${h >= 12 ? "pm" : "am"}`;
   };
   const longPressTimer = useRef(null);
-  const handlePressStart = () => { longPressTimer.current = setTimeout(() => onLongPress?.(), 500); };
+  const handlePressStart = () => { longPressTimer.current = setTimeout(() => onLongPress?.(), 700); };
   const handlePressEnd   = () => clearTimeout(longPressTimer.current);
   const handleTap        = () => selecting ? onToggleSelect?.() : onOpen(trip);
 
   return (
-    <div style={{ ...S.tripCard, opacity: selected ? 0.75 : 1, outline: selected ? `2px solid ${P.terracotta}` : "none" }}
+    <div style={{ ...S.tripCard, opacity: selected ? 0.75 : 1, outline: selected ? `2px solid ${P.terracotta}` : "none", transition: "transform 0.15s", transform: selected ? "scale(0.97)" : "scale(1)" }}
       onClick={handleTap} onTouchStart={handlePressStart} onTouchEnd={handlePressEnd}
       onMouseDown={handlePressStart} onMouseUp={handlePressEnd} onMouseLeave={handlePressEnd}>
       {selecting && (

@@ -134,7 +134,10 @@ function UploadsTab({ trip, user, profile, onPreview }) {
   };
 
   const handleLongPressStart = (id) => {
-    longPressTimers.current[id] = setTimeout(() => { setSelecting(true); setSelectedIds([id]); }, 500);
+    longPressTimers.current[id] = setTimeout(() => {
+      setSelecting(true);
+      setSelectedIds([id]);
+    }, 700);
   };
   const handleLongPressEnd = (id) => { clearTimeout(longPressTimers.current[id]); };
 
@@ -215,7 +218,7 @@ function UploadsTab({ trip, user, profile, onPreview }) {
             const isSelected = selectedIds.includes(ph.id);
             return (
               <div key={ph.id}
-                style={{ position: "relative", aspectRatio: "1", borderRadius: 10, overflow: "hidden", cursor: "pointer", opacity: ph.sensitive ? 0.5 : 1, outline: isSelected ? `2px solid ${P.terracotta}` : "none", transition: "opacity 0.15s" }}
+                style={{ position: "relative", aspectRatio: "1", borderRadius: 10, overflow: "hidden", cursor: "pointer", opacity: ph.sensitive ? 0.5 : 1, outline: isSelected ? `2px solid ${P.terracotta}` : "none", transition: "opacity 0.15s, transform 0.15s", transform: isSelected ? "scale(0.94)" : "scale(1)" }}
                 onClick={() => handleTap(ph)}
                 onTouchStart={() => handleLongPressStart(ph.id)} onTouchEnd={() => handleLongPressEnd(ph.id)}
                 onMouseDown={() => handleLongPressStart(ph.id)} onMouseUp={() => handleLongPressEnd(ph.id)} onMouseLeave={() => handleLongPressEnd(ph.id)}>
