@@ -6,14 +6,16 @@ import { resolveName } from "../utils";
 import ConfirmModal from "./ConfirmModal";
 
 const EXPENSE_PLACEHOLDERS = {
-  Dining:   "e.g. Nobu, dinner for 4",
-  Drinks:   "e.g. Teardrop bar tab",
-  Stay:     "e.g. Fairmont 2 nights",
-  Activity: "e.g. Museum of Fine Arts",
-  Shopping: "e.g. Zara haul",
-  Travel:   "e.g. Dollar Car Rental",
-  Flight:   "e.g. PDX to LAX round trip",
-  Other:    "e.g. what was it?",
+  Dining:      "e.g. Nobu, dinner for 4",
+  Drinks:      "e.g. Teardrop bar tab",
+  Stay:        "e.g. Fairmont 2 nights",
+  Activity:    "e.g. Museum of Fine Arts",
+  Event:       "e.g. Taylor Swift tickets",
+  Celebration: "e.g. Birthday dinner for 8",
+  Shopping:    "e.g. Zara haul",
+  Travel:      "e.g. Dollar Car Rental",
+  Flight:      "e.g. PDX to LAX round trip",
+  Other:       "e.g. what was it?",
 };
 
 // ─── ADD / EDIT EXPENSE MODAL ─────────────────────────────────────────────────
@@ -21,6 +23,7 @@ const EXPENSE_PLACEHOLDERS = {
 export function AddExpenseModal({ onClose, trip, onAdd, user, profile, existingExpense, profileMap = {} }) {
   const [members, setMembers] = useState([]); // [{ id: uuid|name, label: displayName }]
   const [step, setStep] = useState(1);
+  const [submitting, setSubmitting] = useState(false);
   const [confirmDeleteExpense, setConfirmDeleteExpense] = useState(false);
   const [exp, setExp] = useState({
     title:     existingExpense?.title    || "",
@@ -102,27 +105,34 @@ export function AddExpenseModal({ onClose, trip, onAdd, user, profile, existingE
   const labelFor = id => members.find(m => m.id === id)?.label || resolveName(id, profileMap) || id;
 
   const handleSubmit = async () => {
-    if (existingExpense) {
-      const { error } = await supabase.from("expenses").update({
-        title: exp.title, category: exp.category,
-        amount: parseFloat(exp.amount),
-        paid_by: exp.paidBy,
-        split_with: exp.splitWith,
-      }).eq("id", existingExpense.id);
-      if (error) { console.error(error); return; }
-    } else {
-      const { error } = await supabase.from("expenses").insert([{
-        trip_id: trip?.id, title: exp.title, category: exp.category,
-        amount: parseFloat(exp.amount),
-        paid_by: exp.paidBy,
-        split_with: exp.splitWith,
-        date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-        receipt: false,
-      }]);
-      if (error) { console.error(error); return; }
-    }
-    if (onAdd) onAdd();
-    onClose();
+    const amount = parseFloat(exp.amount);
+    if (!exp.title?.trim()) return;
+    if (!amount || amount <= 0 || amount > 999999) return;
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      if (existingExpense) {
+        const { error } = await supabase.from("expenses").update({
+          title: exp.title, category: exp.category,
+          amount,
+          paid_by: exp.paidBy,
+          split_with: exp.splitWith,
+        }).eq("id", existingExpense.id);
+        if (error) { console.error(error); return; }
+      } else {
+        const { error } = await supabase.from("expenses").insert([{
+          trip_id: trip?.id, title: exp.title, category: exp.category,
+          amount,
+          paid_by: exp.paidBy,
+          split_with: exp.splitWith,
+          date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+          receipt: false,
+        }]);
+        if (error) { console.error(error); return; }
+      }
+      if (onAdd) onAdd();
+      onClose();
+    } catch (e) { console.error(e); } finally { setSubmitting(false); }
   };
 
   const stepTitles = ["", "What was it?", "Who's splitting?", "Looks good?"];
@@ -256,8 +266,8 @@ export function AddExpenseModal({ onClose, trip, onAdd, user, profile, existingE
           </div>
           <div style={{ paddingBottom: 16, flexShrink: 0, display: "flex", gap: 10 }}>
             <button style={S.secondaryBtn} onClick={() => setStep(existingExpense ? 1 : 2)}>← Edit</button>
-            <button style={{ ...S.primaryBtn, background: `linear-gradient(135deg, ${P.orange}, ${P.terracotta})` }} onClick={handleSubmit}>
-              {existingExpense ? "✓ Save Changes" : "✓ Add Expense"}
+            <button style={{ ...S.primaryBtn, background: submitting ? P.surface2 : `linear-gradient(135deg, ${P.orange}, ${P.terracotta})` }} onClick={handleSubmit} disabled={submitting}>
+              {submitting ? "Saving..." : existingExpense ? "✓ Save Changes" : "✓ Add Expense"}
             </button>
           </div>
         </div>

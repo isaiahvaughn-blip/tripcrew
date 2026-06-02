@@ -246,9 +246,6 @@ const SI = {
 export default function ItineraryTab({ trip, onModal, refreshKey }) {
   const [items, setItems] = useState([]);
   const [editingItem, setEditingItem] = useState(null);
-  const [confirmDelete, setConfirmDelete] = useState(false);
-
-  const handleDeleteSelected = async () => { setConfirmDelete(false); };
 
   const handleItemTap = item => { setEditingItem(item); };
 
@@ -268,7 +265,6 @@ export default function ItineraryTab({ trip, onModal, refreshKey }) {
 
   return (
     <div style={S.tabScroll}>
-      {confirmDelete && <ConfirmModal message={`Delete ${selectedIds.length} item${selectedIds.length > 1 ? "s" : ""}?`} onConfirm={handleDeleteSelected} onCancel={() => setConfirmDelete(false)} confirmLabel="Delete" danger />}
       <div style={S.tabTopRow}>
         <div style={S.tabTitle}>Itinerary</div>
         <button style={S.newBtn} onClick={() => onModal("addItinerary")}>+ Add</button>

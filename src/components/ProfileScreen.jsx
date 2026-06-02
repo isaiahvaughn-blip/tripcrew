@@ -150,7 +150,8 @@ function AvatarEditSheet({ profile, user, onClose, onSave }) {
       const { error: uploadError } = await supabase.storage.from('trip-photos').upload(path, blob);
       if (uploadError) throw uploadError;
       const { data: { publicUrl } } = supabase.storage.from('trip-photos').getPublicUrl(path);
-      setPhotoUrl(`${publicUrl}?t=${Date.now()}`);
+      const cleanUrl = publicUrl.split('?')[0];
+      setPhotoUrl(`${cleanUrl}?t=${Date.now()}`); // cache buster for display only
       setAvatarVal("");
     } catch (e) { console.error(e); } finally { setUploading(false); }
   };
@@ -159,7 +160,8 @@ function AvatarEditSheet({ profile, user, onClose, onSave }) {
     setSaving(true);
     let avatarStr;
     if (photoUrl) {
-      avatarStr = `photo:${photoUrl}`;
+      // Store clean URL without cache buster
+      avatarStr = `photo:${photoUrl.split('?')[0]}`;
     } else {
       avatarStr = avatarVal.trim() ? `initials:${avatarVal.trim().slice(0, 5)}` : null;
     }

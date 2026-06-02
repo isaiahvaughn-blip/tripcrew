@@ -103,8 +103,8 @@ function MembersTab({ trip, profile, expenses, profileMap = {} }) {
     // Use security-definer RPC to bypass RLS on profiles table
     let displayName = null;
     if (linkedUserId) {
-      const { data: dn } = await supabase.rpc("get_display_name_by_user_id", { user_uuid: linkedUserId });
-      if (dn) displayName = dn;
+      const { data: dn, error: dnError } = await supabase.rpc("get_display_name_by_user_id", { user_uuid: linkedUserId });
+      if (!dnError && dn) displayName = dn;
     }
     if (displayName) {
       const { data: existing } = await supabase.from('members').select('id')

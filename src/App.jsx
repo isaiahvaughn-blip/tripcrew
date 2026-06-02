@@ -111,23 +111,37 @@ export default function App() {
       if (!pending?.length) return;
 
       for (const invite of pending) {
+        // Link the trip_members row
         await supabase.from("trip_members")
           .update({ user_id: user.id, status: "accepted" })
           .eq("id", invite.id);
 
-        const { data: memberRow } = await supabase
-          .from("members").select("name")
-          .eq("trip_id", invite.trip_id)
-          .eq("name", user.email.split("@")[0])
-          .maybeSingle();
+        // Get real display name via security definer RPC
+        const { data: displayName, error: dnError } = await supabase.rpc("get_display_name_by_user_id", { user_uuid: user.id });
 
-        const guestName = memberRow?.name || user.email.split("@")[0];
+        // Write to members table if not already there
+        if (!dnError && displayName) {
+          const { data: existing } = await supabase.from("members").select("id")
+            .eq("trip_id", invite.trip_id).eq("name", displayName).maybeSingle();
+          if (!existing) {
+            await supabase.from("members").insert([{ trip_id: invite.trip_id, name: displayName }]);
+          }
+        }
 
-        await supabase.rpc("migrate_guest_to_uuid", {
-          p_trip_id:    invite.trip_id,
-          p_guest_name: guestName,
-          p_user_uuid:  user.id,
-        });
+        // Migrate any guest expenses that were logged under email prefix
+        const emailPrefix = user.email.split("@")[0];
+        const { data: prefixRow } = await supabase.from("members").select("name")
+          .eq("trip_id", invite.trip_id).eq("name", emailPrefix).maybeSingle();
+        if (prefixRow) {
+          await supabase.rpc("migrate_guest_to_uuid", {
+            p_trip_id:    invite.trip_id,
+            p_guest_name: emailPrefix,
+            p_user_uuid:  user.id,
+          });
+          // Clean up the stale email prefix row
+          await supabase.from("members").delete()
+            .eq("trip_id", invite.trip_id).eq("name", emailPrefix);
+        }
       }
     };
     linkPending();

@@ -356,11 +356,10 @@ export default function NewTripModal({ onClose, onSave, userId, userProfile }) {
         const linkedUserId = existingUser?.[0]?.id || null;
         const { error: tmError } = await supabase.from("trip_members").insert([{ trip_id: trip.id, user_id: linkedUserId, invited_email: email.toLowerCase(), role: "member", status: linkedUserId ? "accepted" : "pending" }]);
         if (tmError && tmError.code !== '23505') throw tmError;
-        // Use security-definer RPC to bypass RLS on profiles table
         let displayName = null;
         if (linkedUserId) {
-          const { data: dn } = await supabase.rpc("get_display_name_by_user_id", { user_uuid: linkedUserId });
-          if (dn) displayName = dn;
+          const { data: dn, error: dnError } = await supabase.rpc("get_display_name_by_user_id", { user_uuid: linkedUserId });
+          if (!dnError && dn) displayName = dn;
         }
         if (displayName) {
           const { data: existingMemberInvite } = await supabase.from("members").select("id")

@@ -13,25 +13,23 @@ import ShareModal from "./ShareModal";
 import EditTripModal from "./EditTripModal";
 
 export default function TripShell({ trip, activeTab, setActiveTab, onBack, onModal, itinRefresh, modal, setModal, user, profile, onItinRefresh, onTripUpdate }) {
-  const [expenses,   setExpenses]   = useState([]);
-  const [profileMap, setProfileMap] = useState({}); // { uuid: displayName }
+  const [expenses,       setExpenses]       = useState([]);
+  const [profileMap,     setProfileMap]     = useState({});
   const [editingTrip,    setEditingTrip]    = useState(false);
   const [editingExpense, setEditingExpense] = useState(null);
   const [previewPhoto,   setPreviewPhoto]   = useState(null);
+  const [savingPhoto,    setSavingPhoto]    = useState(false);
 
   const IconComp  = TRIP_ICONS[trip.emoji] || Plane;
   const myName    = profile?.display_name || user?.email?.split("@")[0] || "Me";
   const nameFontSize = (trip.name?.length || 0) > 22 ? 15 : (trip.name?.length || 0) > 16 ? 17 : 19;
 
-  // ── Fetch expenses + build profileMap for UUID resolution ─────────────────
   useEffect(() => {
     const fetchAll = async () => {
-      // Get all trip members with user_ids
       const { data: tmRows } = await supabase
         .from("trip_members").select("user_id").eq("trip_id", trip.id);
       const userIds = (tmRows || []).map(r => r.user_id).filter(Boolean);
 
-      // Build profileMap: { uuid: displayName }
       if (userIds.length) {
         const { data: profiles } = await supabase
           .from("profiles").select("id, display_name").in("id", userIds);
@@ -40,7 +38,6 @@ export default function TripShell({ trip, activeTab, setActiveTab, onBack, onMod
         setProfileMap(map);
       }
 
-      // Fetch expenses
       const { data } = await supabase
         .from("expenses").select("*").eq("trip_id", trip.id)
         .order("created_at", { ascending: false });
@@ -54,9 +51,23 @@ export default function TripShell({ trip, activeTab, setActiveTab, onBack, onMod
     return () => sub.unsubscribe();
   }, [trip.id, itinRefresh]);
 
-  // Only calculate once profileMap is populated — prevents UUID leaking into settlement names
   const profileMapReady = Object.keys(profileMap).length > 0;
   const settlements = profileMapReady ? calcSettlements(expenses, profileMap) : [];
+
+  // Fetch blob first so browser saves as a named file instead of opening raw Supabase URL
+  const saveSinglePhoto = async (photo) => {
+    setSavingPhoto(true);
+    try {
+      const res = await fetch(photo.url);
+      const blob = await res.blob();
+      const ext = photo.storage_path.split('.').pop() || 'jpg';
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${photo.caption || 'photo'}.${ext}`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } catch (e) { console.error(e); } finally { setSavingPhoto(false); }
+  };
 
   const tabs = [
     { id: "itinerary", label: "Itinerary", Icon: Calendar },
@@ -98,7 +109,6 @@ export default function TripShell({ trip, activeTab, setActiveTab, onBack, onMod
         {activeTab === "members"   && <MembersTab   trip={trip} profile={profile} expenses={expenses} profileMap={profileMap} />}
         {activeTab === "summary"   && <SummaryTab   trip={trip} settlements={settlements} myName={myName} expenses={expenses} />}
 
-        {/* Modals rendered at shell level for correct containing block */}
         {modal === "addExpense"   && <AddExpenseModal trip={trip} user={user} profile={profile} profileMap={profileMap} onClose={() => setModal(null)} onAdd={onItinRefresh} />}
         {modal === "addItinerary" && <AddItinModal    trip={trip} onClose={() => setModal(null)} onAdd={() => { setModal(null); onItinRefresh(); }} />}
         {modal === "settle"       && <SettleModal     settlements={settlements} myName={myName} myUserId={user?.id} trip={trip} profileMap={profileMap} onClose={() => setModal(null)} />}
@@ -122,28 +132,71 @@ export default function TripShell({ trip, activeTab, setActiveTab, onBack, onMod
         ))}
       </div>
 
-      {/* Photo preview — rendered at shell level to cover tab bar */}
+      {/* Photo preview overlay — covers tab bar at shell level */}
       {previewPhoto && (
-        <div style={{ position: "absolute", inset: 0, zIndex: 300, background: P.outerBg, display: "flex", flexDirection: "column" }}
-          onClick={() => setPreviewPhoto(null)}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 20px 12px", flexShrink: 0 }}>
+        <div
+          style={{ position: "absolute", inset: 0, zIndex: 300, background: P.outerBg, display: "flex", flexDirection: "column" }}
+          onClick={() => setPreviewPhoto(null)}
+        >
+          {/* Top: uploader + close */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 20px 16px", flexShrink: 0 }}>
             <div style={{ fontSize: 12, color: P.textMuted }}>by {previewPhoto.uploader}</div>
-            <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-              <button onClick={e => { e.stopPropagation(); previewPhoto.onToggleSensitive?.(); }}
-                style={{ background: previewPhoto.sensitive ? "#2a1810" : P.surface2, border: "none", color: previewPhoto.sensitive ? P.terracotta : P.textMuted, borderRadius: 10, padding: "7px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                {previewPhoto.sensitive ? "🔒 Sensitive" : "Mark 🔒"}
-              </button>
-              <button onClick={e => { e.stopPropagation(); const a = document.createElement('a'); a.href = previewPhoto.url; a.download = previewPhoto.caption || 'photo'; a.target = '_blank'; a.click(); }}
-                style={{ background: P.surface2, border: "none", color: P.lightBlue, borderRadius: 10, padding: "7px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
-                <Download size={12} /> Save
-              </button>
-              <button style={S.closeBtn} onClick={() => setPreviewPhoto(null)}>✕</button>
-            </div>
+            <button
+              style={{ background: "rgba(255,255,255,0.1)", border: "none", color: P.textPrimary, borderRadius: 20, width: 36, height: 36, fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+              onClick={e => { e.stopPropagation(); setPreviewPhoto(null); }}>
+              ✕
+            </button>
           </div>
-          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 12px 24px" }}>
-            <img src={previewPhoto.url} alt={previewPhoto.caption}
+
+          {/* Image */}
+          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 16px" }}>
+            <img
+              src={previewPhoto.url}
+              alt={previewPhoto.caption}
               style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain", borderRadius: 12 }}
-              onClick={e => e.stopPropagation()} />
+              onClick={e => e.stopPropagation()}
+            />
+          </div>
+
+          {/* Bottom actions — two equal buttons, big tap targets */}
+          <div
+            style={{ display: "flex", gap: 12, padding: "20px 20px 48px", flexShrink: 0 }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Mark Sensitive — fixed: updates local state immediately after DB write */}
+            <button
+              onClick={() => {
+                previewPhoto.onToggleSensitive?.();
+                setPreviewPhoto(p => ({ ...p, sensitive: !p.sensitive }));
+              }}
+              style={{
+                flex: 1, padding: "14px 0", fontSize: 14, fontWeight: 700,
+                borderRadius: 14, cursor: "pointer", border: `1.5px solid ${previewPhoto.sensitive ? P.terracotta : "rgba(255,255,255,0.15)"}`,
+                background: previewPhoto.sensitive ? "#2a1810" : "rgba(255,255,255,0.08)",
+                color: previewPhoto.sensitive ? P.terracotta : P.textMuted,
+                fontFamily: "'DM Sans', sans-serif",
+              }}>
+              {previewPhoto.sensitive ? "🔒 Sensitive" : "Mark 🔒"}
+            </button>
+
+            {/* Save — fixed: fetches blob so it saves as a file, not a raw URL tab */}
+            <button
+              onClick={() => saveSinglePhoto(previewPhoto)}
+              disabled={savingPhoto}
+              style={{
+                flex: 1, padding: "14px 0", fontSize: 14, fontWeight: 700,
+                borderRadius: 14, cursor: "pointer", border: `1.5px solid ${P.lightBlue}60`,
+                background: P.lightBlue + "22", color: P.lightBlue,
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                fontFamily: "'DM Sans', sans-serif",
+              }}>
+              {savingPhoto ? "Saving..." : <><Download size={15} /> Save</>}
+            </button>
+          </div>
+
+          {/* iOS hint */}
+          <div style={{ textAlign: "center", fontSize: 11, color: "rgba(255,255,255,0.2)", paddingBottom: 20, marginTop: -28, fontFamily: "'DM Sans', sans-serif" }}>
+            On iPhone: hold the photo above to Save to Photos
           </div>
         </div>
       )}

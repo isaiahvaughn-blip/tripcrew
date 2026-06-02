@@ -28,13 +28,13 @@ function UploadsTab({ trip, user, profile, onPreview }) {
     const { data, error } = await supabase.from('photos').select('*').eq('trip_id', trip.id).order('created_at', { ascending: false });
     if (error) { console.error(error); return; }
 
-    // Build a map of user_id → display_name for all uploaders
+    // Resolve uploader display names via security-definer RPC to bypass RLS
     const uploaderIds = [...new Set((data || []).map(ph => ph.user_id).filter(Boolean))];
     const uploaderMap = {};
-    if (uploaderIds.length) {
-      const { data: profiles } = await supabase.from('profiles').select('id, display_name').in('id', uploaderIds);
-      (profiles || []).forEach(p => { if (p.display_name) uploaderMap[p.id] = p.display_name; });
-    }
+    await Promise.all(uploaderIds.map(async id => {
+      const { data: dn } = await supabase.rpc("get_display_name_by_user_id", { user_uuid: id });
+      if (dn) uploaderMap[id] = dn;
+    }));
 
     // Generate signed URLs (1 hour expiry) + resolve uploader name live
     const withSignedUrls = await Promise.all((data || []).map(async (ph) => {
